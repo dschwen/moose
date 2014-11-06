@@ -20,78 +20,96 @@ RankFourTensor::fillMethodEnum()
   return MooseEnum("antisymmetric symmetric9 symmetric21 general_isotropic symmetric_isotropic antisymmetric_isotropic general");
 }
 
-RankFourTensor::RankFourTensor()
+RankFourTensor::RankFourTensor() :
+    _symmetry(isotropic),
+    _data(2)
 {
-  for (unsigned int i = 0; i < N; ++i)
-    for (unsigned int j = 0; j < N; ++j)
-      for (unsigned int k = 0; k < N; ++k)
-        for (unsigned int l = 0; l < N; ++l)
-          _vals[i][j][k][l] = 0.0;
 }
 
-RankFourTensor::RankFourTensor(const RankFourTensor & a)
+RankFourTensor::RankFourTensor(Symmetry s) :
+    _symmetry(s),
+    _data(int(s))
 {
-  *this = a;
 }
 
 Real &
 RankFourTensor::operator()(unsigned int i, unsigned int j, unsigned int k, unsigned int l)
 {
-  return _vals[i][j][k][l];
+  collapseSymmetryToNone();
+  return _data[((i * N + j) * N + k) * N + l];
 }
 
 Real
 RankFourTensor::operator()(unsigned int i, unsigned int j, unsigned int k, unsigned int l) const
 {
-  return _vals[i][j][k][l];
+  switch (_symmetry)
+  {
+    case none :
+      return _data[((i * N + j) * N + k) * N + l];
+
+    case isotropic :
+    {
+      // https://en.wikipedia.org/wiki/Linear_elasticity#Isotropic_homogeneous_media
+      const Real K = _data[0],
+            mu = _data[1];
+      return K*(i==j)*(k==l) + mu*((i==k)*(j==l) + (i==l)*(j==k) - 2.0/3.0*(i==j)*(k==l));
+    }
+
+    default:
+      mooseError("Invalid tensor symmetry.");
+  }
 }
 
 void
 RankFourTensor::zero()
 {
-  for (unsigned int i = 0; i < N; ++i)
-    for (unsigned int j = 0; j < N; ++j)
-      for (unsigned int k = 0; k < N; ++k)
-        for (unsigned int l = 0; l < N; ++l)
-          _vals[i][j][k][l] = 0.0;
+  _symmetry = isotropic;
+  _data.resize(2);
+  _data[0] = 0.0;
+  _data[1] = 0.0;
 }
 
 RankFourTensor &
-RankFourTensor::operator=(const RankFourTensor & a)
+RankFourTensor::operator=(const RankFourTensor & b)
 {
-  for (unsigned int i = 0; i < N; ++i)
-    for (unsigned int j = 0; j < N; ++j)
-      for (unsigned int k = 0; k < N; ++k)
-        for (unsigned int l = 0; l < N; ++l)
-          _vals[i][j][k][l] = a._vals[i][j][k][l];
-
+  _data = b._data;
+  _symmetry = b._symmetry;
   return *this;
 }
 
 RankTwoTensor
-RankFourTensor::operator*(const RankTwoTensor & a) const
+RankFourTensor::operator*(const RankTwoTensor & b) const
 {
-  RealTensorValue result;
-
-  for (unsigned int i = 0; i < N; ++i)
-    for (unsigned int j = 0; j < N; ++j)
-      for (unsigned int k = 0; k < N; ++k)
-        for (unsigned int l = 0; l < N; ++l)
-          result(i,j) += _vals[i][j][k][l] * a(k,l);
-
-  return result;
+  return RankTwoMultiply(b);
 }
 
 RealTensorValue
-RankFourTensor::operator*(const RealTensorValue & a) const
+RankFourTensor::operator*(const RealTensorValue & b) const
 {
-  RealTensorValue result;
+  return RankTwoMultiply(b);
+}
 
-  for (unsigned int i = 0; i < N; ++i)
-    for (unsigned int j = 0; j < N; ++j)
-      for (unsigned int k = 0; k < N; ++k)
-        for (unsigned int l = 0; l < N; ++l)
-          result(i,j) += _vals[i][j][k][l] * a(k,l);
+template <typename T>
+T
+RankFourTensor::RankTwoMultiply(const T & b) const
+{
+  const RankFourTensor & a = *this;
+  T result;
+
+  switch (_symmetry)
+  {
+    case none:
+    case isotropic:
+      for (unsigned int i = 0; i < N; ++i)
+        for (unsigned int j = 0; j < N; ++j)
+          for (unsigned int k = 0; k < N; ++k)
+            for (unsigned int l = 0; l < N; ++l)
+              result(i,j) += a(i,j,k,l) * b(k,l);
+      break;
+
+    default:
+      mooseError("Invalid tensor symmetry.");
+  }
 
   return result;
 }
@@ -99,126 +117,167 @@ RankFourTensor::operator*(const RealTensorValue & a) const
 RankFourTensor
 RankFourTensor::operator*(const Real & a) const
 {
-  RankFourTensor result;
-
-  for (unsigned int i = 0; i < N; ++i)
-    for (unsigned int j = 0; j < N; ++j)
-      for (unsigned int k = 0; k < N; ++k)
-        for (unsigned int l = 0; l < N; ++l)
-          result(i,j,k,l) = _vals[i][j][k][l] * a;
-
+  RankFourTensor result(_symmetry);
+  // we assume that the elements stored for all symmetries can be multiplied individually
+  for (unsigned int i = 0; i < _data.size(); ++i)
+    result._data[i] = _data[i]*a;
   return result;
 }
 
 RankFourTensor &
 RankFourTensor::operator*=(const Real & a)
 {
-  for (unsigned int i = 0; i < N; ++i)
-    for (unsigned int j = 0; j < N; ++j)
-      for (unsigned int k = 0; k < N; ++k)
-        for (unsigned int l = 0; l < N; ++l)
-          _vals[i][j][k][l] = _vals[i][j][k][l] * a;
-
+  // we assume that the elements stored for all symmetries can be multiplied individually
+  for (unsigned int i = 0; i < _data.size(); ++i)
+    _data[i] *= a;
   return *this;
 }
 
 RankFourTensor
 RankFourTensor::operator/(const Real & a) const
 {
-  RankFourTensor result;
-
-  for (unsigned int i = 0; i < N; ++i)
-    for (unsigned int j = 0; j < N; ++j)
-      for (unsigned int k = 0; k < N; ++k)
-        for (unsigned int l = 0; l < N; ++l)
-          result(i,j,k,l) = _vals[i][j][k][l] / a;
-
+  RankFourTensor result(_symmetry);
+  // we assume that the elements stored for all symmetries can be divided individually
+  for (unsigned int i = 0; i < _data.size(); ++i)
+    result._data[i] = _data[i]/a;
   return result;
 }
 
 RankFourTensor &
 RankFourTensor::operator/=(const Real & a)
 {
-  for (unsigned int i = 0; i < N; ++i)
-    for (unsigned int j = 0; j < N; ++j)
-      for (unsigned int k = 0; k < N; ++k)
-        for (unsigned int l = 0; l < N; ++l)
-          _vals[i][j][k][l] /= a;
-
+  // we assume that the elements stored for all symmetries can be divided individually
+  for (unsigned int i = 0; i < _data.size(); ++i)
+    _data[i] /= a;
   return *this;
 }
 
 RankFourTensor &
-RankFourTensor::operator+=(const RankFourTensor & a)
+RankFourTensor::operator+=(const RankFourTensor & b)
 {
-  for (unsigned int i = 0; i < N; ++i)
-    for (unsigned int j = 0; j < N; ++j)
-      for (unsigned int k = 0; k < N; ++k)
-        for (unsigned int l = 0; l < N; ++l)
-          _vals[i][j][k][l] += a(i,j,k,l);
+  RankFourTensor & a = *this;
 
-  return *this;
+  if (a._symmetry == b._symmetry)
+  {
+    // for identical symmetries just add components
+    for (unsigned int i = 0; i < _data.size(); ++i)
+      _data[i] += b._data[i];
+  }
+  else
+  {
+    // for all other cases downgrade symmetry to none
+    collapseSymmetryToNone();
+
+    for (unsigned int i = 0; i < N; ++i)
+      for (unsigned int j = 0; j < N; ++j)
+        for (unsigned int k = 0; k < N; ++k)
+          for (unsigned int l = 0; l < N; ++l)
+            a(i,j,k,l) += a(i,j,k,l);
+  }
+
+  return a;
 }
 
 RankFourTensor
-RankFourTensor::operator+(const RankFourTensor & a) const
+RankFourTensor::operator+(const RankFourTensor & b) const
 {
-  RankFourTensor result;
+  const RankFourTensor & a = *this;
 
-  for (unsigned int i = 0; i < N; ++i)
-    for (unsigned int j = 0; j < N; ++j)
-      for (unsigned int k = 0; k < N; ++k)
-        for (unsigned int l = 0; l < N; ++l)
-          result(i,j,k,l) = _vals[i][j][k][l] + a(i,j,k,l);
+  if (a._symmetry == b._symmetry)
+  {
+    // for identical symmetries just add components
+    RankFourTensor result(_symmetry);
 
-  return result;
+    for (unsigned int i = 0; i < _data.size(); ++i)
+      result._data[i] += a._data[i] + b._data[i];
+    return result;
+  }
+  else
+  {
+    // for all other cases return no symmetry result
+    RankFourTensor result(none);
+
+    for (unsigned int i = 0; i < N; ++i)
+      for (unsigned int j = 0; j < N; ++j)
+        for (unsigned int k = 0; k < N; ++k)
+          for (unsigned int l = 0; l < N; ++l)
+            result(i,j,k,l) = a(i,j,k,l) + b(i,j,k,l);
+    return result;
+  }
 }
 
 RankFourTensor &
-RankFourTensor::operator-=(const RankFourTensor & a)
+RankFourTensor::operator-=(const RankFourTensor & b)
 {
-  for (unsigned int i = 0; i < N; ++i)
-    for (unsigned int j = 0; j < N; ++j)
-      for (unsigned int k = 0; k < N; ++k)
-        for (unsigned int l = 0; l < N; ++l)
-          _vals[i][j][k][l] -= a(i,j,k,l);
+  RankFourTensor & a = *this;
 
-  return *this;
+  if (a._symmetry == b._symmetry)
+  {
+    // for identical symmetries just add components
+    for (unsigned int i = 0; i < _data.size(); ++i)
+      _data[i] -= b._data[i];
+  }
+  else
+  {
+    // for all other cases downgrade symmetry to none
+    collapseSymmetryToNone();
+
+    for (unsigned int i = 0; i < N; ++i)
+      for (unsigned int j = 0; j < N; ++j)
+        for (unsigned int k = 0; k < N; ++k)
+          for (unsigned int l = 0; l < N; ++l)
+            a(i,j,k,l) -= a(i,j,k,l);
+  }
+
+  return a;
 }
 
 RankFourTensor
-RankFourTensor::operator-(const RankFourTensor & a) const
+RankFourTensor::operator-(const RankFourTensor & b) const
 {
-  RankFourTensor result;
+  const RankFourTensor & a = *this;
 
-  for (unsigned int i = 0; i < N; ++i)
-    for (unsigned int j = 0; j < N; ++j)
-      for (unsigned int k = 0; k < N; ++k)
-        for (unsigned int l = 0; l < N; ++l)
-          result(i,j,k,l) = _vals[i][j][k][l] - a(i,j,k,l);
+  if (a._symmetry == b._symmetry)
+  {
+    // for identical symmetries just add components
+    RankFourTensor result(_symmetry);
 
-  return result;
+    for (unsigned int i = 0; i < _data.size(); ++i)
+      result._data[i] += a._data[i] + b._data[i];
+    return result;
+  }
+  else
+  {
+    // for all other cases return no symmetry result
+    RankFourTensor result(none);
+
+    for (unsigned int i = 0; i < N; ++i)
+      for (unsigned int j = 0; j < N; ++j)
+        for (unsigned int k = 0; k < N; ++k)
+          for (unsigned int l = 0; l < N; ++l)
+            result(i,j,k,l) = a(i,j,k,l) + b(i,j,k,l);
+    return result;
+  }
 }
 
 RankFourTensor
 RankFourTensor::operator-() const
 {
-  RankFourTensor result;
-
-  for (unsigned int i = 0; i < N; ++i)
-    for (unsigned int j = 0; j < N; ++j)
-      for (unsigned int k = 0; k < N; ++k)
-        for (unsigned int l = 0; l < N; ++l)
-          result(i,j,k,l) = -_vals[i][j][k][l];
+  RankFourTensor result(_symmetry);
+  // we assume that the elements stored for all symmetries can be negated individually
+  for (unsigned int i = 0; i < _data.size(); ++i)
+    result._data[i] = -_data[i];
 
   return result;
 }
 
 RankFourTensor
-RankFourTensor::operator*(const RankFourTensor & a) const
+RankFourTensor::operator*(const RankFourTensor & b) const
 {
-  RankFourTensor result;
+  const RankFourTensor & a = *this;
+  RankFourTensor result(none);
 
+  // TODO: respect symmetries
 
   for (unsigned int i = 0; i < N; ++i)
     for (unsigned int j = 0; j < N; ++j)
@@ -226,7 +285,7 @@ RankFourTensor::operator*(const RankFourTensor & a) const
         for (unsigned int l = 0; l < N; ++l)
           for (unsigned int p = 0; p < N; ++p)
             for (unsigned int q = 0; q < N; ++q)
-              result(i,j,k,l) += _vals[i][j][p][q] * a(p,q,k,l);
+              result(i,j,k,l) += a(i,j,p,q) * b(p,q,k,l);
 
   return result;
 }
@@ -234,21 +293,56 @@ RankFourTensor::operator*(const RankFourTensor & a) const
 Real
 RankFourTensor::L2norm() const
 {
+  const RankFourTensor & a = *this;
   Real l2 = 0;
+
+  switch (_symmetry)
+  {
+    case none:
+      for (unsigned int i = 0; i < _data.size(); ++i)
+        l2 += _data[i] * _data[i];
+      break;
+
+    case isotropic :
+      // TODO: simplify
+      for (unsigned int i = 0; i < N; ++i)
+        for (unsigned int j = 0; j < N; ++j)
+          for (unsigned int k = 0; k < N; ++k)
+            for (unsigned int l = 0; l < N; ++l)
+              l2 += std::pow(a(i,j,k,l), 2.0);
+      break;
+
+    default:
+      mooseError("Invalid tensor symmetry.");
+  }
+
+  return std::sqrt(l2);
+}
+
+void
+RankFourTensor::collapseSymmetryToNone()
+{
+  if (_symmetry == none) return;
+
+  const RankFourTensor & a = *this;
+  RankFourTensor result(none);
+
   for (unsigned int i = 0; i < N; ++i)
     for (unsigned int j = 0; j < N; ++j)
       for (unsigned int k = 0; k < N; ++k)
         for (unsigned int l = 0; l < N; ++l)
-          l2 += std::pow(_vals[i][j][k][l], 2);
-  return std::pow(l2, 0.5);
+          result(i,j,k,l) = a(i,j,k,l);
+
+  _data = result._data;
+  _symmetry = none;
 }
 
 RankFourTensor
 RankFourTensor::invSymm() const
 {
   int error;
-  double *mat;
 
+  const RankFourTensor & a = *this;
   RankFourTensor result;
 
   unsigned int ntens = N * (N+1) / 2;
@@ -319,7 +413,9 @@ RankFourTensor::invSymm() const
   // mat[33] = C(1,2,0,1)*2
   // mat[34] = C(1,2,0,2)*2
   // mat[35] = C(1,2,1,2)*2
-  mat=(double*)calloc(ntens * ntens, sizeof(double));
+
+  std::vector<double> mat(ntens * ntens);
+
   for (unsigned int i = 0; i < N; ++i)
     for (unsigned int j = 0; j < N; ++j)
       for (unsigned int k = 0; k < N; ++k)
@@ -328,16 +424,16 @@ RankFourTensor::invSymm() const
           if (i==j)
           {
             if (k==l)
-              mat[i*ntens+k] = _vals[i][j][k][l];
+              mat[i*ntens+k] = a(i,j,k,l);
             else
-              mat[i*ntens+nskip+k+l] += _vals[i][j][k][l];
+              mat[i*ntens+nskip+k+l] += a(i,j,k,l);
           }
           else // i!=j
           {
             if (k==l)
-              mat[(nskip+i+j)*ntens+k] = _vals[i][j][k][l];
+              mat[(nskip+i+j)*ntens+k] = a(i,j,k,l);
             else
-              mat[(nskip+i+j)*ntens+nskip+k+l] += _vals[i][j][k][l]; // note the +=, which results in double-counting and is rectified below
+              mat[(nskip+i+j)*ntens+nskip+k+l] += a(i,j,k,l); // note the +=, which results in double-counting and is rectified below
           }
         }
 
@@ -373,14 +469,20 @@ RankFourTensor::invSymm() const
           }
         }
 
-  free(mat);
   return result;
 }
 
 void
-RankFourTensor::rotate(RealTensorValue & R)
+RankFourTensor::rotate(const RealTensorValue & R)
 {
   Real temp;
+
+  // isotropic tensors are invariant to rotation
+  if (_symmetry == isotropic) return;
+
+  // for all others we downgrade to no symmetry at all
+  collapseSymmetryToNone();
+  RankFourTensor & a = *this;
   RankFourTensor old = *this;
 
   for (unsigned int i = 0; i < N; ++i)
@@ -393,16 +495,16 @@ RankFourTensor::rotate(RealTensorValue & R)
             for (unsigned int n = 0; n < N; ++n)
               for (unsigned int o = 0; o < N; ++o)
                 for (unsigned int p = 0; p < N; ++p)
-                  temp += R(i,m) * R(j,n) * R(k,o) * R(l,p) * old._vals[m][n][o][p];
+                  temp += R(i,m) * R(j,n) * R(k,o) * R(l,p) * old(m,n,o,p);
 
-          _vals[i][j][k][l] = temp;
+          a(i,j,k,l) = temp;
         }
 }
 
 void
 RankFourTensor::print() const
 {
-  const RankFourTensor & s = *this;
+  const RankFourTensor & a = *this;
 
   for (unsigned int i = 0; i < N; ++i)
     for (unsigned int j = 0; j < N; ++j)
@@ -411,7 +513,7 @@ RankFourTensor::print() const
       for (unsigned int k = 0; k < N; ++k)
       {
         for (unsigned int l = 0; l < N; ++l)
-          Moose::out << std::setw(15) << s(i,j,k,l) << " ";
+          Moose::out << std::setw(15) << a(i,j,k,l) << " ";
 
         Moose::out << std::endl;
       }
@@ -421,56 +523,71 @@ RankFourTensor::print() const
 RankFourTensor
 RankFourTensor::transposeMajor() const
 {
-  RankFourTensor result;
+  const RankFourTensor & a = *this;
 
-  for (unsigned int i = 0; i < N; ++i)
-    for (unsigned int j = 0; j < N; ++j)
-      for (unsigned int k = 0; k < N; ++k)
-        for (unsigned int l = 0; l < N; ++l)
-          result(i,j,k,l) = _vals[k][l][i][j];
+  switch (_symmetry)
+  {
+    case none:
+    {
+      RankFourTensor result(none);
 
-  return result;
+      for (unsigned int i = 0; i < N; ++i)
+        for (unsigned int j = 0; j < N; ++j)
+          for (unsigned int k = 0; k < N; ++k)
+            for (unsigned int l = 0; l < N; ++l)
+              result(i,j,k,l) = a(k,l,i,j);
+
+      return result;
+    }
+
+    case isotropic:
+      return a;
+
+    default:
+      mooseError("Invalid tensor symmetry.");
+  }
 }
 
 void
 RankFourTensor::surfaceFillFromInputVector(const std::vector<Real> & input)
 {
   zero();
+  RankFourTensor & a = *this;
 
   if (input.size() == 9)
   {
     //then fill from vector C_1111, C_1112, C_1122, C_1212, C_1222, C_1211, C_2211, C_2212, C_2222
-    _vals[0][0][0][0] = input[0];
-    _vals[0][0][0][1] = input[1];
-    _vals[0][0][1][1] = input[2];
-    _vals[0][1][0][1] = input[3];
-    _vals[0][1][1][1] = input[4];
-    _vals[0][1][0][0] = input[5];
-    _vals[1][1][0][0] = input[6];
-    _vals[1][1][0][1] = input[7];
-    _vals[1][1][1][1] = input[8];
+    a(0,0,0,0) = input[0];
+    a(0,0,0,1) = input[1];
+    a(0,0,1,1) = input[2];
+    a(0,1,0,1) = input[3];
+    a(0,1,1,1) = input[4];
+    a(0,1,0,0) = input[5];
+    a(1,1,0,0) = input[6];
+    a(1,1,0,1) = input[7];
+    a(1,1,1,1) = input[8];
 
     // fill in remainders from C_ijkl = C_ijlk = C_jikl
-    _vals[0][0][1][0] = _vals[0][0][0][1];
-    _vals[0][1][1][0] = _vals[0][1][0][1];
-    _vals[1][0][0][0] = _vals[0][1][0][0];
-    _vals[1][0][0][1] = _vals[0][1][0][1];
-    _vals[1][0][1][1] = _vals[0][1][1][1];
-    _vals[1][0][0][0] = _vals[0][1][0][0];
-    _vals[1][1][1][0] = _vals[1][1][0][1];
+    a(0,0,1,0) = a(0,0,0,1);
+    a(0,1,1,0) = a(0,1,0,1);
+    a(1,0,0,0) = a(0,1,0,0);
+    a(1,0,0,1) = a(0,1,0,1);
+    a(1,0,1,1) = a(0,1,1,1);
+    a(1,0,0,0) = a(0,1,0,0);
+    a(1,1,1,0) = a(1,1,0,1);
   }
   else if (input.size() == 2)
   {
     // only two independent constants, C_1111 and C_1122
-    _vals[0][0][0][0] = input[0];
-    _vals[0][0][1][1] = input[1];
+    a(0,0,0,0) = input[0];
+    a(0,0,1,1) = input[1];
     //use symmetries
-    _vals[1][1][1][1] = _vals[0][0][0][0];
-    _vals[1][1][0][0] = _vals[0][0][1][1];
-    _vals[0][1][0][1] = 0.5 * (_vals[0][0][0][0] - _vals[0][0][1][1]);
-    _vals[1][0][0][1] = _vals[0][1][0][1];
-    _vals[0][1][1][0] = _vals[0][1][0][1];
-    _vals[1][0][1][0] = _vals[0][1][0][1];
+    a(1,1,1,1) = a(0,0,0,0);
+    a(1,1,0,0) = a(0,0,1,1);
+    a(0,1,0,1) = 0.5 * (a(0,0,0,0) - a(0,0,1,1));
+    a(1,0,0,1) = a(0,1,0,1);
+    a(0,1,1,0) = a(0,1,0,1);
+    a(1,0,1,0) = a(0,1,0,1);
   }
   else
     mooseError("Please provide correct number of inputs for surface RankFourTensor initialization.");
@@ -510,34 +627,25 @@ RankFourTensor::fillFromInputVector(const std::vector<Real> & input, FillMethod 
 }
 
 int
-RankFourTensor::MatrixInversion(double* A, int n) const
+RankFourTensor::MatrixInversion(std::vector<double> & A, int n) const
 {
-  int return_value, buffer_size;
-  int *ipiv, *buffer;
+  int return_value, buffer_size = n * 64;
 
-  buffer_size = n * 64;
-
-  ipiv = (int*)calloc(n, sizeof(int));
-  buffer = (int*)calloc(buffer_size, sizeof(int));
+  std::vector<int> ipiv(n);
+  std::vector<int> buffer(buffer_size);
 
   // Following does a LU decomposition of "square matrix A"
   // upon return "A = P*L*U" if return_value == 0
   // Here i use quotes because A is actually an array of length n^2, not a matrix of size n-by-n
-  FORTRAN_CALL(dgetrf)(&n, &n, A, &n, ipiv, &return_value);
+  FORTRAN_CALL(dgetrf)(&n, &n, &A[0], &n, &ipiv[0], &return_value);
 
+  // couldn't LU decompose because: illegal value in A; or, A singular
   if (return_value != 0)
-  {
-    // couldn't LU decompose because: illegal value in A; or, A singular
-    free(ipiv);
-    free(buffer);
     return return_value;
-  }
 
   // get the inverse of A
-  FORTRAN_CALL(dgetri)(&n, A, &n, ipiv, buffer, &buffer_size, &return_value);
+  FORTRAN_CALL(dgetri)(&n, &A[0], &n, &ipiv[0], &buffer[0], &buffer_size, &return_value);
 
-  free(ipiv);
-  free(buffer);
   return return_value;
 }
 
@@ -548,47 +656,48 @@ RankFourTensor::fillSymmetricFromInputVector(const std::vector<Real> & input, bo
     mooseError("Please check the number of entries in the stiffness input vector.");
 
   zero();
+  RankFourTensor & a = *this;
 
   if (all == true)
   {
-    _vals[0][0][0][0] = input[0]; //C1111
-    _vals[0][0][1][1] = input[1]; //C1122
-    _vals[0][0][2][2] = input[2]; //C1133
-    _vals[0][0][1][2] = input[3]; //C1123
-    _vals[0][0][0][2] = input[4]; //C1113
-    _vals[0][0][0][1] = input[5]; //C1112
+    a(0,0,0,0) = input[0]; //C1111
+    a(0,0,1,1) = input[1]; //C1122
+    a(0,0,2,2) = input[2]; //C1133
+    a(0,0,1,2) = input[3]; //C1123
+    a(0,0,0,2) = input[4]; //C1113
+    a(0,0,0,1) = input[5]; //C1112
 
-    _vals[1][1][1][1] = input[6]; //C2222
-    _vals[1][1][2][2] = input[7]; //C2233
-    _vals[1][1][1][2] = input[8]; //C2223
-    _vals[0][2][1][1] = input[9]; //C2213  //flipped for filling purposes
-    _vals[0][1][1][1] = input[10]; //C2212 //flipped for filling purposes
+    a(1,1,1,1) = input[6]; //C2222
+    a(1,1,2,2) = input[7]; //C2233
+    a(1,1,1,2) = input[8]; //C2223
+    a(0,2,1,1) = input[9]; //C2213  //flipped for filling purposes
+    a(0,1,1,1) = input[10]; //C2212 //flipped for filling purposes
 
-    _vals[2][2][2][2] = input[11]; //C3333
-    _vals[1][2][2][2] = input[12]; //C3323 //flipped for filling purposes
-    _vals[0][2][2][2] = input[13]; //C3313 //flipped for filling purposes
-    _vals[0][1][2][2] = input[14]; //C3312 //flipped for filling purposes
+    a(2,2,2,2) = input[11]; //C3333
+    a(1,2,2,2) = input[12]; //C3323 //flipped for filling purposes
+    a(0,2,2,2) = input[13]; //C3313 //flipped for filling purposes
+    a(0,1,2,2) = input[14]; //C3312 //flipped for filling purposes
 
-    _vals[1][2][1][2] = input[15]; //C2323
-    _vals[0][2][1][2] = input[16]; //C2313 //flipped for filling purposes
-    _vals[0][1][1][2] = input[17]; //C2312 //flipped for filling purposes
+    a(1,2,1,2) = input[15]; //C2323
+    a(0,2,1,2) = input[16]; //C2313 //flipped for filling purposes
+    a(0,1,1,2) = input[17]; //C2312 //flipped for filling purposes
 
-    _vals[0][2][0][2] = input[18]; //C1313
-    _vals[0][1][0][2] = input[19]; //C1312 //flipped for filling purposesc
+    a(0,2,0,2) = input[18]; //C1313
+    a(0,1,0,2) = input[19]; //C1312 //flipped for filling purposesc
 
-    _vals[0][1][0][1] = input[20]; //C1212
+    a(0,1,0,1) = input[20]; //C1212
   }
   else
   {
-    _vals[0][0][0][0] = input[0];   //C1111
-    _vals[0][0][1][1] = input[1];   //C1122
-    _vals[0][0][2][2] = input[2];   //C1133
-    _vals[1][1][1][1] = input[3];   //C2222
-    _vals[1][1][2][2] = input[4];   //C2233
-    _vals[2][2][2][2] = input[5];  //C3333
-    _vals[1][2][1][2] = input[6];  //C2323
-    _vals[0][2][0][2] = input[7];  //C1313
-    _vals[0][1][0][1] = input[8];  //C1212
+    a(0,0,0,0) = input[0];   //C1111
+    a(0,0,1,1) = input[1];   //C1122
+    a(0,0,2,2) = input[2];   //C1133
+    a(1,1,1,1) = input[3];   //C2222
+    a(1,1,2,2) = input[4];   //C2233
+    a(2,2,2,2) = input[5];  //C3333
+    a(1,2,1,2) = input[6];  //C2323
+    a(0,2,0,2) = input[7];  //C1313
+    a(0,1,0,1) = input[8];  //C1212
   }
 
   //fill in from symmetry relations
@@ -596,13 +705,13 @@ RankFourTensor::fillSymmetricFromInputVector(const std::vector<Real> & input, bo
     for (unsigned int j = 0; j < N; ++j)
       for (unsigned int k = 0; k < N; ++k)
         for (unsigned int l = 0; l < N; ++l)
-          _vals[i][j][l][k] =
-          _vals[j][i][k][l] =
-          _vals[j][i][l][k] =
-          _vals[k][l][i][j] =
-          _vals[l][k][j][i] =
-          _vals[k][l][j][i] =
-          _vals[l][k][i][j] = _vals[i][j][k][l];
+          a(i,j,l,k) =
+          a(j,i,k,l) =
+          a(j,i,l,k) =
+          a(k,l,i,j) =
+          a(l,k,j,i) =
+          a(k,l,j,i) =
+          a(l,k,i,j) = a(i,j,k,l);
 }
 
 void
@@ -612,29 +721,30 @@ RankFourTensor::fillAntisymmetricFromInputVector(const std::vector<Real> & input
     mooseError("To use fillAntisymmetricFromInputVector, your input must have size 6.  Yours has size " << input.size());
 
   zero();
+  RankFourTensor & a = *this;
 
-  _vals[0][1][0][1] = input[0];   //B1212
-  _vals[0][1][0][2] = input[1];   //B1213
-  _vals[0][1][1][2] = input[2];   //B1223
+  a(0,1,0,1) = input[0];   //B1212
+  a(0,1,0,2) = input[1];   //B1213
+  a(0,1,1,2) = input[2];   //B1223
 
-  _vals[0][2][0][2] = input[3];   //B1313
-  _vals[0][2][1][2] = input[4];   //B1323
+  a(0,2,0,2) = input[3];   //B1313
+  a(0,2,1,2) = input[4];   //B1323
 
-  _vals[1][2][1][2] = input[5];   //B2323
+  a(1,2,1,2) = input[5];   //B2323
 
   // symmetry on the two pairs
-  _vals[0][2][0][1] = _vals[0][1][0][2];
-  _vals[1][2][0][1] = _vals[0][1][1][2];
-  _vals[1][2][0][2] = _vals[0][2][1][2];
+  a(0,2,0,1) = a(0,1,0,2);
+  a(1,2,0,1) = a(0,1,1,2);
+  a(1,2,0,2) = a(0,2,1,2);
   // have now got the upper parts of vals[0][1], vals[0][2] and vals[1][2]
 
   // fill in from antisymmetry relations
   for (unsigned int i = 0; i < N; ++i)
     for (unsigned int j = 0; j < N; ++j)
     {
-      _vals[0][1][j][i] = -_vals[0][1][i][j];
-      _vals[0][2][j][i] = -_vals[0][2][i][j];
-      _vals[1][2][j][i] = -_vals[1][2][i][j];
+      a(0,1,j,i) = -a(0,1,i,j);
+      a(0,2,j,i) = -a(0,2,i,j);
+      a(1,2,j,i) = -a(1,2,i,j);
     }
   // have now got all of vals[0][1], vals[0][2] and vals[1][2]
 
@@ -642,9 +752,9 @@ RankFourTensor::fillAntisymmetricFromInputVector(const std::vector<Real> & input
   for (unsigned int i = 0; i < N; ++i)
     for (unsigned int j = 0; j < N; ++j)
     {
-      _vals[1][0][i][j] = -_vals[0][1][i][j];
-      _vals[2][0][i][j] = -_vals[0][2][i][j];
-      _vals[2][1][i][j] = -_vals[1][2][i][j];
+      a(1,0,i,j) = -a(0,1,i,j);
+      a(2,0,i,j) = -a(0,2,i,j);
+      a(2,1,i,j) = -a(1,2,i,j);
     }
 }
 
@@ -654,16 +764,16 @@ RankFourTensor::fillGeneralIsotropicFromInputVector(const std::vector<Real> & in
   if (input.size() != 3)
     mooseError("To use fillGeneralIsotropicFromInputVector, your input must have size 3.  Yours has size " << input.size());
 
-  zero();
+  RankFourTensor & a = *this;
 
   for (unsigned int i = 0; i < N; ++i)
     for (unsigned int j = 0; j < N; ++j)
       for (unsigned int k = 0; k < N; ++k)
         for (unsigned int l = 0; l < N; ++l)
         {
-          _vals[i][j][k][l] = input[0] * (i==j) * (k==l) + input[1] * (i==k) * (j==l) + input[1] * (i==l) * (j==k);
+          a(i,j,k,l) = input[0] * (i==j) * (k==l) + input[1] * (i==k) * (j==l) + input[1] * (i==l) * (j==k);
           for (unsigned int m = 0 ; m < N ; ++m)
-            _vals[i][j][k][l] += input[2] * PermutationTensor::eps(i, j, m) * PermutationTensor::eps(k, l, m);
+            a(i,j,k,l) += input[2] * PermutationTensor::eps(i, j, m) * PermutationTensor::eps(k, l, m);
         }
 }
 
@@ -672,10 +782,9 @@ RankFourTensor::fillAntisymmetricIsotropicFromInputVector(const std::vector<Real
 {
   if (input.size() != 1)
     mooseError("To use fillAntisymmetricIsotropicFromInputVector, your input must have size 1. Yours has size " << input.size());
-  std::vector<Real> input3;
-  input3.push_back(0);
-  input3.push_back(0);
-  input3.push_back(input[0]);
+
+  std::vector<Real> input3(3);
+  input3[2] = input[0];
   fillGeneralIsotropicFromInputVector(input3);
 }
 
@@ -684,9 +793,8 @@ RankFourTensor::fillSymmetricIsotropicFromInputVector(const std::vector<Real> & 
 {
   if (input.size() != 2)
     mooseError("To use fillSymmetricIsotropicFromInputVector, your input must have size 2. Yours has size " << input.size());
-  std::vector<Real> input3;
-  input3.push_back(input[0]);
-  input3.push_back(input[1]);
+
+  std::vector<Real> input3 = input;
   input3.push_back(0);
   fillGeneralIsotropicFromInputVector(input3);
 }
@@ -697,15 +805,6 @@ RankFourTensor::fillGeneralFromInputVector(const std::vector<Real> & input)
   if (input.size() != 81)
     mooseError("To use fillGeneralFromInputVector, your input must have size 81. Yours has size " << input.size());
 
-  zero();
-
-  int ind;
-  for (unsigned int i = 0; i < N; ++i)
-    for (unsigned int j = 0; j < N; ++j)
-      for (unsigned int k = 0; k < N; ++k)
-        for (unsigned int l = 0; l < N; ++l)
-        {
-          ind = i * N*N*N + j * N*N + k * N + l;
-          _vals[i][j][k][l] = input[ind];
-        }
+  _data = input;
+  _symmetry = none;
 }

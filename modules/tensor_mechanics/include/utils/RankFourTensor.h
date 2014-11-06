@@ -32,14 +32,23 @@ class RankFourTensor
 {
 public:
 
+  class ElementProxy
+  {
+    unsigned int i, j, k, l;
+  public:
+    //ElementProxy
+  };
+
   /// Default constructor; fills to zero
   RankFourTensor();
 
-  /// Copy constructor
-  RankFourTensor(const RankFourTensor & a);
-
-  /// Destructor
-  ~RankFourTensor() {}
+  /// Construct with a given symmetry
+  enum Symmetry
+  {
+    none = 81,
+    isotropic = 2
+  };
+  RankFourTensor(Symmetry);
 
   /// Gets the value for the index specified.  Takes index = 0,1,2
   Real & operator()(unsigned int i, unsigned int j, unsigned int k, unsigned int l);
@@ -108,7 +117,7 @@ public:
    * Rotate the tensor using
    * C_ijkl = R_im R_in R_ko R_lp C_mnop
    */
-  virtual void rotate(RealTensorValue & R);
+  virtual void rotate(const RealTensorValue & R);
 
   /**
    * Transpose the tensor by swapping the first pair with the second pair of indices
@@ -171,8 +180,8 @@ protected:
   /// Dimensionality of rank-four tensor
   static const unsigned int N = 3;
 
-  /// The values of the rank-four tensor
-  Real _vals[N][N][N][N];
+  /// ignore symmetry and switch to storing all 81 entries
+  void collapseSymmetryToNone();
 
   /**
    * Inverts the dense matrix A using LAPACK routines
@@ -180,7 +189,7 @@ protected:
    * @param n size of A
    * @return if zero then inversion was successful.  Otherwise A contained illegal entries or was singular
    */
-  int MatrixInversion(double *A, int n) const;
+  int MatrixInversion(std::vector<double> & A, int n) const;
 
   /**
   * fillSymmetricFromInputVector takes either 21 (all=true) or 9 (all=false) inputs to fill in
@@ -237,8 +246,14 @@ protected:
    */
   void fillGeneralFromInputVector(const std::vector<Real> & input);
 
-private:
+  /**
+   * Templated helper method to allow for multiplications with RanksTwoTensor and RealTensorValue
+   */
+   template <typename T> T RankTwoMultiply(const T &) const;
 
+private:
+  Symmetry _symmetry;
+  std::vector<Real> _data;
 };
 
 inline RankFourTensor operator*(Real a, const RankFourTensor & b) { return b * a; }
