@@ -55,45 +55,49 @@ public:
 
   /// Print the rank four tensor
   void print() const;
+  void printFlat() const;
 
   /// copies values from a into this tensor
-  RankFourTensor & operator= (const RankFourTensor & a);
+  RankFourTensor & operator= (const RankFourTensor &);
 
   /// C_ijkl*a_kl
-  RankTwoTensor operator* (const RankTwoTensor & a) const;
+  RankTwoTensor operator* (const RankTwoTensor &) const;
 
   /// C_ijkl*a_kl
-  RealTensorValue operator* (const RealTensorValue & a) const;
+  RealTensorValue operator* (const RealTensorValue &) const;
 
   /// C_ijkl*a
-  RankFourTensor operator* (const Real & a) const;
+  RankFourTensor operator* (const Real &) const;
 
   /// C_ijkl *= a
-  RankFourTensor & operator*= (const Real & a);
+  RankFourTensor & operator*= (const Real &);
 
   /// C_ijkl/a
-  RankFourTensor operator/ (const Real & a) const;
+  RankFourTensor operator/ (const Real &) const;
 
   /// C_ijkl /= a  for all i, j, k, l
-  RankFourTensor & operator/= (const Real & a);
+  RankFourTensor & operator/= (const Real &);
 
   /// C_ijkl += a_ijkl  for all i, j, k, l
-  RankFourTensor & operator+= (const RankFourTensor & a);
+  RankFourTensor & operator+= (const RankFourTensor &);
 
   /// C_ijkl + a_ijkl
-  RankFourTensor operator+ (const RankFourTensor & a) const;
+  RankFourTensor operator+ (const RankFourTensor &) const;
 
   /// C_ijkl -= a_ijkl
-  RankFourTensor & operator-= (const RankFourTensor & a);
+  RankFourTensor & operator-= (const RankFourTensor &);
 
   /// C_ijkl - a_ijkl
-  RankFourTensor operator- (const RankFourTensor & a) const;
+  RankFourTensor operator- (const RankFourTensor &) const;
 
   /// -C_ijkl
   RankFourTensor operator- () const;
 
   /// C_ijpq*a_pqkl
-  RankFourTensor operator* (const RankFourTensor & a) const;
+  RankFourTensor operator* (const RankFourTensor &) const;
+
+  /// element by element comparison
+  bool operator== (const RankFourTensor &) const;
 
   /// sqrt(C_ijkl*C_ijkl)
   Real L2norm() const;

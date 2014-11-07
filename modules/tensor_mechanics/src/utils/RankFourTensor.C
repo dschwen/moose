@@ -231,6 +231,21 @@ RankFourTensor::operator*(const RankFourTensor & a) const
   return result;
 }
 
+bool
+RankFourTensor::operator== (const RankFourTensor & b) const
+{
+  const RankFourTensor & a = *this;
+
+  for (unsigned int i = 0; i < N; ++i)
+    for (unsigned int j = 0; j < N; ++j)
+      for (unsigned int k = 0; k < N; ++k)
+        for (unsigned int l = 0; l < N; ++l)
+          if (a(i,j,k,l) != b(i,j,k,l))
+            return false;
+
+  return true;
+}
+
 Real
 RankFourTensor::L2norm() const
 {
@@ -416,6 +431,18 @@ RankFourTensor::print() const
         Moose::out << std::endl;
       }
     }
+}
+
+void
+RankFourTensor::printFlat() const
+{
+  const RankFourTensor & a = *this;
+
+  for (unsigned int i = 0; i < N; ++i)
+    for (unsigned int j = 0; j < N; ++j)
+      for (unsigned int k = 0; k < N; ++k)
+        for (unsigned int l = 0; l < N; ++l)
+          Moose::out << ((i==0 && j==0 && k==0 && l==0) ? "" : ", ") << std::setw(15) << a(i,j,k,l);
 }
 
 RankFourTensor
