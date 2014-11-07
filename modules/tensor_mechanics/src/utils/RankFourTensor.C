@@ -442,7 +442,7 @@ RankFourTensor::printFlat() const
     for (unsigned int j = 0; j < N; ++j)
       for (unsigned int k = 0; k < N; ++k)
         for (unsigned int l = 0; l < N; ++l)
-          Moose::out << ((i==0 && j==0 && k==0 && l==0) ? "" : ", ") << std::setw(15) << a(i,j,k,l);
+          Moose::out << ((i==0 && j==0 && k==0 && l==0) ? "" : ", ") << a(i,j,k,l);
 }
 
 RankFourTensor

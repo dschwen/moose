@@ -29,6 +29,8 @@ class RankFourTensorTest : public CppUnit::TestFixture
   CPPUNIT_TEST( L2normTest );
   CPPUNIT_TEST( SubtractTest );
   CPPUNIT_TEST( AddTest );
+  CPPUNIT_TEST( DivideTest );
+  CPPUNIT_TEST( MultiplyTest );
   CPPUNIT_TEST( transposeTest );
 
   CPPUNIT_TEST_SUITE_END();
@@ -40,6 +42,8 @@ public:
   void L2normTest();
   void SubtractTest();
   void AddTest();
+  void DivideTest();
+  void MultiplyTest();
   void transposeTest();
 
  private:
