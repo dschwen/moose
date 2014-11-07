@@ -152,32 +152,6 @@ RankFourTensor::operator/=(const Real & a)
   return *this;
 }
 
-RankFourTensor &
-RankFourTensor::operator+=(const RankFourTensor & b)
-{
-  RankFourTensor & a = *this;
-
-  if (a._symmetry == b._symmetry)
-  {
-    // for identical symmetries just add components
-    for (unsigned int i = 0; i < _data.size(); ++i)
-      _data[i] += b._data[i];
-  }
-  else
-  {
-    // for all other cases downgrade symmetry to none
-    collapseSymmetryToNone();
-
-    for (unsigned int i = 0; i < N; ++i)
-      for (unsigned int j = 0; j < N; ++j)
-        for (unsigned int k = 0; k < N; ++k)
-          for (unsigned int l = 0; l < N; ++l)
-            a(i,j,k,l) += a(i,j,k,l);
-  }
-
-  return a;
-}
-
 RankFourTensor
 RankFourTensor::operator+(const RankFourTensor & b) const
 {
@@ -207,6 +181,60 @@ RankFourTensor::operator+(const RankFourTensor & b) const
 }
 
 RankFourTensor &
+RankFourTensor::operator+=(const RankFourTensor & b)
+{
+  RankFourTensor & a = *this;
+
+  if (a._symmetry == b._symmetry)
+  {
+    // for identical symmetries just add components
+    for (unsigned int i = 0; i < _data.size(); ++i)
+      _data[i] += b._data[i];
+  }
+  else
+  {
+    // for all other cases downgrade symmetry to none
+    collapseSymmetryToNone();
+
+    for (unsigned int i = 0; i < N; ++i)
+      for (unsigned int j = 0; j < N; ++j)
+        for (unsigned int k = 0; k < N; ++k)
+          for (unsigned int l = 0; l < N; ++l)
+            a(i,j,k,l) += a(i,j,k,l);
+  }
+
+  return a;
+}
+
+RankFourTensor
+RankFourTensor::operator-(const RankFourTensor & b) const
+{
+  const RankFourTensor & a = *this;
+
+  if (a._symmetry == b._symmetry)
+  {
+    // for identical symmetries just add components
+    RankFourTensor result(_symmetry);
+
+    for (unsigned int i = 0; i < _data.size(); ++i)
+      result._data[i] += a._data[i] - b._data[i];
+    return result;
+  }
+  else
+  {
+    // for all other cases return no symmetry result
+    RankFourTensor result(none);
+
+    for (unsigned int i = 0; i < N; ++i)
+      for (unsigned int j = 0; j < N; ++j)
+        for (unsigned int k = 0; k < N; ++k)
+          for (unsigned int l = 0; l < N; ++l)
+            result(i,j,k,l) = a(i,j,k,l) - b(i,j,k,l);
+    return result;
+  }
+}
+
+RankFourTensor &
 RankFourTensor::operator-=(const RankFourTensor & b)
 {
   RankFourTensor & a = *this;
@@ -230,34 +258,6 @@ RankFourTensor::operator-=(const RankFourTensor & b)
   }
 
   return a;
-}
-
-RankFourTensor
-RankFourTensor::operator-(const RankFourTensor & b) const
-{
-  const RankFourTensor & a = *this;
-
-  if (a._symmetry == b._symmetry)
-  {
-    // for identical symmetries just add components
-    RankFourTensor result(_symmetry);
-
-    for (unsigned int i = 0; i < _data.size(); ++i)
-      result._data[i] += a._data[i] + b._data[i];
-    return result;
-  }
-  else
-  {
-    // for all other cases return no symmetry result
-    RankFourTensor result(none);
-
-    for (unsigned int i = 0; i < N; ++i)
-      for (unsigned int j = 0; j < N; ++j)
-        for (unsigned int k = 0; k < N; ++k)
-          for (unsigned int l = 0; l < N; ++l)
-            result(i,j,k,l) = a(i,j,k,l) + b(i,j,k,l);
-    return result;
-  }
 }
 
 RankFourTensor
