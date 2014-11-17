@@ -50,9 +50,11 @@ public:
   };
   RankFourTensor(Symmetry);
 
+private:
   /// Gets the value for the index specified.  Takes index = 0,1,2
   Real & operator()(unsigned int i, unsigned int j, unsigned int k, unsigned int l);
 
+public:
   /**
    * Gets the value for the index specified.  Takes index = 0,1,2
    * used for const
