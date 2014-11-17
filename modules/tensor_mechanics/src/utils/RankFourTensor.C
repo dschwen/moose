@@ -338,6 +338,35 @@ RankFourTensor::collapseSymmetryToNone()
 }
 
 RankFourTensor
+RankFourTensor::constructOuterProduct(const RankTwoTensor & b, const RankTwoTensor & c)
+{
+  RankFourTensor result(none);
+
+  for (unsigned int i = 0; i < LIBMESH_DIM; ++i)
+    for (unsigned int j = 0; j < LIBMESH_DIM; ++j)
+      for (unsigned int k = 0; k < LIBMESH_DIM; ++k)
+        for (unsigned int l = 0; l < LIBMESH_DIM; ++l)
+          result(i,j,k,l) = b(i,j) * c(k,l);
+
+  return result;
+}
+
+RankFourTensor
+RankFourTensor::outerProduct(const RankTwoTensor & b, const RankTwoTensor & c)
+{
+  const RankFourTensor & a = *this;
+
+  for (unsigned int i = 0; i < LIBMESH_DIM; ++i)
+    for (unsigned int j = 0; j < LIBMESH_DIM; ++j)
+      for (unsigned int k = 0; k < LIBMESH_DIM; ++k)
+        for (unsigned int l = 0; l < LIBMESH_DIM; ++l)
+          a(i,j,k,l) = b(i,j) * c(k,l);
+
+  return result;
+}
+
+
+RankFourTensor
 RankFourTensor::invSymm() const
 {
   int error;

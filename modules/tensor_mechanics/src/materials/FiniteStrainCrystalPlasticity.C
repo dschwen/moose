@@ -724,7 +724,7 @@ FiniteStrainCrystalPlasticity::calcJacobian( RankFourTensor &jac )
   for (unsigned int i = 0; i < _nss; ++i)
   {
     temp2 = dfpinvdslip[i] * _dslipdtau[i];
-    temp4 = outerProduct(temp2, dtaudpk2[i]);
+    temp4.outerProduct(temp2, dtaudpk2[i]);
     dfpinvdpk2 += temp4;
   }
 
@@ -746,19 +746,6 @@ FiniteStrainCrystalPlasticity::getSlipIncrements()
 
   for (unsigned int i = 0; i < _nss; ++i)
     _dslipdtau[i] = _a0[i] / _xm[i] * std::pow(std::abs(_tau[i] / _gss_tmp[i]), 1.0 / _xm[i] - 1.0) / _gss_tmp[i] * _dt;
-}
-
-RankFourTensor FiniteStrainCrystalPlasticity::outerProduct(const RankTwoTensor & a, const RankTwoTensor & b)
-{
-  RankFourTensor result;
-
-  for (unsigned int i = 0; i < LIBMESH_DIM; ++i)
-    for (unsigned int j = 0; j < LIBMESH_DIM; ++j)
-      for (unsigned int k = 0; k < LIBMESH_DIM; ++k)
-        for (unsigned int l = 0; l < LIBMESH_DIM; ++l)
-          result(i,j,k,l) = a(i,j) * b(k,l);
-
-  return result;
 }
 
 // Calls getMatRot to perform RU factorization of a tensor.
@@ -823,8 +810,8 @@ FiniteStrainCrystalPlasticity::computeQpElasticityTensor()
     for (unsigned int j = 0; j < LIBMESH_DIM; ++j)
       for (unsigned int k = 0; k < LIBMESH_DIM; ++k)
       {
-        deedfe(i,j,k,i) = deedfe(i,j,k,i) + _fe(k,j) * 0.5;
-        deedfe(i,j,k,j) = deedfe(i,j,k,j) + _fe(k,i) * 0.5;
+        deedfe(i,j,k,i) += _fe(k,j) * 0.5;
+        deedfe(i,j,k,j) += _fe(k,i) * 0.5;
       }
 
   for (unsigned int i = 0; i < LIBMESH_DIM; ++i)
@@ -842,8 +829,8 @@ FiniteStrainCrystalPlasticity::computeQpElasticityTensor()
     for (unsigned int j = 0; j < LIBMESH_DIM; ++j)
       for (unsigned int l = 0; l < LIBMESH_DIM; ++l)
       {
-        tan_mod(i,j,i,l) = tan_mod(i,j,i,l) + pk2fet(l,j);
-        tan_mod(i,j,j,l) = tan_mod(i,j,j,l) + fepk2(i,l);
+        tan_mod(i,j,i,l) += pk2fet(l,j);
+        tan_mod(i,j,j,l) += fepk2(i,l);
       }
 
   tan_mod += dsigdpk2dfe;

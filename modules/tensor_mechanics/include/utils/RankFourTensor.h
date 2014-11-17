@@ -22,7 +22,7 @@ class RankTwoTensor;
  * RankFourTensor is designed to handle any N-dimensional fourth order tensor, C.
  *
  * It is designed to allow for maximum clarity of the mathematics and ease of use.
- * Original class authors: A. M. Jokisaari, O. Heinonen, M.R. Tonks
+ * Original class authors: A. M. Jokisaari, O. Heinonen, M.R. Tonks, D. Schwen
  *
  * Since N is hard-coded to 3, RankFourTensor holds 81 separate C_ijkl entries.
  * Within the code i = 0, 1, 2, but this object provides methods to extract the entries
@@ -108,6 +108,10 @@ public:
 
   /// sqrt(C_ijkl*C_ijkl)
   Real L2norm() const;
+
+  // C_ijkl = a_ij * b_kl
+  static RankFourTensor constructOuterProduct(const RankTwoTensor &, const RankTwoTensor &);
+  void outerProduct(const RankTwoTensor &, const RankTwoTensor &);
 
   /**
    * This returns A_ijkl such that C_ijkl*A_klmn = 0.5*(de_im de_jn + de_in de_jm)

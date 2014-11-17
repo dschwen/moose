@@ -59,16 +59,11 @@ protected:
   virtual void calcJacobian( RankFourTensor & );
 
   virtual void getEulerRotations();
-  RankFourTensor outerProduct(const RankTwoTensor & a, const RankTwoTensor & b);
-
 
   RankTwoTensor get_current_rotation(const RankTwoTensor & a);
 
   ////Old function: Kept to avoid code break in computeQpStress
   RankTwoTensor getMatRot(const RankTwoTensor & a);
-
-
-
 
   const unsigned int _nss;
 
