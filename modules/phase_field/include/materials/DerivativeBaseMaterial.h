@@ -104,6 +104,9 @@ protected:
   /// String vector of all argument names.
   std::vector<std::string> _arg_names;
 
+  /// String vector of function variable names which the args are remapped to.
+  std::vector<std::string> _arg_remap;
+
   /// Calculate (and allocate memory for) the third derivatives of the free energy.
   bool _third_derivatives;
 

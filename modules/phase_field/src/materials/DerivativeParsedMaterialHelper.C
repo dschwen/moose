@@ -65,8 +65,10 @@ void DerivativeParsedMaterialHelper::functionParse(const std::string & function_
                                                    const std::vector<std::string> & tol_names,
                                                    const std::vector<Real> & tol_values)
 {
+  mooseAssert(_arg_names.size() == _nargs, "Assert failed: _arg_names.size() == _nargs");
+
   // check number of coupled variables
-  if (_arg_names.size() == 0)
+  if (_nargs == 0)
     mooseError("Need at least one coupled variable for DerivativeParsedMaterialHelper.");
 
   // check constant vectors
@@ -125,9 +127,23 @@ void DerivativeParsedMaterialHelper::functionParse(const std::string & function_
   }
 
   // build 'variables' argument for fparser
-  std::string variables = _arg_names[0];
-  for (unsigned i = 1; i < _arg_names.size(); ++i)
-    variables += "," + _arg_names[i];
+  std::string variables;
+  if (_arg_remap.size() == 0)
+  {
+    // use moose var names in the function
+    variables = _arg_names[0];
+    for (unsigned i = 1; i < _nargs; ++i)
+      variables += "," + _arg_names[i];
+  }
+  else
+  {
+    // use variable name remapping between moose vars and function vars
+    if (_arg_remap.size() != _nargs)
+      mooseError("The parameter vectors args and args_remap must have equal length.");
+    variables = _arg_remap[0];
+    for (unsigned i = 1; i < _nargs; ++i)
+      variables += "," + _arg_remap[i];
+  }
 
   // get all material properties
   _nmat_props = mat_prop_names.size();
