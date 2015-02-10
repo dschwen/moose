@@ -180,7 +180,7 @@
     base_name = phase1
     disp_y = disp_y
     disp_x = disp_x
-    C_ijkl = '3 3'
+    C_ijkl = '30 30'
     fill_method = symmetric_isotropic
   [../]
 
@@ -191,7 +191,7 @@
     base_name = phase2
     disp_y = disp_y
     disp_x = disp_x
-    C_ijkl = '1 1'
+    C_ijkl = '5 5'
     fill_method = symmetric_isotropic
   [../]
 
