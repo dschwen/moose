@@ -180,7 +180,7 @@
     base_name = phase1
     disp_y = disp_y
     disp_x = disp_x
-    C_ijkl = '30 30'
+    C_ijkl = '20 20'
     fill_method = symmetric_isotropic
   [../]
 
@@ -191,7 +191,7 @@
     base_name = phase2
     disp_y = disp_y
     disp_x = disp_x
-    C_ijkl = '5 5'
+    C_ijkl = '2 2'
     fill_method = symmetric_isotropic
   [../]
 
@@ -338,8 +338,8 @@
   l_max_its = 30
   nl_max_its = 50
   l_tol = 1.0e-4
-  nl_rel_tol = 1.0e-7
-  nl_abs_tol = 1.0e-10
+  nl_rel_tol = 1.0e-6
+  nl_abs_tol = 1.0e-8
   start_time = 0.0
   num_steps = 800
 
