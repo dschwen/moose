@@ -20,6 +20,13 @@
   elem_type = QUAD4
 []
 
+[Functions]
+  [./tween]
+    type = ParsedFunction
+    value = 'if(t<10.0,max((t-0.2)/10.0,0.01),1)'
+  [../]
+[]
+
 [Variables]
   [./c]
     order = FIRST
@@ -180,7 +187,8 @@
     base_name = phase1
     disp_y = disp_y
     disp_x = disp_x
-    C_ijkl = '20 20'
+    C_ijkl = '100 100'
+    elasticity_tensor_prefactor = tween
     fill_method = symmetric_isotropic
   [../]
 
@@ -191,7 +199,7 @@
     base_name = phase2
     disp_y = disp_y
     disp_x = disp_x
-    C_ijkl = '2 2'
+    C_ijkl = '1 1'
     fill_method = symmetric_isotropic
   [../]
 
@@ -319,6 +327,13 @@
   [../]
 []
 
+[Postprocessors]
+  [./tween_plot]
+    type = PlotFunction
+    function = tween
+  []
+[]
+
 [Preconditioning]
   # active = ' '
   [./SMP]
@@ -357,9 +372,12 @@
   interval = 1
   exodus = true
   output_on = timestep_end
+  [./table]
+    type = CSV
+  [../]
   [./console]
     type = Console
     perf_log = true
-    output_on = 'initial timestep_end failed nonlinear'
+    output_on = 'initial timestep_begin timestep_end failed nonlinear'
   [../]
 []
