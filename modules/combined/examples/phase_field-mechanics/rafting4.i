@@ -35,7 +35,7 @@
       type = LatticeSmoothCircleIC
       block = 0
       Rnd_variation = 5.0
-      circles_per_side = '12 12'
+      circles_per_side = '10 10'
       radius = 5
       int_width = 4
       invalue = 0.8
