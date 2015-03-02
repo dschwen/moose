@@ -146,7 +146,7 @@ Material::registerPropName(std::string prop_name, bool is_get, Material::Prop_St
   // Store material properties for block ids
   for (std::set<SubdomainID>::const_iterator it = blockIDs().begin(); it != blockIDs().end(); ++it)
   {
-    // Only save this prop as a "supplied" prop is it was registered as a result of a call to declareProperty not getMaterialProperty
+    // Only save this prop as a "supplied" prop if it was registered as a result of a call to declareProperty not getMaterialProperty
     if (!is_get)
       _supplied_props.insert(prop_name);
     _fe_problem.storeMatPropName(*it, prop_name);
@@ -155,7 +155,7 @@ Material::registerPropName(std::string prop_name, bool is_get, Material::Prop_St
   // Store material properties for the boundary ids
   for (std::set<BoundaryID>::const_iterator it = boundaryIDs().begin(); it != boundaryIDs().end(); ++it)
   {
-    // Only save this prop as a "supplied" prop is it was registered as a result of a call to declareProperty not getMaterialProperty
+    // Only save this prop as a "supplied" prop if it was registered as a result of a call to declareProperty not getMaterialProperty
     if (!is_get)
       _supplied_props.insert(prop_name);
     _fe_problem.storeMatPropName(*it, prop_name);

@@ -19,7 +19,7 @@ TotalFreeEnergyBase::TotalFreeEnergyBase(const std::string & name,
     _nkappas(_kappa_names.size()),
     _additional_free_energy(coupledValue("additional_free_energy"))
 {
-  // Fetch couples variables and their gradients
+  // Fetch coupled variables and their gradients
   for (unsigned int i = 0; i < _nvars; ++i)
   {
     _vars[i]      = &coupledValue("interfacial_vars", i);
