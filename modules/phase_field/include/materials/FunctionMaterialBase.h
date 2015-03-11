@@ -62,6 +62,9 @@ protected:
   /// String vector of all argument names.
   std::vector<std::string> _arg_names;
 
+  /// Vector of all MooseVariable pointers to all arguments.
+  std::vector<MooseVariable *> _arg_vars;
+
   /// Vector of all argument MOOSE variable numbers.
   std::vector<unsigned int> _arg_numbers;
 

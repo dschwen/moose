@@ -48,6 +48,7 @@ FunctionMaterialBase::FunctionMaterialBase(const std::string & name,
       //unsigned int number = vars->second[j]->number();
       unsigned int number = coupled(*it, j);
       _arg_names.push_back(vars->second[j]->name());
+      _arg_vars.push_back(vars->second[j]);
       _arg_numbers.push_back(number);
       _arg_param_names.push_back(*it);
 
