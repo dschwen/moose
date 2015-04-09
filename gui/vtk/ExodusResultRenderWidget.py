@@ -463,7 +463,7 @@ class ExodusResultRenderWidget(QtGui.QWidget):
     self.open_button.clicked.connect(self._clickedOpen)
     self.view_layout.addWidget(self.open_button, alignment=QtCore.Qt.AlignHCenter)
 
-    self.save_button = QtGui.QPushButton('Save')
+    self.save_button = QtGui.QPushButton('Save Image')
     self.save_button.setMaximumWidth(100)
     self.save_button.setToolTip('Save the current view to a file')
     self.save_button.clicked.connect(self._saveView)

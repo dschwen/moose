@@ -33,6 +33,7 @@ class InputFileTextbox(QtGui.QTextEdit):
 #    self.setMinimumWidth(300)
     self.setReadOnly(True)
     self.textbox_layout = QtGui.QVBoxLayout()
+    self.textbox_layout.setContentsMargins(0,0,0,0)
     self.textbox_layout.addWidget(self)
     self.textbox_layout.setSizeConstraint(QtGui.QLayout.SetMinimumSize)
 

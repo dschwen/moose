@@ -35,6 +35,7 @@ class MeshRenderWidget(QtGui.QWidget):
     self.current_nodeset_actors = {}
 
     self.this_layout = QtGui.QVBoxLayout()
+    self.this_layout.setContentsMargins(0,0,0,0)
     self.setLayout(self.this_layout)
 
     self.vtkwidget = QVTKRenderWindowInteractor(self)
@@ -59,12 +60,21 @@ class MeshRenderWidget(QtGui.QWidget):
     self.interactor.Initialize()
 
     self.controls_layout = QtGui.QHBoxLayout()
+    self.controls_layout.setContentsMargins(0,0,0,0)
 
     self.left_controls_layout = QtGui.QVBoxLayout()
+    self.left_controls_layout.setContentsMargins(0,0,0,0)
 
+    self.plane = vtk.vtkPlane()
+    self.plane.SetOrigin(0, 0, 0)
+    self.plane.SetNormal(1, 0, 0)
+
+    #
+    # Show Blocks group
+    #
     self.block_view_group_box = QtGui.QGroupBox('Show Blocks')
+    self.block_view_group_box.setFlat(True)
     self.block_view_group_box.setMaximumWidth(150)
-#    self.block_view_group_box.setMaximumHeight(200)
 
     self.block_view_layout = QtGui.QVBoxLayout()
     self.block_view_list = QtGui.QListView()
@@ -77,20 +87,66 @@ class MeshRenderWidget(QtGui.QWidget):
     self.left_controls_layout.addWidget(self.block_view_group_box)
     self.controls_layout.addLayout(self.left_controls_layout)
 
+    #
+    # | vertical separator line
+    #
+    self.vertical_separator = QtGui.QFrame()
+    self.vertical_separator.setFrameShape(QtGui.QFrame.VLine)
+    self.vertical_separator.setFrameShadow(QtGui.QFrame.Sunken)
+    self.controls_layout.addWidget(self.vertical_separator)
 
     self.right_controls_layout = QtGui.QVBoxLayout()
     self.controls_layout.addLayout(self.right_controls_layout)
+
+    #
+    # Mesh group
+    #
+    self.mesh_groupbox = QtGui.QGroupBox("Mesh")
+    self.mesh_groupbox.setFlat(True)
+    self.mesh_groupbox.setToolTip('Toggle clip mode to slice the mesh open along a plane')
+    self.mesh_layout = QtGui.QVBoxLayout()
+    self.mesh_layout.setContentsMargins(0,0,0,0)
+    self.mesh_groupbox.setLayout(self.mesh_layout)
 
     self.view_mesh_checkbox = QtGui.QCheckBox('View Mesh')
     self.view_mesh_checkbox.setToolTip('Toggle viewing of mesh elements')
     self.view_mesh_checkbox.setCheckState(QtCore.Qt.Checked)
     self.view_mesh_checkbox.stateChanged.connect(self.viewMeshCheckboxChanged)
-    self.right_controls_layout.addWidget(self.view_mesh_checkbox)
+    self.view_mesh_checkbox_layout = QtGui.QHBoxLayout()
+    self.view_mesh_checkbox_layout.setContentsMargins(0,0,0,0)
+    self.view_mesh_checkbox_layout.addWidget(self.view_mesh_checkbox)
+    self.mesh_layout.addLayout(self.view_mesh_checkbox_layout)
 
+    self.clip_layout = QtGui.QHBoxLayout()
+    self.clip_layout.setContentsMargins(0,0,0,0)
+    self.clip_checkbox = QtGui.QCheckBox("Clip")
+    self.clip_checkbox.setChecked(False)
+    self.clip_checkbox.toggled[bool].connect(self._clippingToggled)
+    self.clip_layout.addWidget(self.clip_checkbox)
+    self.clip_plane_combobox = QtGui.QComboBox()
+    self.clip_plane_combobox.setToolTip('Direction of the normal for the clip plane')
+    self.clip_plane_combobox.addItem('x')
+    self.clip_plane_combobox.addItem('y')
+    self.clip_plane_combobox.addItem('z')
+    self.clip_plane_combobox.currentIndexChanged[str].connect(self._clipNormalChanged)
+    self.clip_layout.addWidget(self.clip_plane_combobox)
+    self.clip_plane_slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+    self.clip_plane_slider.setToolTip('Slide to change plane position')
+    self.clip_plane_slider.setRange(0, 100)
+    self.clip_plane_slider.setSliderPosition(50)
+    self.clip_plane_slider.sliderMoved[int].connect(self._clipSliderMoved)
+    self.clip_layout.addWidget(self.clip_plane_slider)
+    self.mesh_layout.addLayout(self.clip_layout)
+
+    self.right_controls_layout.addWidget(self.mesh_groupbox)
+
+    #
+    # Highlight group
+    #
     self.highlight_group_box = QtGui.QGroupBox('Highlight')
+    self.highlight_group_box.setFlat(True)
     self.highlight_group_box.setMaximumHeight(70)
     self.highlight_group_box.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.Fixed)
-#    self.highlight_group_box.setMaximumWidth(200)
     self.highlight_layout = QtGui.QHBoxLayout()
     self.highlight_group_box.setLayout(self.highlight_layout)
     self.right_controls_layout.addWidget(self.highlight_group_box)
@@ -98,7 +154,7 @@ class MeshRenderWidget(QtGui.QWidget):
     self.highlight_block_label = QtGui.QLabel('Block:')
     self.highlight_block_label.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
     self.highlight_block_combo = QtGui.QComboBox()
-#    self.highlight_block_combo.setMaximumWidth(50)
+    # self.highlight_block_combo.setMaximumWidth(50)
     self.highlight_block_combo.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToMinimumContentsLength)
     self.highlight_block_combo.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.Fixed)
     self.highlight_block_combo.setToolTip('Highlight a block in the mesh')
@@ -109,7 +165,7 @@ class MeshRenderWidget(QtGui.QWidget):
     self.highlight_sideset_label = QtGui.QLabel('Sideset:')
     self.highlight_sideset_label.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
     self.highlight_sideset_combo = QtGui.QComboBox()
-#    self.highlight_sideset_combo.setMaximumWidth(50)
+    # self.highlight_sideset_combo.setMaximumWidth(50)
     self.highlight_sideset_combo.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToMinimumContentsLength)
     self.highlight_sideset_combo.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.Fixed)
     self.highlight_sideset_combo.setToolTip('Highlight a sideset in the mesh')
@@ -120,7 +176,7 @@ class MeshRenderWidget(QtGui.QWidget):
     self.highlight_nodeset_label = QtGui.QLabel('Nodeset:')
     self.highlight_nodeset_label.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
     self.highlight_nodeset_combo = QtGui.QComboBox()
-#    self.highlight_nodeset_combo.setMaximumWidth(50)
+    # self.highlight_nodeset_combo.setMaximumWidth(50)
     self.highlight_nodeset_combo.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToMinimumContentsLength)
     self.highlight_nodeset_combo.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.Fixed)
     self.highlight_nodeset_combo.setToolTip('Highlight a nodeset in the mesh')
@@ -134,38 +190,9 @@ class MeshRenderWidget(QtGui.QWidget):
     self.highlight_clear.clicked.connect(self.clearHighlight)
     self.highlight_layout.addWidget(self.highlight_clear)
 
-    self.plane = vtk.vtkPlane()
-    self.plane.SetOrigin(0, 0, 0)
-    self.plane.SetNormal(1, 0, 0)
-
-    self.clip_groupbox = QtGui.QGroupBox("Clip")
-    self.clip_groupbox.setToolTip('Toggle clip mode to slice the mesh open along a plane')
-    self.clip_groupbox.setCheckable(True)
-    self.clip_groupbox.setChecked(False)
-    self.clip_groupbox.setMaximumHeight(70)
-    self.clip_groupbox.toggled[bool].connect(self._clippingToggled)
-    clip_layout = QtGui.QHBoxLayout()
-
-    self.clip_plane_combobox = QtGui.QComboBox()
-    self.clip_plane_combobox.setToolTip('Direction of the normal for the clip plane')
-    self.clip_plane_combobox.addItem('x')
-    self.clip_plane_combobox.addItem('y')
-    self.clip_plane_combobox.addItem('z')
-    self.clip_plane_combobox.currentIndexChanged[str].connect(self._clipNormalChanged)
-
-    clip_layout.addWidget(self.clip_plane_combobox)
-
-    self.clip_plane_slider = QtGui.QSlider(QtCore.Qt.Horizontal)
-    self.clip_plane_slider.setToolTip('Slide to change plane position')
-    self.clip_plane_slider.setRange(0, 100)
-    self.clip_plane_slider.setSliderPosition(50)
-    self.clip_plane_slider.sliderMoved[int].connect(self._clipSliderMoved)
-    clip_layout.addWidget(self.clip_plane_slider)
-#     vbox->addStretch(1);
-    self.clip_groupbox.setLayout(clip_layout)
-
-    self.right_controls_layout.addWidget(self.clip_groupbox)
-
+    #
+    # add controls below mesh render viewport
+    #
     self.this_layout.addLayout(self.controls_layout)
     self.this_layout.setStretchFactor(self.controls_layout, 1)
 
@@ -174,9 +201,8 @@ class MeshRenderWidget(QtGui.QWidget):
     self.bounds['y'] = [0.0, 0.0]
     self.bounds['z'] = [0.0, 0.0]
 
-#    self.draw_edges_checkbox = QtGui.QCheckBox("View Mesh")
-
-#    self.left_controls_layout.addWidget(self.draw_edges_checkbox)
+    # self.draw_edges_checkbox = QtGui.QCheckBox("View Mesh")
+    # self.left_controls_layout.addWidget(self.draw_edges_checkbox)
 
   def clear(self):
     self.highlight_block_combo.clear()

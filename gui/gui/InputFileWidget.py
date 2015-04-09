@@ -78,23 +78,25 @@ class InputFileWidget(QtGui.QWidget):
   def initUI(self):
     # Just a holder so the edit param_widget can go in where we want
     self.edit_param_layout_spot = QtGui.QVBoxLayout()
+    #self.edit_param_layout_spot.setContentsMargins(0,0,0,0)
 
     self.tree_widget_layout_widget = QtGui.QWidget()
     self.tree_widget_layout = QtGui.QVBoxLayout()
+    #self.tree_widget_layout.setContentsMargins(0,0,0,0)
     self.tree_widget_layout_widget.setLayout(self.tree_widget_layout)
     self.layoutH = QtGui.QHBoxLayout()
+    self.layoutH.setContentsMargins(0,0,0,0)
     self.layout_with_textbox = QtGui.QSplitter()
-#    self.layout_with_textbox.setChildrenCollapsible(False)
 
     self.input_file_textbox = InputFileTextbox(self)
-#    self.input_file_textbox.hide()
     self.tree_widget = InputFileTreeWidget(self)
 
     self.tree_widget_layout.addWidget(self.tree_widget)
+
     self.init_buttons(self.layoutH)
     self.tree_widget_layout.addLayout(self.layoutH)
     self.layout_with_textbox.addWidget(self.tree_widget_layout_widget)
-#    self.layout_with_textbox.addLayout(self.edit_param_layout_spot)
+    # self.layout_with_textbox.addLayout(self.edit_param_layout_spot)
 
     self.mesh_render_widget = self.application.meshRenderWidget(self)
     if not self.application.showMeshRenderWidgetByDefault():
@@ -105,20 +107,23 @@ class InputFileWidget(QtGui.QWidget):
     self.input_file_textbox_layout_widget.setLayout(self.input_file_textbox.getLayout())
     self.layout_with_textbox.addWidget(self.input_file_textbox_layout_widget)
 
-
     self.layout_with_textbox.setStretchFactor(0,0.1)
     self.layout_with_textbox.setStretchFactor(1,0.9)
-    self.layout_with_textbox.setStretchFactor(1,0.2)
-
+    self.layout_with_textbox.setStretchFactor(2,0.2)
     self.layout_with_textbox.setSizes([30,600,0])
 
     self.main_layout = QtGui.QHBoxLayout()
+    self.main_layout.setContentsMargins(0,0,0,0)
     self.main_layout.addWidget(self.layout_with_textbox)
     self.setLayout(self.main_layout)
 
     self.menubar = self.peacock_ui.menuBar()
 
+    #
     # build menu
+    #
+
+    # File
     self.file_menu = self.menubar.addMenu('&File')
     open_file_action = QtGui.QAction("Open...", self)
     open_file_action.setShortcut('Ctrl+O')
@@ -129,11 +134,13 @@ class InputFileWidget(QtGui.QWidget):
     save_file_action.triggered.connect(self.click_save)
     self.file_menu.addAction(save_file_action)
 
+    # Edit
     self.edit_menu = self.menubar.addMenu('&Edit')
     main_comment_action = QtGui.QAction("Main Comment", self)
     main_comment_action.triggered.connect(self._edit_main_comment)
     self.edit_menu.addAction(main_comment_action)
 
+    # View
     self.view_menu = self.menubar.addMenu('&View')
     input_file_action = QtGui.QAction("Input File", self)
     input_file_action.triggered.connect(self._view_input_file)
@@ -159,6 +166,7 @@ class InputFileWidget(QtGui.QWidget):
     layout.addWidget(self.buttonOpen)
     layout.addWidget(self.buttonSave)
     self.application.addRelapSave(layout)
+    layout.addStretch()
     layout.addWidget(self.buttonClear)
 
   def getOutputFileAndBlockNames(self):
