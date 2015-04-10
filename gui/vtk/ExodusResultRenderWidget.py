@@ -457,22 +457,19 @@ class ExodusResultRenderWidget(QtGui.QWidget):
     #
     self.view_layout = QtGui.QHBoxLayout()
 
-    self.open_button = QtGui.QPushButton('Open')
-    self.open_button.setMaximumWidth(100)
+    self.open_button = QtGui.QPushButton(self.style().standardIcon(QtGui.QStyle.SP_DialogOpenButton), "Open")
     self.open_button.setToolTip('Open an existing result')
     self.open_button.clicked.connect(self._clickedOpen)
     self.view_layout.addWidget(self.open_button, alignment=QtCore.Qt.AlignHCenter)
 
-    self.save_button = QtGui.QPushButton('Save Image')
-    self.save_button.setMaximumWidth(100)
+    self.save_button = QtGui.QPushButton(self.style().standardIcon(QtGui.QStyle.SP_DialogSaveButton),'Save Image')
     self.save_button.setToolTip('Save the current view to a file')
     self.save_button.clicked.connect(self._saveView)
     self.view_layout.addWidget(self.save_button, alignment=QtCore.Qt.AlignHCenter)
 
     self.view_layout.addStretch()
 
-    self.reset_button = QtGui.QPushButton('Reset')
-    self.reset_button.setMaximumWidth(100)
+    self.reset_button = QtGui.QPushButton(self.style().standardIcon(QtGui.QStyle.SP_DialogResetButton),'Reset')
     self.reset_button.setToolTip('Recenter the camera on the current result')
     self.reset_button.clicked.connect(self._resetView)
     self.view_layout.addWidget(self.reset_button, alignment=QtCore.Qt.AlignHCenter)
