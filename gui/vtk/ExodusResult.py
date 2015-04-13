@@ -127,7 +127,8 @@ class ExodusResult:
       self.scalar_bar = vtk.vtkScalarBarActor()
       self.current_actors.append(self.scalar_bar)
       self.scalar_bar.SetLookupTable(self.mapper.GetLookupTable())
-      self.scalar_bar.SetNumberOfLabels(4)
+      self.scalar_bar.SetNumberOfLabels(5)
+      self.scalar_bar.SetBarRatio(0.15)
 
       self.current_bounds = self.actor.GetBounds()
     except:

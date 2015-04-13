@@ -56,6 +56,7 @@ class ExecuteWidget(QtGui.QWidget):
     #the central page widgets
     self.pb_layout = QtGui.QVBoxLayout()
     self.cwd_layout = QtGui.QHBoxLayout()
+
     #the working directory
     self.cwd_layout.addWidget(QtGui.QLabel("Current Working Directory:"))
     self.cwd_text = QtGui.QLineEdit()
@@ -86,6 +87,8 @@ class ExecuteWidget(QtGui.QWidget):
 
     #the bottom of the GUI page
     self.bottom_layout = QtGui.QHBoxLayout()
+    #self.bottom_layout.setContentsMargins(0,0,0,0)
+
     #the kill button
     self.kill_button = QtGui.QPushButton("Kill")
     self.kill_button.setToolTip('Stop the currently running simulation')
@@ -104,13 +107,17 @@ class ExecuteWidget(QtGui.QWidget):
     self.save_log_button.setDisabled(True)
     QtCore.QObject.connect(self.save_log_button, QtCore.SIGNAL("clicked()"), self.clickedSaveLog)
     self.bottom_layout.addWidget(self.save_log_button, alignment=QtCore.Qt.AlignHCenter)
+
     #Placing everything in the main layout and than in the GUI object
     self.main_layout = QtGui.QVBoxLayout()
+    self.main_layout.setContentsMargins(0,0,0,0)
+
     self.main_layout.addLayout(self.top_layout)
     self.main_layout.addLayout(self.cwd_layout)
     self.main_layout.addLayout(self.pb_layout)
     self.main_layout.addWidget(self.execution_text)
     self.main_layout.addLayout(self.bottom_layout)
+    self.bottom_layout.setContentsMargins(0,0,0,0)
     self.setLayout(self.main_layout)
 
     #call the API
@@ -127,9 +134,11 @@ class ExecuteWidget(QtGui.QWidget):
     overload this method to change the top layout
     '''
     self.top_layout = QtGui.QVBoxLayout()
+    #self.top_layout.setContentsMargins(0,0,0,0)
     self.run_layout  = QtGui.QHBoxLayout()
+    #self.run_layout.setContentsMargins(0,0,0,0)
 
-    self.run_layout.addStretch(10)
+    #self.run_layout.addStretch(10)
 
     #the number of mpi processors
     mpi_proc_label = QtGui.QLabel('MPI:')
@@ -139,7 +148,7 @@ class ExecuteWidget(QtGui.QWidget):
     self.run_layout.addWidget(mpi_proc_label)
     self.run_layout.addWidget(self.mpi_proc_line)
 
-    self.run_layout.addStretch(10)
+    #self.run_layout.addStretch(10)
 
     #the number of threads
     threads_label = QtGui.QLabel('Threads:')

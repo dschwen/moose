@@ -78,25 +78,23 @@ class InputFileWidget(QtGui.QWidget):
   def initUI(self):
     # Just a holder so the edit param_widget can go in where we want
     self.edit_param_layout_spot = QtGui.QVBoxLayout()
-    #self.edit_param_layout_spot.setContentsMargins(0,0,0,0)
 
     self.tree_widget_layout_widget = QtGui.QWidget()
     self.tree_widget_layout = QtGui.QVBoxLayout()
-    #self.tree_widget_layout.setContentsMargins(0,0,0,0)
     self.tree_widget_layout_widget.setLayout(self.tree_widget_layout)
+
     self.layoutH = QtGui.QHBoxLayout()
     self.layoutH.setContentsMargins(0,0,0,0)
-    self.layout_with_textbox = QtGui.QSplitter()
-
-    self.input_file_textbox = InputFileTextbox(self)
-    self.tree_widget = InputFileTreeWidget(self)
-
-    self.tree_widget_layout.addWidget(self.tree_widget)
-
     self.init_buttons(self.layoutH)
+
+    self.layout_with_textbox = QtGui.QSplitter()
+    self.input_file_textbox = InputFileTextbox(self)
+
+    self.tree_widget = InputFileTreeWidget(self)
+    self.tree_widget_layout.addWidget(self.tree_widget)
     self.tree_widget_layout.addLayout(self.layoutH)
+
     self.layout_with_textbox.addWidget(self.tree_widget_layout_widget)
-    # self.layout_with_textbox.addLayout(self.edit_param_layout_spot)
 
     self.mesh_render_widget = self.application.meshRenderWidget(self)
     if not self.application.showMeshRenderWidgetByDefault():
