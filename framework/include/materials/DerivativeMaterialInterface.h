@@ -106,7 +106,7 @@ MaterialProperty<U> *
 DerivativeMaterialInterface<T>::getMaterialPropertyPointer(const std::string & name)
 {
   mooseDeprecated("getMaterialPropertyPointer is deprecated because it is construction order dependent. Use getDefaultMaterialProperty instead.");
-  return this->template hasMaterialProperty<U>(name) ? &(this->template getMaterialProperty<U>(name)) : NULL;
+  return this->template hasBlockMaterialProperty<U>(name) ? &(this->template getMaterialProperty<U>(name)) : NULL;
 }
 
 template<>
@@ -115,7 +115,7 @@ const MaterialProperty<U> &
 DerivativeMaterialInterface<Material>::getDefaultMaterialProperty(const std::string & name)
 {
   // if found return the requested property
-  if (this->template hasMaterialProperty<U>(name))
+  if (this->template hasBlockMaterialProperty<U>(name))
     return this->template getMaterialProperty<U>(name);
 
   // declare this material property
@@ -140,7 +140,7 @@ DerivativeMaterialInterface<T>::getDefaultMaterialProperty(const std::string & n
   static MaterialProperty<U> _zero;
 
   // if found return the requested property
-  if (this->template hasMaterialProperty<U>(name))
+  if (this->template hasBlockMaterialProperty<U>(name))
     return this->template getMaterialProperty<U>(name);
 
   // make sure _zero is in a sane state
