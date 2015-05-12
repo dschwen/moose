@@ -106,7 +106,7 @@ MaterialProperty<U> *
 DerivativeMaterialInterface<T>::getMaterialPropertyPointer(const std::string & name)
 {
   mooseDeprecated("getMaterialPropertyPointer is deprecated because it is construction order dependent. Use getDefaultMaterialProperty instead.");
-  return this->template hasBlockMaterialProperty<U>(name) ? &(this->template getMaterialProperty<U>(name)) : NULL;
+  return this->hasBlockMaterialProperty(name) ? &(this->template getMaterialProperty<U>(name)) : NULL;
 }
 
 template<>
@@ -115,10 +115,17 @@ const MaterialProperty<U> &
 DerivativeMaterialInterface<Material>::getDefaultMaterialProperty(const std::string & name)
 {
   // if found return the requested property
-  if (this->template hasBlockMaterialProperty<U>(name))
-    return this->template getMaterialProperty<U>(name);
+  if (this->hasBlockMaterialProperty(name) ^ this->template hasMaterialProperty<U>(name))
+    std::cerr << this->_name << "  Discrepancy for property        hmp:" <<  (this->template hasMaterialProperty<U>(name) ? "true" : "false") << " hbmp:" << (this->hasBlockMaterialProperty(name) ? "true  " : "false  ")
+              << name << "  U=" << typeid(U).name() << std::endl;
+
+  // {
+  //   std::cerr << this->_name << "  Fetch existing property " << name << std::endl;
+  //   return this->template getMaterialProperty<U>(name);
+  // }
 
   // declare this material property
+  std::cerr << this->_name << "  Declare property        " << name << std::endl;
   MaterialProperty<U> & preload_with_zero = this->template declareProperty<U>(name);
 
   // resize to accomodate maximum number of qpoints
@@ -140,7 +147,7 @@ DerivativeMaterialInterface<T>::getDefaultMaterialProperty(const std::string & n
   static MaterialProperty<U> _zero;
 
   // if found return the requested property
-  if (this->template hasBlockMaterialProperty<U>(name))
+  if (this->hasBlockMaterialProperty(name))
     return this->template getMaterialProperty<U>(name);
 
   // make sure _zero is in a sane state
