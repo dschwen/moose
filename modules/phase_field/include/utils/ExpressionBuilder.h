@@ -269,7 +269,7 @@ public:
     // construct from number or string
     EBTerm(int number) : root(new EBNumberNode<int>(number)) {}
     EBTerm(Real number) : root(new EBNumberNode<Real>(number)) {}
-    EBTerm(const char *symbol) : root(new EBSymbolNode(symbol)) {}
+    EBTerm(const std::string & symbol) : root(new EBSymbolNode(symbol)) {}
 
     // concatenate terms to form a parameter list with (()) syntax (those need to be out-of-class!)
     friend EBTermList operator, (const ExpressionBuilder::EBTerm & larg, const ExpressionBuilder::EBTerm & rarg);
@@ -388,7 +388,7 @@ public:
     EBFunction & operator() (const EBTerm & a1, const EBTerm & a2, const EBTerm & a3, const EBTerm & a4, const EBTerm & a5, const EBTerm & a6, const EBTerm & a7, const EBTerm & a8, const EBTerm & a9) { return (*this)((a1,a2,a3,a4,a5,a6,a7,a8,a9)); }
 
     // cast an EBFunction into an EBTerm
-    operator EBTerm() const;
+    explicit operator EBTerm() const;
 
     // cast into a string (via the cast into a term above)
     operator std::string() const;
