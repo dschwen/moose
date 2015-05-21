@@ -269,7 +269,8 @@ public:
     // construct from number or string
     EBTerm(int number) : root(new EBNumberNode<int>(number)) {}
     EBTerm(Real number) : root(new EBNumberNode<Real>(number)) {}
-    EBTerm(const std::string & symbol) : root(new EBSymbolNode(symbol)) {}
+    explicit EBTerm(const std::string & symbol) : root(new EBSymbolNode(symbol)) {}
+    EBTerm(const EBFunction & f) : root(static_cast<EBTerm>(f).root==NULL ? NULL : static_cast<EBTerm>(f).root->clone()) {}
 
     // concatenate terms to form a parameter list with (()) syntax (those need to be out-of-class!)
     friend EBTermList operator, (const ExpressionBuilder::EBTerm & larg, const ExpressionBuilder::EBTerm & rarg);
@@ -283,6 +284,9 @@ public:
 
     // assign a term
     EBTerm & operator= (const EBTerm & term) { delete root; root = term.root==NULL ? NULL : term.root->clone(); return *this; }
+
+    // shorthand to set the term to a symbol
+    EBTerm & operator= (const char * symbol) { delete root; root = new EBSymbolNode(symbol); return *this; }
 
     // perform a substitution (returns substituton count)
     unsigned int substitute(const EBSubstitutionRule & rule);
@@ -388,7 +392,7 @@ public:
     EBFunction & operator() (const EBTerm & a1, const EBTerm & a2, const EBTerm & a3, const EBTerm & a4, const EBTerm & a5, const EBTerm & a6, const EBTerm & a7, const EBTerm & a8, const EBTerm & a9) { return (*this)((a1,a2,a3,a4,a5,a6,a7,a8,a9)); }
 
     // cast an EBFunction into an EBTerm
-    explicit operator EBTerm() const;
+    operator EBTerm() const;
 
     // cast into a string (via the cast into a term above)
     operator std::string() const;

@@ -198,7 +198,7 @@ ExpressionBuilder::EBFunction::operator ExpressionBuilder::EBTerm() const
 ExpressionBuilder::EBFunction::operator std::string() const
 {
   EBTerm eval;
-  eval = *this; // typecast EBFunction -> EBTerm performs a parameter substitution
+  eval = static_cast<EBTerm>(*this); // typecast EBFunction -> EBTerm performs a parameter substitution
   std::ostringstream s;
   s << eval;
   return s.str();
