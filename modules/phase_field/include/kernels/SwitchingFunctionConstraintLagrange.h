@@ -45,7 +45,10 @@ protected:
   std::vector<int> _j_eta;
 
   /// shift factor
-  Real _epsilon;
+  const Real _epsilon;
+
+  /// prefactor function to multiply epsilon with
+  Function * const _epsilon_function;
 };
 
 #endif //SWITCHINGFUNCTIONCONSTRAINTLAGRANGE_H

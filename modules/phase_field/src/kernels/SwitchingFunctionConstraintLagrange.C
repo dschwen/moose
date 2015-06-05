@@ -14,6 +14,7 @@ InputParameters validParams<SwitchingFunctionConstraintLagrange>()
   params.addParam<std::vector<std::string> >("h_names", "Switching Function Materials that provide h(eta_i)");
   params.addRequiredCoupledVar("etas", "eta_i order parameters, one for each h");
   params.addParam<Real>("epsilon", 1e-9, "Shift factor to avoid a zero pivot");
+  params.addParam<FunctionName>("epsilon_function", "Prefactor function for epsilon");
   return params;
 }
 
@@ -25,7 +26,9 @@ SwitchingFunctionConstraintLagrange::SwitchingFunctionConstraintLagrange(const s
     _dh(_num_h),
     _number_of_nl_variables(_fe_problem.getNonlinearSystem().nVariables()),
     _j_eta(_number_of_nl_variables, -1),
-    _epsilon(getParam<Real>("epsilon"))
+    _epsilon(getParam<Real>("epsilon")),
+    _epsilon_function(isParamValid("epsilon_function") ? &getFunction("epsilon_function") : NULL)
+
 {
   // parameter check. We need exactly one eta per h
   if (_num_h != coupledComponents("etas"))
@@ -47,7 +50,9 @@ SwitchingFunctionConstraintLagrange::SwitchingFunctionConstraintLagrange(const s
 Real
 SwitchingFunctionConstraintLagrange::computeQpResidual()
 {
-  Real g = -_epsilon * _u[_qp] - 1.0;
+  Real epsilon = _epsilon_function ? _epsilon_function->value(_t, _q_point[_qp])*_epsilon : _epsilon;
+  Real g = -epsilon * _u[_qp] - 1.0;
+
   for (unsigned int i = 0; i < _num_h; ++i)
     g += (*_h[i])[_qp];
 
@@ -57,7 +62,8 @@ SwitchingFunctionConstraintLagrange::computeQpResidual()
 Real
 SwitchingFunctionConstraintLagrange::computeQpJacobian()
 {
-  return _test[_i][_qp] * -_epsilon * _phi[_j][_qp];
+  Real epsilon = _epsilon_function ? _epsilon_function->value(_t, _q_point[_qp])*_epsilon : _epsilon;
+  return _test[_i][_qp] * -epsilon * _phi[_j][_qp];
 }
 
 Real
