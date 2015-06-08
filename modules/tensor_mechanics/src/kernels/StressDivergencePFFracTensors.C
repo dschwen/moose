@@ -5,6 +5,7 @@ template<>
 InputParameters validParams<StressDivergencePFFracTensors>()
 {
   InputParameters params = validParams<StressDivergenceTensors>();
+  params.addClassDescription("Phase field fracture model stress divergence kernel");
   params.addCoupledVar("c", "Phase field damage variable: Used to indicate calculation of Off Diagonal Jacobian term");
   params.addParam<std::string>("pff_jac_prop_name","","Name of property variable containing d_stress_d_c");
 
