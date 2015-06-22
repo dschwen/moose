@@ -17,22 +17,11 @@
   [./c]
     order = THIRD
     family = HERMITE
-  [../]
-[]
-
-[AuxVariables]
-  [./local_energy]
-    order = CONSTANT
-    family = MONOMIAL
-  [../]
-[]
-
-[ICs]
-  [./cIC]
-    type = RandomIC
-    variable = c
-    max = 0.1
-    min = -0.1
+    [./InitialCondition]
+      type = RandomIC
+      max = 0.1
+      min = -0.1
+    [../]
   [../]
 []
 
@@ -56,19 +45,7 @@
     type = CHInterface
     variable = c
     mob_name = M
-    kappa_name = kappa_c
-    grad_mob_name = grad_M
-  [../]
-[]
-
-[AuxKernels]
-  [./local_energy]
-    type = TotalFreeEnergy
-    variable = local_energy
-    f_name = fbulk
-    interfacial_vars = c
-    kappa_names = kappa_c
-    execute_on = timestep_end
+    kappa_name = kappa
   [../]
 []
 
@@ -81,11 +58,11 @@
 []
 
 [Materials]
-  [./mat]
-    type = PFMobility
+  [./constants]
+    type = GenericConstantMaterial
     block = 0
-    mob = 1.0
-    kappa = 0.5
+    prop_names =  'M kappa'
+    prop_values = '1 0.5'
   [../]
   [./free_energy]
     type = DerivativeParsedMaterial
@@ -99,15 +76,35 @@
   [../]
 []
 
+[AuxVariables]
+  [./local_energy]
+    order = CONSTANT
+    family = MONOMIAL
+  [../]
+[]
+
+[AuxKernels]
+  [./local_energy]
+    type = TotalFreeEnergy
+    variable = local_energy
+    f_name = fbulk
+    interfacial_vars = c
+    kappa_names = kappa
+    execute_on = 'initial timestep_end'
+  [../]
+[]
+
 [Postprocessors]
   [./top]
     type = SideIntegralVariablePostprocessor
     variable = c
     boundary = top
+    execute_on = 'initial timestep_end'
   [../]
   [./total_free_energy]
     type = ElementIntegralVariablePostprocessor
     variable = local_energy
+    execute_on = 'initial timestep_end'
   [../]
 []
 
@@ -128,7 +125,6 @@
 [Outputs]
   output_initial = true
   exodus = true
-  print_linear_residuals = true
+  print_linear_residuals = false
   print_perf_log = true
 []
-
