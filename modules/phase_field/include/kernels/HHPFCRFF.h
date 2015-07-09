@@ -22,14 +22,11 @@ protected:
   virtual Real precomputeQpJacobian();
   virtual Real computeQpOffDiagJacobian(unsigned int jvar);
 
-  bool _positive;
   Real _kernel_sign;
-
   const MaterialProperty<Real> & _prop;
 
-  bool _has_coupled_var;
-  VariableValue * _coupled_var;
-  unsigned int _coupled_var_var;
+  VariableValue * _coupled;
+  unsigned int _coupled_var;
 };
 
 #endif //HHFPCRFF_H

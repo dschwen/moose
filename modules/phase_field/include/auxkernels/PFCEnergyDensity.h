@@ -12,13 +12,13 @@ InputParameters validParams<PFCEnergyDensity>();
 class PFCEnergyDensity : public AuxKernel
 {
 public:
-   PFCEnergyDensity( const std::string& name, InputParameters parameters );
+   PFCEnergyDensity(const std::string& name, InputParameters parameters);
 
 protected:
   virtual Real computeValue();
 
   std::vector<VariableValue *> _vals;
-  std::vector<const MaterialProperty<Real>* > _coeff;
+  std::vector<const MaterialProperty<Real> * > _coeff;
 
   unsigned int _order;
   const MaterialProperty<Real> & _a;
