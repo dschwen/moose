@@ -32,15 +32,19 @@ CrossTermBarrierFunctionMaterial::CrossTermBarrierFunctionMaterial(const InputPa
   // if Vector W_ij is not the correct size to fill the matrix give error
   if (_num_eta * _num_eta != _W_ij.size())
     mooseError("Supply the number of etas squared for W_ij.");
+
   // if W_ij is not symmetric or if diagonal values are not zero, return error
   for (unsigned int i = 0; i < _num_eta; ++i)
-    for (unsigned int j = 0; j < _num_eta; ++j)
+  {
+    if (_W_ij[_num_eta * i + i] != 0)
+      mooseError("Set on-diagonal values of W_ij to zero");
+
+    for (unsigned int j = i; j < _num_eta; ++j)
     {
-      if (_W_ij[_num_eta*i + j] != _W_ij[_num_eta*j + i])
+      if (_W_ij[_num_eta * i + j] != _W_ij[_num_eta*j + i])
         mooseError("Supply symmetric values for W_ij");
-      if (_W_ij[_num_eta*i + i] != 0)
-        mooseError("Set on-diagonal values of W_ij to zero");
     }
+  }
 
   // declare derivative properties, fetch eta values
   for (unsigned int i = 0; i < _num_eta; ++i)
@@ -55,7 +59,6 @@ CrossTermBarrierFunctionMaterial::CrossTermBarrierFunctionMaterial(const InputPa
 void
 CrossTermBarrierFunctionMaterial::computeQpProperties()
 {
-
   // Sum the components of our W_ij matrix to get constant used in our g function
   for (unsigned int i = 0; i < _num_eta; ++i)
     for (unsigned int j = 0; j < _num_eta; ++j)
