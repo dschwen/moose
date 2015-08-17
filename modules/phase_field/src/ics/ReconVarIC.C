@@ -107,4 +107,3 @@ ReconVarIC::value(const Point & /*p*/)
 
   return 0.0;
 }
-

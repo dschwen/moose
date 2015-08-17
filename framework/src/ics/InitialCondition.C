@@ -25,6 +25,7 @@ InputParameters validParams<InitialCondition>()
   InputParameters params = validParams<MooseObject>();
   params += validParams<BlockRestrictable>();
   params += validParams<BoundaryRestrictable>();
+  params += validParams<RandomInterface>();
 
   params.addRequiredParam<VariableName>("variable", "The variable this initial condition is supposed to provide values for.");
 
@@ -43,6 +44,10 @@ InitialCondition::InitialCondition(const InputParameters & parameters) :
     DependencyResolverInterface(),
     Restartable(parameters, "InitialConditions"),
     ZeroInterface(parameters),
+    RandomInterface(parameters,
+                    *parameters.get<FEProblem *>("_fe_problem"),
+                    parameters.get<THREAD_ID>("_tid"),
+                    getParam<SystemBase *>("_sys")->getVariable(parameters.get<THREAD_ID>("_tid"), parameters.get<VariableName>("variable")).isNodal()),
     _fe_problem(*parameters.getCheckedPointerParam<FEProblem *>("_fe_problem")),
     _sys(*parameters.getCheckedPointerParam<SystemBase *>("_sys")),
     _tid(getParam<THREAD_ID>("_tid")),
@@ -61,6 +66,8 @@ InitialCondition::InitialCondition(const InputParameters & parameters) :
   for (std::map<std::string, std::vector<MooseVariable *> >::iterator it = coupled_vars.begin(); it != coupled_vars.end(); ++it)
     for (std::vector<MooseVariable *>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2)
       _depend_vars.insert((*it2)->name());
+
+  setRandomResetFrequency(EXEC_INITIAL);
 }
 
 InitialCondition::~InitialCondition()
@@ -186,6 +193,8 @@ InitialCondition::compute()
       libmesh_assert(nc == 1);
       _qp = n;
       _current_node = _current_elem->get_node(n);
+      // set the _curr_node pointer in assembly, which is what RandomInterface uses
+      _fe_problem.assembly(_tid).reinit(_current_node);
       Ue(current_dof) = value(*_current_node);
       dof_is_fixed[current_dof] = true;
       current_dof++;
@@ -195,6 +204,8 @@ InitialCondition::compute()
     {
       _qp = n;
       _current_node = _current_elem->get_node(n);
+      // set the _curr_node pointer in assembly, which is what RandomInterface uses
+      _fe_problem.assembly(_tid).reinit(_current_node);
       Ue(current_dof) = value(*_current_node);
       dof_is_fixed[current_dof] = true;
       current_dof++;
@@ -275,6 +286,8 @@ InitialCondition::compute()
     {
       libmesh_assert(nc == 1 + dim);
       _current_node = _current_elem->get_node(n);
+      // set the _curr_node pointer in assembly, which is what RandomInterface uses
+      _fe_problem.assembly(_tid).reinit(_current_node);
       Ue(current_dof) = value(*_current_node);
       dof_is_fixed[current_dof] = true;
       current_dof++;
@@ -562,4 +575,3 @@ InitialCondition::compute()
       }
   }
 }
-

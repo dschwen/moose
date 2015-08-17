@@ -400,6 +400,11 @@ void FEProblem::initialSetup()
     for (std::map<std::string, MooseSharedPointer<Function> >::iterator vit = _functions[i].begin(); vit != _functions[i].end(); ++vit)
       vit->second->initialSetup();
 
+  // Random interface objects
+  for (std::map<std::string, RandomData *>::iterator it = _random_data_objects.begin();
+       it != _random_data_objects.end();
+       ++it)
+    it->second->updateSeeds(EXEC_INITIAL);
 
   if (!_app.isRecovering())
   {
@@ -493,12 +498,6 @@ void FEProblem::initialSetup()
   Moose::setup_perf_log.push("Initial updateGeomSearch()","Setup");
   updateGeomSearch(); // Call all of the rest of the geometric searches
   Moose::setup_perf_log.pop("Initial updateGeomSearch()","Setup");
-
-  // Random interface objects
-  for (std::map<std::string, RandomData *>::iterator it = _random_data_objects.begin();
-       it != _random_data_objects.end();
-       ++it)
-    it->second->updateSeeds(EXEC_INITIAL);
 
   // Call initialSetup on the MultiApps
   _multi_apps(EXEC_LINEAR)[0].initialSetup();
