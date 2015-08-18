@@ -1217,13 +1217,13 @@ Assembly::addJacobianBlock(SparseMatrix<Number> & jacobian, DenseMatrix<Number> 
 void
 Assembly::cacheJacobianBlock(DenseMatrix<Number> & jac_block, std::vector<dof_id_type> & idof_indices, std::vector<dof_id_type> & jdof_indices, Real scaling_factor)
 {
-  Moose::out << ' ' << idof_indices.size() << ' ' << jdof_indices.size() << ' ' << jac_block.n() << ' ' << jac_block.m() << '\n';
+  Moose::out << " 1: " << idof_indices.size() << ' ' << jdof_indices.size() << ' ' << jac_block.n() << ' ' << jac_block.m() << '\n';
   if ((idof_indices.size() > 0) && (jdof_indices.size() > 0) && jac_block.n() && jac_block.m())
   {
     std::vector<dof_id_type> di(idof_indices);
     std::vector<dof_id_type> dj(jdof_indices);
     _dof_map.constrain_element_matrix(jac_block, di, dj, false);
-    Moose::out << " c " << di.size() << ' ' << dj.size() << '\n';
+    Moose::out << " 2: " << di.size() << ' ' << dj.size() << ' ' << jac_block.n() << ' ' << jac_block.m() << '\n';
     if (scaling_factor != 1.0)
       jac_block *= scaling_factor;
 
