@@ -1,13 +1,9 @@
 [Mesh]
   type = GeneratedMesh
-  dim = 2
+  dim = 1
   nx = 6000
-  ny = 1
   xmin = -5
   xmax = 5
-  ymin = 0
-  ymax = 1
-  elem_type = QUAD4
 []
 
 [GlobalParams]
@@ -33,7 +29,7 @@
   [./c]
     order = THIRD
     family = HERMITE
-   
+
     [./InitialCondition]
       type = FunctionIC
       variable = c
@@ -44,7 +40,7 @@
   [./eta]
     order = FIRST
     family = LAGRANGE
-    
+
     [./InitialCondition]
       type = FunctionIC
       function = 'if(x<-0.50,0,if(x<0,0.5,1))'
@@ -139,7 +135,7 @@ active = 'consts phase_free_energy mobility-expression kappa_material'
 
   # This material returns the free energy of the system as a function of the
   # concentration and non-conserved order parameter eta, including the
-  # interface penalty term W(phi)*g(phi) in Zaeem2014 equations 2-8. 
+  # interface penalty term W(phi)*g(phi) in Zaeem2014 equations 2-8.
   [./phase_free_energy]
     type = DerivativeParsedMaterial
     block = 0
