@@ -50,7 +50,7 @@
 
 [Kernels]
   [./c_res]
-    type = CHParsed
+    type = CahnHilliard
     variable = c
     f_name = F
     mob_name = M
@@ -221,7 +221,9 @@ active = 'total_solute'
   end_time   = 1200.0 # 3600.0
 
   [./TimeStepper]
-    type = SolutionTimeAdaptiveDT
+    type = IterationAdaptiveDT
+    optimal_iterations = 15
+    iteration_window = 3
     dt = 0.0001
   [../]
 []
@@ -235,7 +237,7 @@ active = 'total_solute'
   exodus = true
   csv = true
   output_initial = true
-  print_linear_residuals = true
+  print_linear_residuals = false
   [./table]
     type = CSV
     delimiter = ' '
