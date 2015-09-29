@@ -29,8 +29,12 @@
   [../]
 []
 [Kernels]
-  [./a]
+  [./a0]
     type = Diffusion
+    variable = a
+  [../]
+  [./a1]
+    type = TimeDerivative
     variable = a
   [../]
 []
@@ -39,21 +43,15 @@
   [./without]
     type = ElementIntegralVariablePostprocessor
     variable = c
-    execute_on = initial
   [../]
   [./with]
     type = ElementIntegralVariablePostprocessor
     variable = c
     use_displaced_mesh = true
-    execute_on = initial
   [../]
-[]
-
-[Problem]
-  solve = false
 []
 
 [Executioner]
   type = Transient
-  num_steps = 0
+  num_steps = 1
 []
