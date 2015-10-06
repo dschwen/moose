@@ -48,7 +48,7 @@ def recursiveFindFile(current_path, p, executable):
       return the_file
 
   for afile in files:
-    if p.match(afile) and ((not executable) or os.access(current_path+'/'+afile, os.X_OK)):
+    if p.match(afile) and not os.path.isdir(afile) and ((not executable) or os.access(current_path+'/'+afile, os.X_OK)):
       return current_path + '/' + afile
 
   up_one = os.path.dirname(current_path)
