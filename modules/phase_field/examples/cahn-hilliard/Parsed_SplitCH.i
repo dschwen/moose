@@ -16,7 +16,7 @@
 [Variables]
   [./c]
   [../]
-  [./w]
+  [./chem_pot]
   [../]
 []
 
@@ -31,15 +31,15 @@
   [./cIC]
     type = RandomIC
     variable = c
-    max = 0.1
-    min = -0.1
+    max = 0.55
+    min = 0.45
   [../]
 []
 
 [Kernels]
   [./c_dot]
     type = CoupledTimeDerivative
-    variable = w
+    variable = chem_pot
     v = c
   [../]
   [./c_res]
@@ -47,11 +47,11 @@
     variable = c
     f_name = fbulk
     kappa_name = kappa_c
-    w = w
+    w = chem_pot
   [../]
-  [./w_res]
+  [./chem_pot_res]
     type = SplitCHWRes
-    variable = w
+    variable = chem_pot
     mob_name = M
   [../]
 []
@@ -78,7 +78,7 @@
 [Materials]
   [./mat]
     type = GenericConstantMaterial
-    prop_names  = 'M kappa_c'
+    prop_names = 'M kappa_c'
     prop_values = '1.0 0.5'
     block = 0
   [../]
@@ -89,8 +89,7 @@
     args = c
     constant_names = W
     constant_expressions = 1.0/2^2
-    function = W*(1-c)^2*(1+c)^2
-    enable_jit = true
+    function = W*(c)^2*(1-c)^2
     outputs = exodus
   [../]
 []
@@ -104,6 +103,10 @@
   [./total_free_energy]
     type = ElementIntegralVariablePostprocessor
     variable = local_energy
+  [../]
+  [./total c]
+    type = ElementAverageTimeDerivative
+    variable = c
   [../]
 []
 
@@ -133,4 +136,3 @@
 [Outputs]
   exodus = true
 []
-
