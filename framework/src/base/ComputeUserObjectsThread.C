@@ -83,8 +83,12 @@ ComputeUserObjectsThread::onElement(const Elem * elem)
   }
 
   // Prepare shape functions for ShapeElementUserObjects
-  for (unsigned int i = 0; i < _user_object_shape_variables.size(); ++i)
-    _fe_problem.prepareShapes(_user_object_shape_variables[i], _tid);
+  if (_fe_problem.currentlyComputingJacobian())
+  {
+    const std::vector<unsigned int> & user_object_shape_variables = _fe_problem.assembly(_tid).userObjectShapeVariables();
+    for (unsigned int i = 0; i < user_object_shape_variables.size(); ++i)
+      _fe_problem.prepareShapes(user_object_shape_variables[i], _tid);
+  }
 
   _fe_problem.swapBackMaterials(_tid);
 }
