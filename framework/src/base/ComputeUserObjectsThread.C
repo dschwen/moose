@@ -32,7 +32,8 @@ ComputeUserObjectsThread::ComputeUserObjectsThread(FEProblem & problem,
     _soln(*sys.currentSolution()),
     _elemental_user_objects(elemental_user_objects),
     _side_user_objects(side_user_objects),
-    _internal_side_user_objects(internal_side_user_objects)
+    _internal_side_user_objects(internal_side_user_objects),
+    _user_object_shape_variables(_fe_problem.assembly(_tid).userObjectShapeVariables())
 {
 }
 
@@ -42,7 +43,8 @@ ComputeUserObjectsThread::ComputeUserObjectsThread(ComputeUserObjectsThread & x,
     _soln(x._soln),
     _elemental_user_objects(x._elemental_user_objects),
     _side_user_objects(x._side_user_objects),
-    _internal_side_user_objects(x._internal_side_user_objects)
+    _internal_side_user_objects(x._internal_side_user_objects),
+    _user_object_shape_variables(x._user_object_shape_variables)
 {
 }
 
@@ -79,6 +81,10 @@ ComputeUserObjectsThread::onElement(const Elem * elem)
     for (const auto & uo : objects)
       uo->execute();
   }
+
+  // Prepare shape functions for ShapeElementUserObjects
+  for (unsigned int i = 0; i < _user_object_shape_variables.size(); ++i)
+    _fe_problem.prepareShapes(_user_object_shape_variables[i], _tid);
 
   _fe_problem.swapBackMaterials(_tid);
 }
