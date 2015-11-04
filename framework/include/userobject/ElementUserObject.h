@@ -56,6 +56,31 @@ class ElementUserObject :
 public:
   ElementUserObject(const InputParameters & parameters);
 
+  /**
+   * This function will get called on each geometric object this
+   * postprocessor acts on (ie Elements, Sides or Nodes).  This will
+   * most likely get called multiple times before getValue() is
+   * called.
+   *
+   * Someone somewhere has to override this.
+   */
+  virtual void execute() = 0;
+
+  /**
+   * This function will be called with the shape functions for jvar initialized. It
+   * can be used to compute Jacobian contributions of the UserObject.
+   */
+  virtual void executeJacobian(unsigned int /*jvar*/) {}
+
+  /**
+   * Must override.
+   *
+   * @param uo The UserObject to be joined into _this_ object.  Take the data from the uo object and "add" it into the data for this object.
+   */
+  virtual void threadJoin(const UserObject & uo) = 0;
+
+  bool requestedJacobian(unsigned int var) const;
+
 protected:
   MooseMesh & _mesh;
 
@@ -69,6 +94,9 @@ protected:
   QBase * & _qrule;
   const MooseArray<Real> & _JxW;
   const MooseArray<Real> & _coord;
+
+  /// flag store to indicate if a jacobian w.r.t. a non-linear variable with a given number is requested
+  std::vector<bool> _requested_jacobian_flag;
 };
 
 #endif
