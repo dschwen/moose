@@ -16,6 +16,7 @@
 #include "Problem.h"
 #include "SystemBase.h"
 #include "ElementUserObject.h"
+#include "ShapeElementUserObject.h"
 #include "SideUserObject.h"
 #include "InternalSideUserObject.h"
 #include "NodalUserObject.h"
@@ -64,6 +65,8 @@ ComputeUserObjectsThread::subdomainChanged()
   _side_user_objects.subdomainSetup(_tid);
   _internal_side_user_objects.subdomainSetup(_subdomain, _tid);
 
+  //std::copy(jacobian_moose_vars.begin(), jacobian_moose_vars.end(), std::back_inserter(_jacobian_moose_vars));
+
   _fe_problem.setActiveElementalMooseVariables(needed_moose_vars, _tid);
   _fe_problem.prepareMaterials(_subdomain, _tid);
 }
@@ -86,23 +89,22 @@ ComputeUserObjectsThread::onElement(const Elem * elem)
   if (_fe_problem.currentlyComputingJacobian())
   {
     // Prepare shape functions for ShapeElementUserObjects
-    const std::vector<unsigned int> & user_object_shape_variables = _fe_problem.assembly(_tid).userObjectShapeVariables();
-    for (unsigned int i = 0; i < user_object_shape_variables.size(); ++i)
+    for (std::vector<MooseVariable *>::const_iterator jvar_it = _jacobian_moose_vars.begin();
+         jvar_it != _jacobian_moose_vars.end();
+         ++jvar_it)
     {
-      unsigned int jvar = user_object_shape_variables[i];
+      unsigned int jvar = (*jvar_it)->number();
       _fe_problem.prepareShapes(jvar, _tid);
 
-      for (std::vector<ElementUserObject *>::const_iterator UserObject_it = _user_objects[_tid].elementUserObjects(Moose::ANY_BLOCK_ID, _group).begin();
-           UserObject_it != _user_objects[_tid].elementUserObjects(Moose::ANY_BLOCK_ID, _group).end();
+      for (std::vector<ShapeElementUserObject *>::const_iterator UserObject_it = _user_objects[_tid].shapeElementUserObjects(Moose::ANY_BLOCK_ID, _group).begin();
+           UserObject_it != _user_objects[_tid].shapeElementUserObjects(Moose::ANY_BLOCK_ID, _group).end();
            ++UserObject_it)
-        if ((*UserObject_it)->requestedJacobian(jvar))
-          (*UserObject_it)->executeJacobian(jvar);
+        (*UserObject_it)->executeJacobian(jvar);
 
-      for (std::vector<ElementUserObject *>::const_iterator UserObject_it = _user_objects[_tid].elementUserObjects(_subdomain, _group).begin();
-           UserObject_it != _user_objects[_tid].elementUserObjects(_subdomain, _group).end();
+      for (std::vector<ShapeElementUserObject *>::const_iterator UserObject_it = _user_objects[_tid].shapeElementUserObjects(_subdomain, _group).begin();
+           UserObject_it != _user_objects[_tid].shapeElementUserObjects(_subdomain, _group).end();
            ++UserObject_it)
-        if ((*UserObject_it)->requestedJacobian(jvar))
-          (*UserObject_it)->executeJacobian(jvar);
+        (*UserObject_it)->executeJacobian(jvar);
     }
   }
 

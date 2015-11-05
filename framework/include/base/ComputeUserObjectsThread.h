@@ -61,7 +61,7 @@ protected:
   const MooseObjectWarehouse<InternalSideUserObject> & _internal_side_user_objects;
   ///@}
 
-  const std::vector<unsigned int> & _user_object_shape_variables;
+  std::vector<MooseVariable *> _jacobian_moose_vars;
 };
 
 #endif //COMPUTEUSEROBJECTSTHREAD_H

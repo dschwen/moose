@@ -791,9 +791,6 @@ protected:
   std::vector<Real> _cached_jacobian_contribution_vals;
   std::vector<numeric_index_type> _cached_jacobian_contribution_rows;
   std::vector<numeric_index_type> _cached_jacobian_contribution_cols;
-
-  /// Variables that need shape functions initialized for UserObjects
-  std::vector<unsigned int> _user_object_shape_variables;
 };
 
 #endif /* ASSEMBLY_H */
