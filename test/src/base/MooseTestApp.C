@@ -177,6 +177,7 @@
 #include "GetMaterialPropertyBoundaryBlockNamesTest.h"
 #include "SetupInterfaceCount.h"
 #include "ReadDoubleIndex.h"
+#include "ShapeTestUserObject.h"
 
 // Postprocessors
 #include "TestCopyInitialSolution.h"
@@ -469,6 +470,7 @@ MooseTestApp::registerObjects(Factory & factory)
   registerUserObject(InternalSideSetupInterfaceCount);
   registerUserObject(NodalSetupInterfaceCount);
   registerUserObject(ReadDoubleIndex);
+  registerUserObject(ShapeTestUserObject);
 
   registerPostprocessor(InsideValuePPS);
   registerPostprocessor(TestCopyInitialSolution);
