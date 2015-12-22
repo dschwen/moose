@@ -4,8 +4,6 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-//  Phenomenological constitutive model state variable userobject class
-//
 #include "CrystalPlasticityStateVariableGSS.h"
 
 template<>
@@ -18,8 +16,8 @@ InputParameters validParams<CrystalPlasticityStateVariableGSS>()
 }
 
 CrystalPlasticityStateVariableGSS::CrystalPlasticityStateVariableGSS(const InputParameters & parameters) :
-  CrystalPlasticityStateVariable(parameters),
-  _gprops(getParam<std::vector<Real> >("gprops"))
+    CrystalPlasticityStateVariable(parameters),
+    _gprops(getParam<std::vector<Real> >("gprops"))
 {
 }
 
@@ -44,16 +42,16 @@ CrystalPlasticityStateVariableGSS::assignSlipSysRes(std::vector<Real> & val) con
 {
 }
 
-// Read initial slip system resistances  from .i file
 void
 CrystalPlasticityStateVariableGSS::getInitSlipSysRes(std::vector<Real> & val) const
 {
   if (_gprops.size() <= 0)
     mooseError("CrystalPlasticityStateVariableGSS: Error in reading slip system resistance properties: Specify input in .i file or in slip_sys_res_prop_file or in slip_sys_file");
 
-  unsigned int num_data_grp = 3; //Number of data per group e.g. start_slip_sys, end_slip_sys, value
+  // Number of data per group e.g. start_slip_sys, end_slip_sys, value
+  unsigned int num_data_grp = 3;
 
-  for (unsigned int i = 0; i < _gprops.size()/num_data_grp; ++i)
+  for (unsigned int i = 0; i < _gprops.size() / num_data_grp; ++i)
   {
     Real vs,ve;
     unsigned int is, ie;
@@ -64,7 +62,7 @@ CrystalPlasticityStateVariableGSS::getInitSlipSysRes(std::vector<Real> & val) co
     if (vs <= 0 || ve <= 0)
       mooseError( "CrystalPlasticityStateVariableGSS: Indices in gss property read must be positive integers: is = " << vs << " ie = " << ve );
 
-    if (vs != floor(vs) || ve != floor(ve))
+    if (vs != std::floor(vs) || ve != std::floor(ve))
       mooseError("CrystalPlasticityStateVariableGSS: Error in reading slip system resistances: Values specifying start and end number of slip system groups should be integer");
 
     is = static_cast<unsigned int>(vs);

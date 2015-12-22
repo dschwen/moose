@@ -40,13 +40,8 @@ ComputeElasticityTensorCP::computeQpElasticityTensor()
 
   getEulerRotations();
 
-  RealTensorValue rot;
-  for (unsigned int i = 0; i < 3; ++i)
-    for (unsigned int j = 0; j < 3; ++j)
-      rot(i,j) = _crysrot[_qp](i,j);
-
   _elasticity_tensor[_qp] = _Cijkl;
-  _elasticity_tensor[_qp].rotate(rot);
+  _elasticity_tensor[_qp].rotate(_crysrot[_qp]);
 }
 
 void

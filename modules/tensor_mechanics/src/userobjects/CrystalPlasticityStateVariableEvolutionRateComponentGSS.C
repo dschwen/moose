@@ -4,8 +4,6 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-//  Phenomenological constitutive model state variable evolution rate component userobject class
-//
 #include "CrystalPlasticityStateVariableEvolutionRateComponentGSS.h"
 
 template<>
@@ -20,18 +18,17 @@ InputParameters validParams<CrystalPlasticityStateVariableEvolutionRateComponent
 }
 
 CrystalPlasticityStateVariableEvolutionRateComponentGSS::CrystalPlasticityStateVariableEvolutionRateComponentGSS(const InputParameters & parameters) :
-  CrystalPlasticityStateVariableEvolutionRateComponent(parameters),
-  _mat_prop_slip_rate(getMaterialProperty<std::vector<Real> >(parameters.get<std::string>("uo_slip_rate_name"))),
-  _mat_prop_state_var(getMaterialProperty<std::vector<Real> >(parameters.get<std::string>("uo_state_var_name"))),
-  _hprops(getParam<std::vector<Real> >("hprops"))
+    CrystalPlasticityStateVariableEvolutionRateComponent(parameters),
+    _mat_prop_slip_rate(getMaterialProperty<std::vector<Real> >(parameters.get<std::string>("uo_slip_rate_name"))),
+    _mat_prop_state_var(getMaterialProperty<std::vector<Real> >(parameters.get<std::string>("uo_state_var_name"))),
+    _hprops(getParam<std::vector<Real> >("hprops"))
 {
 }
 
 bool
 CrystalPlasticityStateVariableEvolutionRateComponentGSS::calcStateVariableEvolutionRateComponent(unsigned int qp, std::vector<Real> & val) const
 {
-  for (unsigned int i = 0; i < _variable_size; i++)
-    val[i] = 0.0;
+  val.assign(_variable_size, 0.0);
 
   Real r = _hprops[0];
   Real h0 = _hprops[1];
@@ -43,15 +40,14 @@ CrystalPlasticityStateVariableEvolutionRateComponentGSS::calcStateVariableEvolut
   Real a = _hprops[4]; // Kalidindi
 
   for (unsigned int i = 0; i < _variable_size; ++i)
-    hb(i) = h0 * std::pow(std::abs(1.0 - _mat_prop_state_var[qp][i]/tau_sat),a) * copysign(1.0,1.0 - _mat_prop_state_var[qp][i]/tau_sat);
+    hb(i) = h0 * std::pow(std::abs(1.0 - _mat_prop_state_var[qp][i] / tau_sat), a) * copysign(1.0,1.0 - _mat_prop_state_var[qp][i] / tau_sat);
 
   for (unsigned int i = 0; i < _variable_size; ++i)
-  {
     for (unsigned int j = 0; j < _variable_size; ++j)
     {
       unsigned int iplane, jplane;
-      iplane = i/3;
-      jplane = j/3;
+      iplane = i / 3;
+      jplane = j / 3;
 
       if (iplane == jplane) // Kalidindi
         qab = 1.0;
@@ -60,6 +56,6 @@ CrystalPlasticityStateVariableEvolutionRateComponentGSS::calcStateVariableEvolut
 
       val[i] += std::abs(_mat_prop_slip_rate[qp][j]) * qab * hb(j);
     }
-  }
+
   return true;
 }

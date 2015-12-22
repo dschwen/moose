@@ -4,8 +4,6 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-//  Crystal plasticity slip resistance userobject class.
-//
 #include "CrystalPlasticitySlipResistance.h"
 
 template<>
@@ -17,6 +15,6 @@ InputParameters validParams<CrystalPlasticitySlipResistance>()
 }
 
 CrystalPlasticitySlipResistance::CrystalPlasticitySlipResistance(const InputParameters & parameters) :
-  CrystalPlasticityUOBase(parameters)
+    CrystalPlasticityUOBase(parameters)
 {
 }

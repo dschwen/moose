@@ -16,26 +16,19 @@ template<>
 InputParameters validParams<CrystalPlasticitySlipRateGSS>();
 
 /**
- * phenomenological constitutive model slip rate userobject class
- * The virtual functions written below must be
- * over-ridden in derived classes to provide actual values
+ * Phenomenological constitutive model slip rate userobject class.
  */
-
 class CrystalPlasticitySlipRateGSS : public CrystalPlasticitySlipRate
 {
  public:
   CrystalPlasticitySlipRateGSS(const InputParameters & parameters);
 
   virtual bool calcSlipRate(unsigned qp, Real dt, std::vector<Real> & val) const;
-
   virtual bool calcSlipRateDerivative(unsigned qp, Real dt, std::vector<Real> & val) const;
-
   virtual void calcFlowDirection(unsigned int qp, std::vector<RankTwoTensor> & flow_direction) const;
 
  protected:
-
   virtual void readFileFlowRateParams();
-
   virtual void getFlowRateParams();
 
   const MaterialProperty<std::vector<Real> > & _mat_prop_state_var;

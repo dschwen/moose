@@ -425,27 +425,6 @@ RankFourTensor::invSymm() const
 }
 
 void
-RankFourTensor::rotate(RealTensorValue & R)
-{
-  RankFourTensor old = *this;
-
-  for (unsigned int i = 0; i < N; ++i)
-    for (unsigned int j = 0; j < N; ++j)
-      for (unsigned int k = 0; k < N; ++k)
-        for (unsigned int l = 0; l < N; ++l)
-        {
-          Real sum = 0.0;
-          for (unsigned int m = 0; m < N; ++m)
-            for (unsigned int n = 0; n < N; ++n)
-              for (unsigned int o = 0; o < N; ++o)
-                for (unsigned int p = 0; p < N; ++p)
-                  sum += R(i,m) * R(j,n) * R(k,o) * R(l,p) * old(m,n,o,p);
-
-          _vals[i][j][k][l] = sum;
-        }
-}
-
-void
 RankFourTensor::print() const
 {
   const RankFourTensor & a = *this;
@@ -707,7 +686,7 @@ RankFourTensor::fillGeneralIsotropicFromInputVector(const std::vector<Real> & in
         for (unsigned int l = 0; l < N; ++l)
         {
           _vals[i][j][k][l] = input[0] * (i==j) * (k==l) + input[1] * (i==k) * (j==l) + input[1] * (i==l) * (j==k);
-          for (unsigned int m = 0 ; m < N ; ++m)
+          for (unsigned int m = 0; m < N; ++m)
             _vals[i][j][k][l] += input[2] * PermutationTensor::eps(i, j, m) * PermutationTensor::eps(k, l, m);
         }
 }

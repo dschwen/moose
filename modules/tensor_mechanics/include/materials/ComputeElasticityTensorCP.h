@@ -27,15 +27,16 @@ protected:
   /// Individual material information
   ElasticityTensorR4 _Cijkl;
 
-  ///Element property read user object
-  ///Presently used to read Euler angles -  see test
+  /**
+   * Element property read user object
+   * Presently used to read Euler angles -  see test
+   */
   const ElementPropertyReadFile * _read_prop_user_object;
 
   MaterialProperty<RealVectorValue> & _Euler_angles;
 
   /// Crystal Rotation Matrix
   MaterialProperty<RankTwoTensor> & _crysrot;
-
 };
 
 #endif //COMPUTEELASTICITYTENSORCP_H

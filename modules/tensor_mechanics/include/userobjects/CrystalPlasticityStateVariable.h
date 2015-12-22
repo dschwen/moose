@@ -8,7 +8,6 @@
 #define CRYSTALPLASTICITYSTATEVARIABLE_H
 
 #include "CrystalPlasticityUOBase.h"
-#include "RankTwoTensor.h"
 
 class CrystalPlasticityStateVariable;
 
@@ -16,46 +15,40 @@ template<>
 InputParameters validParams<CrystalPlasticityStateVariable>();
 
 /**
- * Crystal plasticity state variable userobject class
- * The virtual functions written below must be
- * over-ridden in derived classes to provide actual values
+ * Crystal plasticity state variable userobject class.
  */
-
 class CrystalPlasticityStateVariable : public CrystalPlasticityUOBase
 {
-  public:
-    CrystalPlasticityStateVariable(const InputParameters & parameters);
+public:
+  CrystalPlasticityStateVariable(const InputParameters & parameters);
 
-    virtual bool updateStateVariable(unsigned int qp, Real dt, std::vector<Real> & val) const;
+  virtual bool updateStateVariable(unsigned int qp, Real dt, std::vector<Real> & val) const;
+  virtual void initSlipSysProps(std::vector<Real> & val) const;
 
-    virtual void initSlipSysProps(std::vector<Real> & val) const;
+protected:
+  virtual void readFileInitSlipSysRes(std::vector<Real> & val) const;
 
-  protected:
+  unsigned int _num_mat_state_var_evol_rate_comps;
 
-    virtual void readFileInitSlipSysRes(std::vector<Real> & val) const;
+  std::vector<const MaterialProperty<std::vector<Real> > * > _mat_prop_state_var_evol_rate_comps;
 
-    unsigned int _num_mat_state_var_evol_rate_comps;
+  const MaterialProperty<std::vector<Real> > &  _mat_prop_state_var;
+  const MaterialProperty<std::vector<Real> > &  _mat_prop_state_var_old;
 
-    std::vector<const MaterialProperty<std::vector<Real> > * > _mat_prop_state_var_evol_rate_comps;
+  /// File should contain initial values of the slip system resistances.
+  std::string _slip_sys_res_prop_file_name;
 
-    const MaterialProperty<std::vector<Real> > &  _mat_prop_state_var;
+  /// The hardening parameters in this class are read from .i file. The user can override to read from file.
+  std::string _slip_sys_hard_prop_file_name;
 
-    const MaterialProperty<std::vector<Real> > &  _mat_prop_state_var_old;
+  /// Read from options for initial values of internal variables
+  MooseEnum _intvar_read_type;
 
-    ///File should contain initial values of the slip system resistances.
-    std::string _slip_sys_res_prop_file_name;
+  /// Numerical zero for internal variable
+  Real _zero;
 
-    ///The hardening parameters in this class are read from .i file. The user can override to read from file.
-    std::string _slip_sys_hard_prop_file_name;
-
-    ///Read from options for initial values of internal variables
-    MooseEnum _intvar_read_type;
-
-    ///Numerical zero for internal variable
-    Real _zero;
-
-    ///Scale factor of individual component
-    std::vector<Real> _scale_factor;
+  /// Scale factor of individual component
+  std::vector<Real> _scale_factor;
 };
 
 #endif // CRYSTALPLASTICITYSTATEVARIABLE_H

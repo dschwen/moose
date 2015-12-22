@@ -64,8 +64,8 @@ TensorMechanicsPlasticTensileMulti::dyieldFunction_dstressV(const RankTwoTensor 
     RankTwoTensor shifted_stress = stress;
     while (eigvals[0] > eigvals[1] - 0.1*_shift || eigvals[1] > eigvals[2] - 0.1*_shift)
     {
-      for (unsigned i = 0 ; i < 3 ; ++i)
-        for (unsigned j = 0 ; j <= i ; ++j)
+      for (unsigned i = 0; i < 3; ++i)
+        for (unsigned j = 0; j <= i; ++j)
         {
           small_perturbation = 0.1*_shift*2*(MooseRandom::rand() - 0.5);
           shifted_stress(i, j) += small_perturbation;
@@ -146,11 +146,11 @@ TensorMechanicsPlasticTensileMulti::activeConstraints(const std::vector<Real> & 
   // these are the normals to the 3 yield surfaces
   std::vector<std::vector<Real> > n(3);
   n[0].resize(3);
-  n[0][0] = 1 ; n[0][1] = 0 ; n[0][2] = 0;
+  n[0][0] = 1; n[0][1] = 0; n[0][2] = 0;
   n[1].resize(3);
-  n[1][0] = 0 ; n[1][1] = 1 ; n[1][2] = 0;
+  n[1][0] = 0; n[1][1] = 1; n[1][2] = 0;
   n[2].resize(3);
-  n[2][0] = 0 ; n[2][1] = 0 ; n[2][2] = 1;
+  n[2][0] = 0; n[2][1] = 0; n[2][2] = 1;
 
   // the flow directions are these n multiplied by Eijkl.
   // I re-use the name "n" for the flow directions

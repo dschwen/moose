@@ -4,8 +4,6 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-//  Crystal plasticity state variable evolution rate component userobject class.
-//
 #include "CrystalPlasticityStateVariableEvolutionRateComponent.h"
 
 template<>
@@ -17,6 +15,6 @@ InputParameters validParams<CrystalPlasticityStateVariableEvolutionRateComponent
 }
 
 CrystalPlasticityStateVariableEvolutionRateComponent::CrystalPlasticityStateVariableEvolutionRateComponent(const InputParameters & parameters) :
-  CrystalPlasticityUOBase(parameters)
+    CrystalPlasticityUOBase(parameters)
 {
 }

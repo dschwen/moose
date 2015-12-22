@@ -8,19 +8,14 @@
 #define CRYSTALPLASTICITYSTATEVARIABLEEVOLUTIONRATECOMPONENTGSS_H
 
 #include "CrystalPlasticityStateVariableEvolutionRateComponent.h"
-#include "RankTwoTensor.h"
 
 class CrystalPlasticityStateVariableEvolutionRateComponentGSS;
-
 
 template<>InputParameters validParams<CrystalPlasticityStateVariableEvolutionRateComponentGSS>();
 
 /**
- * Phenomenological constitutive model state variable evolution rate component userobject class
- * The virtual functions written below must be
- * over-ridden in derived classes to provide actual values
+ * Phenomenological constitutive model state variable evolution rate component userobject class.
  */
-
 class CrystalPlasticityStateVariableEvolutionRateComponentGSS : public CrystalPlasticityStateVariableEvolutionRateComponent
 {
  public:
@@ -29,9 +24,7 @@ class CrystalPlasticityStateVariableEvolutionRateComponentGSS : public CrystalPl
   virtual bool calcStateVariableEvolutionRateComponent(unsigned int qp, std::vector<Real> & val) const;
 
  protected:
-
   const MaterialProperty<std::vector<Real> > &  _mat_prop_slip_rate;
-
   const MaterialProperty<std::vector<Real> > & _mat_prop_state_var;
 
   std::vector<Real> _hprops;

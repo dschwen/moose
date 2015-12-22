@@ -8,7 +8,6 @@
 #define CRYSTALPLASTICITYUOBASE_H
 
 #include "ElementUserObject.h"
-#include "RankTwoTensor.h"
 
 class CrystalPlasticityUOBase;
 
@@ -16,11 +15,8 @@ template<>
 InputParameters validParams<CrystalPlasticityUOBase>();
 
 /**
- * Crystal plasticity system userobject base class
- * The virtual functions written below must be
- * over-ridden in derived classes to provide actual values
+ * Crystal plasticity system userobject base class.
  */
-
 class CrystalPlasticityUOBase : public ElementUserObject
 {
  public:
@@ -37,7 +33,6 @@ class CrystalPlasticityUOBase : public ElementUserObject
   virtual unsigned int variableSize() const;
 
  protected:
-
   unsigned int _variable_size;
 };
 

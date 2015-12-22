@@ -4,8 +4,6 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-//  Phenomenological constitutive model slip rate userobject class.
-//
 #include "CrystalPlasticitySlipRateGSS.h"
 
 template<>
@@ -18,12 +16,12 @@ InputParameters validParams<CrystalPlasticitySlipRateGSS>()
 }
 
 CrystalPlasticitySlipRateGSS::CrystalPlasticitySlipRateGSS(const InputParameters & parameters) :
-  CrystalPlasticitySlipRate(parameters),
-  _mat_prop_state_var(getMaterialProperty<std::vector<Real> >(parameters.get<std::string> ("uo_state_var_name"))),
-  _pk2(getMaterialPropertyByName<RankTwoTensor>("pk2")),
-  _a0(_variable_size),
-  _xm(_variable_size),
-  _flow_direction(getMaterialProperty<std::vector<RankTwoTensor> >(_name + "_flow_direction"))
+    CrystalPlasticitySlipRate(parameters),
+    _mat_prop_state_var(getMaterialProperty<std::vector<Real> >(parameters.get<std::string>("uo_state_var_name"))),
+    _pk2(getMaterialPropertyByName<RankTwoTensor>("pk2")),
+    _a0(_variable_size),
+    _xm(_variable_size),
+    _flow_direction(getMaterialProperty<std::vector<RankTwoTensor> >(_name + "_flow_direction"))
 {
   if (_slip_sys_flow_prop_file_name.length() != 0)
     readFileFlowRateParams();
@@ -66,7 +64,7 @@ CrystalPlasticitySlipRateGSS::getFlowRateParams()
 
   unsigned int num_data_grp = 2 + _num_slip_sys_flowrate_props; //Number of data per group e.g. start_slip_sys, end_slip_sys, value1, value2, ..
 
-  for (unsigned int i = 0; i < _flowprops.size()/num_data_grp; ++i)
+  for (unsigned int i = 0; i < _flowprops.size() / num_data_grp; ++i)
   {
     Real vs,ve;
     unsigned int is, ie;
@@ -77,7 +75,7 @@ CrystalPlasticitySlipRateGSS::getFlowRateParams()
     if (vs <= 0 || ve <= 0)
       mooseError("FiniteStrainUObasedCP: Indices in flow rate parameter read must be positive integers: is = " << vs << " ie = " << ve );
 
-    if (vs != floor(vs) || ve != floor(ve))
+    if (vs != std::floor(vs) || ve != std::floor(ve))
       mooseError("FiniteStrainUObasedCP: Error in reading flow props: Values specifying start and end number of slip system groups should be integer");
 
     is = static_cast<unsigned int>(vs);

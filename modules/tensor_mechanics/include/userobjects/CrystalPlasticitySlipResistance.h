@@ -8,7 +8,6 @@
 #define CRYSTALPLASTICITYSLIPRESISTANCE_H
 
 #include "CrystalPlasticityUOBase.h"
-#include "RankTwoTensor.h"
 
 class CrystalPlasticitySlipResistance;
 
@@ -16,18 +15,16 @@ template<>
 InputParameters validParams<CrystalPlasticitySlipResistance>();
 
 /**
- * Crystal plasticity slip resistance userobject class
+ * Crystal plasticity slip resistance userobject class.
  * The virtual functions written below must be
- * over-ridden in derived classes to provide actual values
+ * over-ridden in derived classes to provide actual values.
  */
-
 class CrystalPlasticitySlipResistance : public CrystalPlasticityUOBase
 {
  public:
   CrystalPlasticitySlipResistance(const InputParameters & parameters);
 
   virtual bool calcSlipResistance(unsigned int qp, std::vector<Real> & val) const = 0;
-
 };
 
 #endif // CRYSTALPLASTICITYSLIPRESISTANCE_H

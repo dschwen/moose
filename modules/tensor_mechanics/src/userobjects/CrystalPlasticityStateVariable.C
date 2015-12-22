@@ -4,8 +4,6 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-//  Crystal plasticity state variable userobject class.
-//
 #include "CrystalPlasticityStateVariable.h"
 
 template<>
@@ -24,25 +22,23 @@ InputParameters validParams<CrystalPlasticityStateVariable>()
 }
 
 CrystalPlasticityStateVariable::CrystalPlasticityStateVariable(const InputParameters & parameters) :
-  CrystalPlasticityUOBase(parameters),
-  _num_mat_state_var_evol_rate_comps(parameters.get<std::vector<std::string> >("uo_state_var_evol_rate_comp_name").size()),
-  _mat_prop_state_var(getMaterialProperty< std::vector<Real> >(_name)),
-  _mat_prop_state_var_old(getMaterialPropertyOld< std::vector<Real> >(_name)),
-  _slip_sys_res_prop_file_name(getParam<FileName>("slip_sys_res_prop_file_name")),
-  _slip_sys_hard_prop_file_name(getParam<FileName>("slip_sys_hard_prop_file_name")),
-  _intvar_read_type(getParam<MooseEnum>("intvar_read_type")),
-  _zero(getParam<Real>("zero")),
-  _scale_factor(getParam<std::vector<Real> >("scale_factor"))
+    CrystalPlasticityUOBase(parameters),
+    _num_mat_state_var_evol_rate_comps(parameters.get<std::vector<std::string> >("uo_state_var_evol_rate_comp_name").size()),
+    _mat_prop_state_var(getMaterialProperty<std::vector<Real> >(_name)),
+    _mat_prop_state_var_old(getMaterialPropertyOld< std::vector<Real> >(_name)),
+    _slip_sys_res_prop_file_name(getParam<FileName>("slip_sys_res_prop_file_name")),
+    _slip_sys_hard_prop_file_name(getParam<FileName>("slip_sys_hard_prop_file_name")),
+    _intvar_read_type(getParam<MooseEnum>("intvar_read_type")),
+    _zero(getParam<Real>("zero")),
+    _scale_factor(getParam<std::vector<Real> >("scale_factor"))
 {
   if (_scale_factor.size() != _num_mat_state_var_evol_rate_comps)
     mooseError("CrystalPlasticityStateVariable: Scale factor should be have the same size of evolution rate components.");
 
   _mat_prop_state_var_evol_rate_comps.resize(_num_mat_state_var_evol_rate_comps);
 
-  for (unsigned int i = 0 ; i < _num_mat_state_var_evol_rate_comps ; ++i)
-  {
-    _mat_prop_state_var_evol_rate_comps[i] = &getMaterialProperty< std::vector<Real> >(parameters.get<std::vector<std::string> >("uo_state_var_evol_rate_comp_name")[i]);
-  }
+  for (unsigned int i = 0; i < _num_mat_state_var_evol_rate_comps; ++i)
+    _mat_prop_state_var_evol_rate_comps[i] = &getMaterialProperty<std::vector<Real> >(parameters.get<std::vector<std::string> >("uo_state_var_evol_rate_comp_name")[i]);
 }
 
 void
@@ -71,14 +67,14 @@ CrystalPlasticityStateVariable::updateStateVariable(unsigned int qp, Real dt, st
 {
   DenseVector<Real> dval(_variable_size);
 
-  for (unsigned int i = 0; i < _variable_size; i++)
+  for (unsigned int i = 0; i < _variable_size; ++i)
   {
     val[i] = _mat_prop_state_var_old[qp][i];
     for (unsigned int j = 0; j < _num_mat_state_var_evol_rate_comps; j++)
       dval(i) += (*_mat_prop_state_var_evol_rate_comps[j])[qp][i] * dt * _scale_factor[j];
   }
 
-  for (unsigned int i = 0; i < _variable_size; i++)
+  for (unsigned int i = 0; i < _variable_size; ++i)
   {
     if (_mat_prop_state_var_old[qp][i] < _zero && dval(i) < 0.0)
       val[i] = _mat_prop_state_var_old[qp][i];

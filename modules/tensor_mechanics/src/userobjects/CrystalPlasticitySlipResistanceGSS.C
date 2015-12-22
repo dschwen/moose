@@ -4,8 +4,6 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-//  phenomenological constitutive model slip resistance userobject class.
-//
 #include "CrystalPlasticitySlipResistanceGSS.h"
 
 template<>
@@ -18,17 +16,16 @@ InputParameters validParams<CrystalPlasticitySlipResistanceGSS>()
 }
 
 CrystalPlasticitySlipResistanceGSS::CrystalPlasticitySlipResistanceGSS(const InputParameters & parameters) :
-  CrystalPlasticitySlipResistance(parameters),
-  _mat_prop_state_var(getMaterialProperty<std::vector<Real> >(parameters.get<std::string>("uo_state_var_name")))
+    CrystalPlasticitySlipResistance(parameters),
+    _mat_prop_state_var(getMaterialProperty<std::vector<Real> >(parameters.get<std::string>("uo_state_var_name")))
 {
 }
 
 bool
 CrystalPlasticitySlipResistanceGSS::calcSlipResistance(unsigned int qp, std::vector<Real> & val) const
 {
-  for (unsigned int i = 0; i < _variable_size; i++)
+  for (unsigned int i = 0; i < _variable_size; ++i)
     val[i] = _mat_prop_state_var[qp][i];
 
   return true;
 }
-
