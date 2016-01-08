@@ -96,7 +96,6 @@
 []
 
 [Outputs]
-  file_base = explicit
   execute_on = 'initial timestep_end final'
   csv = true
   interval = 20

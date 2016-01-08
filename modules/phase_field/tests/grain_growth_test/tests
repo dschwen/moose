@@ -65,10 +65,10 @@
     exodiff = 'GBEvolution_mob.e'
   [../]
 
-  [./Explicit_test]
+  [./explicit]
     type = 'Exodiff'
-    input = 'GrGr_test_explicit.i'
-    exodiff = 'explicit.e'
+    input = 'explicit.i'
+    exodiff = 'explicit_out.e'
     max_parallel = 1
   [../]
 
