@@ -72,10 +72,10 @@
     max_parallel = 1
   [../]
 
-  [./GrGrVoronoi3D_test]
+  [./voronoi_3D]
     type = 'Exodiff'
-    input = 'GrGr_voronoi_columnar3D_test.i'
-    exodiff = 'voronoi3D.e'
+    input = 'voronoi_3D.i'
+    exodiff = 'voronoi_3D_out.e'
   [../]
 
   [./GrGr_particle_test]

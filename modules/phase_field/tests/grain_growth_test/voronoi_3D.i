@@ -101,6 +101,5 @@
 []
 
 [Outputs]
-  file_base = voronoi3D
   exodus = true
 []
