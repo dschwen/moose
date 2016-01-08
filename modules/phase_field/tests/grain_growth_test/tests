@@ -20,10 +20,10 @@
     group = 'adaptive'
   [../]
 
-  [./GrGrHex_test]
+  [./hex]
     type = 'Exodiff'
-    input = 'GrGr_hex_test.i'
-    exodiff = 'hex.e'
+    input = 'hex.i'
+    exodiff = 'hex_out.e'
   [../]
 
   [./stored_energy]

@@ -111,6 +111,5 @@
 []
 
 [Outputs]
-  file_base = hex
   exodus = true
 []
