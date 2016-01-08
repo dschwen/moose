@@ -38,10 +38,10 @@
     exodiff = 'voronoi.e'
   [../]
 
-  [./GrGrBoundingBox_test]
+  [./bounding_box]
     type = 'Exodiff'
-    input = 'GrGr_boundingbox_test.i'
-    exodiff = 'bounding_box.e-s003'
+    input = 'bounding_box.i'
+    exodiff = 'bounding_box_out.e-s003'
     recover = false # See 5207
   [../]
 

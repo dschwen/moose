@@ -108,7 +108,6 @@
 
 [Outputs]
   execute_on = 'timestep_end'
-  file_base = bounding_box
   csv = true
   exodus = true
 []
