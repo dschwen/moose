@@ -102,7 +102,6 @@
 []
 
 [Outputs]
-  file_base = GBEvolution_mob
   exodus = true
 []
 

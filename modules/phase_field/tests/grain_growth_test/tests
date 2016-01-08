@@ -59,10 +59,10 @@
     max_parallel = 1                      # -pc_type lu
   [../]
 
-  [./GBEvolution_mob_test]
+  [./mobility]
     type = 'Exodiff'
-    input = 'GBEvolution_mob_test.i'
-    exodiff = 'GBEvolution_mob.e'
+    input = 'mobility.i'
+    exodiff = 'mobility_out.e'
   [../]
 
   [./explicit]
