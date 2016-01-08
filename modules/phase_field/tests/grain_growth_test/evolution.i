@@ -87,8 +87,6 @@
 []
 
 [Executioner]
-  # petsc_options_iname = '-pc_type'
-  # petsc_options_value = 'lu'
   type = Transient
   scheme = bdf2
 
@@ -105,7 +103,6 @@
 []
 
 [Outputs]
-  file_base = GBEvolution
   exodus = true
 []
 

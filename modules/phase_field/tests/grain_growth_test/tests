@@ -45,10 +45,10 @@
     recover = false # See 5207
   [../]
 
-  [./GBEvolution_test]
+  [./evolution]
     type = 'Exodiff'
-    input = 'GBEvolution_test.i'
-    exodiff = 'GBEvolution.e'
+    input = 'evolution.i'
+    exodiff = 'evolution_out.e'
   [../]
 
   [./GrGrOffDaig_test]
