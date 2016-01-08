@@ -1,8 +1,8 @@
 [Tests]
-  [./GrGr_test]
+  [./bicrystal]
     type = 'Exodiff'
-    input = 'GrGr_test.i'
-    exodiff = 'out.e-s005'
+    input = 'bicrystal.i'
+    exodiff = 'bicrystal_out.e-s005'
     group = 'adpative'
   [../]
 
