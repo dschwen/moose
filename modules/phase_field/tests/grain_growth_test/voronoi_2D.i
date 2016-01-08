@@ -108,6 +108,5 @@
 []
 
 [Outputs]
-  file_base = voronoi
   exodus = true
 []

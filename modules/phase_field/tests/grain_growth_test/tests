@@ -32,10 +32,10 @@
     exodiff = 'stored_energy_out.e'
   [../]
 
-  [./GrGrVoronoi_test]
+  [./voronoi_2D]
     type = 'Exodiff'
-    input = 'GrGr_voronoi_test.i'
-    exodiff = 'voronoi.e'
+    input = 'voronoi_2D.i'
+    exodiff = 'voronoi_2D_out.e'
   [../]
 
   [./bounding_box]
