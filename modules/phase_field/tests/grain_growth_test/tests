@@ -78,10 +78,10 @@
     exodiff = 'voronoi_3D_out.e'
   [../]
 
-  [./GrGr_particle_test]
+  [./particle]
     type = 'Exodiff'
-    input = 'GrGr_particle_test.i'
-    exodiff = 'particle.e-s005'
+    input = 'particle.i'
+    exodiff = 'particle_out.e-s005'
     abs_zero = 1e-8
   [../]
 []
