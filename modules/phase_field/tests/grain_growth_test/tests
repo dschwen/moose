@@ -51,10 +51,10 @@
     exodiff = 'evolution_out.e'
   [../]
 
-  [./GrGrOffDaig_test]
+  [./offdiagonal]
     type = 'Exodiff'
-    input = 'GrGr_OffDiag_test.i'
-    exodiff = 'OffDiag.e-s002'
+    input = 'offdiagonal.i'
+    exodiff = 'offdiagonal_out.e-s002'
     group = 'adaptive'
     max_parallel = 1                      # -pc_type lu
   [../]

@@ -128,6 +128,5 @@
 []
 
 [Outputs]
-  file_base = OffDiag
   exodus = true
 []
