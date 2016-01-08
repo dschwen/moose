@@ -13,10 +13,10 @@
     group = 'adaptive'
   [../]
 
-  [./GrGrThumb_test]
+  [./thumb]
     type = 'Exodiff'
-    input = 'GrGr_thumb_test.i'
-    exodiff = 'Thumb.e-s006'
+    input = 'thumb.i'
+    exodiff = 'thumb_out.e-s006'
     group = 'adaptive'
   [../]
 
