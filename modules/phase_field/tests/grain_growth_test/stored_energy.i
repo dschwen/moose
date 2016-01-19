@@ -53,7 +53,7 @@
 
 [Kernels]
   [./PolycrystalKernel]
-    penalty = 1
+    penalty = 5
   [../]
 []
 
@@ -87,6 +87,13 @@
     GBmob0 = 2.5e-6 #m^4/(Js) from Schoenfelder 1997
     Q = 0.23 #Migration energy in eV
     GBenergy = 0.708 #GB energy in J/m^2
+  [../]
+  [./etasum]
+    type = ParsedMaterial
+    f_name = sum
+    function = 'gr0+gr1+gr2+gr3-1'
+    args = 'gr0 gr1 gr2 gr3'
+    outputs = exodus
   [../]
 []
 
@@ -134,8 +141,8 @@
   nl_max_its = 20
   nl_rel_tol = 1.0e-9
   start_time = 0.0
-  num_steps = 40
-  dt = 10.0
+  num_steps = 80
+  dt = 5.0
 []
 
 [Outputs]
