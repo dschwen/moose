@@ -52,9 +52,6 @@ FunctionPeriodicBoundary::FunctionPeriodicBoundary(const FunctionPeriodicBoundar
 Point
 FunctionPeriodicBoundary::get_corresponding_pos(const Point & pt) const
 {
-  // Force thread-safe evaluation of what could be ParsedFunctions.
-  Threads::spin_mutex::scoped_lock lock(parsed_function_mutex);
-
   Real t = 0.;
   Point p;
   switch (_dim)

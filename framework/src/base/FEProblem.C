@@ -1207,7 +1207,7 @@ FEProblem::getFunction(const std::string & name, THREAD_ID tid)
   // This thread lock is necessary since this method will create functions
   // for all threads if one is missing.
   Threads::spin_mutex::scoped_lock lock(get_function_mutex);
-
+  Moose::out << name << ' ' << tid << '\n';
   if (!hasFunction(name, tid))
   {
     // If we didn't find a function, it might be a default function, attempt to construct one now
