@@ -180,4 +180,3 @@ AddPeriodicBCAction::act()
     mooseError("You have to specify either 'auto_direction', 'translation' or 'trans_func' in your period boundary section '" + _name + "'");
   }
 }
-

@@ -29,7 +29,7 @@ FunctionPeriodicBoundary::FunctionPeriodicBoundary(FEProblem & feproblem, std::v
     _tr_y(fn_names.size() > 1 ? &feproblem.getFunction(fn_names[1]) : NULL),
     _tr_z(fn_names.size() > 2 ? &feproblem.getFunction(fn_names[2]) : NULL)
 {
-
+std::cout << "FPB " << '\n';
   // Make certain the the dimensions agree
   if (_dim != feproblem.mesh().dimension())
     mooseError("Transform function has to have the same dimension as the problem being solved.");
@@ -78,9 +78,13 @@ FunctionPeriodicBoundary::get_corresponding_pos(const Point & pt) const
 
 UniquePtr<PeriodicBoundaryBase> FunctionPeriodicBoundary::clone(TransformationType t) const
 {
+  ParallelUniqueId puid;
+  std::cout << "FunctionPeriodicBoundary::clone thread " << puid.id << '\n';
+
   if (t==INVERSE)
     mooseError("No way to automatically clone() an inverse FunctionPeriodicBoundary object");
 
+  std::cout << "Cloning!\n";
   return UniquePtr<PeriodicBoundaryBase>(new FunctionPeriodicBoundary(*this));
 }
 

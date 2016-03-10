@@ -49,6 +49,8 @@ protected:
   void setPeriodicVars(PeriodicBoundaryBase & p, const std::vector<VariableName> & var_names);
 
   MooseMesh * _mesh;
+
+  THREAD_ID _tid;
 };
 
 #endif // ADDPERIODICBCACTION_H

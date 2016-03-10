@@ -55,6 +55,7 @@ BoundaryCondition::BoundaryCondition(const InputParameters & parameters) :
     _var(_sys.getVariable(_tid, parameters.get<NonlinearVariableName>("variable"))),
     _mesh(_subproblem.mesh())
 {
+  std::cout << "TID = " << _tid << "/" << _fni_tid << " " << _name << '\n';
 }
 
 MooseVariable &

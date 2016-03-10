@@ -16,6 +16,7 @@
 #define FUNCTIONPERIODICBOUNDARY_H
 
 #include "Moose.h"
+#include "MooseTypes.h"
 
 //libMesh
 #include "libmesh/point.h"

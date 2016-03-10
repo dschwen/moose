@@ -24,8 +24,8 @@ InputParameters validParams<FunctionInterface>()
 }
 
 FunctionInterface::FunctionInterface(const InputParameters & params) :
-    _fni_feproblem(*params.get<FEProblem *>("_fe_problem")),
     _fni_tid(params.have_parameter<THREAD_ID>("_tid") ? params.get<THREAD_ID>("_tid") : 0),
+    _fni_feproblem(*params.get<FEProblem *>("_fe_problem")),
     _fni_params(params)
 {
 }

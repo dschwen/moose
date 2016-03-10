@@ -56,13 +56,13 @@ public:
    */
   Function & getFunctionByName(const FunctionName & name);
 
+  /// Thread ID
+  THREAD_ID _fni_tid;
+
 private:
 
   /// Reference to FEProblem instance
   FEProblem & _fni_feproblem;
-
-  /// Thread ID
-  THREAD_ID _fni_tid;
 
   /// Parameters of the object with this interface
   const InputParameters &_fni_params;
