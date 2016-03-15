@@ -36,8 +36,8 @@ CALPHADDerivatives::CALPHADDerivatives(const InputParameters & parameters) :
     mooseError("CALPHADDerivatives needs one constraint function for each global concentration.");
 
   // get the arg indices of the global variables
-  for (unsigned int i = 0; i < _n_global; ++i)
-    _global_index[i] = argIndex(coupled("global_args", i));
+  for (unsigned int j = 0; j < _n_global; ++j)
+    _global_index[j] = argIndex(coupled("global_args", j));
 
   // fetch all derivatives
   for (unsigned int i = 0; i < _derivs.size(); ++i)
@@ -71,25 +71,38 @@ CALPHADDerivatives::CALPHADDerivatives(const InputParameters & parameters) :
 void
 CALPHADDerivatives::computeQpProperties()
 {
-  for (unsigned int ii = 0; ii < _n_global; ++ii)
+  for (unsigned int jj = 0; jj < _n_global; ++jj)
   {
-    const unsigned int i = _global_index[ii];
+    const unsigned int j = _global_index[jj];
 
-    // // set first derivatives
-    // if (_prop_dF[i]) {
-    //   (*_prop_dF[i])[_qp] =  (*_summand_dF[0][i])[_qp] * _prefactor[0];
-    //   for (unsigned int n = 1; n < _num_materials; ++n)
-    //     (*_prop_dF[i])[_qp] += (*_summand_dF[n][i])[_qp] * _prefactor[n];
-    // }
-    //
-    // // second derivatives
-    // for (j = i; j < _nargs; ++j)
-    // {
-    //   if (_prop_d2F[i][j]) {
-    //     (*_prop_d2F[i][j])[_qp] =  (*_summand_d2F[0][i][j])[_qp] * _prefactor[0];
-    //     for (unsigned int n = 1; n < _num_materials; ++n)
-    //       (*_prop_d2F[i][j])[_qp] += (*_summand_d2F[n][i][j])[_qp] * _prefactor[n];
-    //     }
+    // set first derivatives
+    if (_prop_dF[j]) {
+      (*_prop_dF[j])[_qp] = 0;
+      for (unsigned int k = 0; k < _derivs[0][jj].size(); ++k)
+      {
+        mooseAssert(_derivs[0][jj][k]->second)[_qp] != 0, "Derivative of the CALPHAD constraint function must not be zero.");
+        (*_prop_dF[j])[_qp] += (_derivs[0][jj][k]->first)[_qp] / (_derivs[0][jj][k]->second)[_qp];
+      }
+    }
 
+    // second derivatives
+    if (_prop_d2F[j][j]) {
+      (*_prop_d2F[j][j])[_qp] = 0;
+      for (unsigned int k = 0; k < _derivs[1][jj].size(); ++k)
+      {
+        mooseAssert(_derivs[1][jj][k]->second)[_qp] != 0, "Derivative of the CALPHAD constraint function must not be zero.");
+        (*_prop_d2F[j][j])[_qp] += (_derivs[1][jj][k]->first)[_qp] / (_derivs[1][jj][k]->second)[_qp];
+      }
+    }
+
+    // third derivatives
+    if (_prop_d3F[j][j][j]) {
+      (*_prop_d3F[j][j][j])[_qp] = 0;
+      for (unsigned int k = 0; k < _derivs[2][jj].size(); ++k)
+      {
+        mooseAssert(_derivs[2][jj][k]->second)[_qp] != 0, "Derivative of the CALPHAD constraint function must not be zero.");
+        (*_prop_d3F[j][j][j])[_qp] += (_derivs[2][jj][k]->first)[_qp] / (_derivs[2][jj][k]->second)[_qp];
+      }
+    }
   }
 }
