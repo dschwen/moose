@@ -30,6 +30,7 @@
 #include "ExecuteMooseObjectWarehouse.h"
 #include "AuxGroupExecuteMooseObjectWarehouse.h"
 #include "MaterialWarehouse.h"
+#include "GlobalManager.h"
 
 // libMesh includes
 #include "libmesh/enum_quadrature_type.h"
@@ -966,7 +967,8 @@ public:
    */
   virtual void computeAuxiliaryKernels(const ExecFlagType & type);
 
-public:
+  /// fetch the GlobalManager object of type T
+  template <class T> T & getGlobal();
 
   ///@{
   /**
@@ -997,13 +999,10 @@ public:
 
 protected:
 
-  ///@{
   /**
    *
    */
   VectorPostprocessorData & getVectorPostprocessorData();
-  ///@}
-
 
   MooseMesh & _mesh;
   EquationSystems _eq;
@@ -1206,6 +1205,8 @@ protected:
   Moose::PetscSupport::PetscOptions _petsc_options;
 #endif //LIBMESH_HAVE_PETSC
 
+  std::map<std::string, MooseSharedPointer<GlobalManager> > _global_managers;
+
 private:
   bool _use_legacy_uo_aux_computation;
   bool _use_legacy_uo_initialization;
@@ -1271,5 +1272,36 @@ FEProblem::finalizeUserObjects(const MooseObjectWarehouse<T> & warehouse)
   }
 }
 
+template <class T>
+T &
+FEProblem::getGlobal()
+{
+  // get the class name as map key
+  const std::string name = typeid(T).name();
+
+  // look up the class by its name in the _global_managers_map
+  std::map<std::string, MooseSharedPointer<GlobalManager> >::iterator it = _global_managers.find(name);
+  if (it != _global_managers.end())
+  {
+    // the object was found. Check that the type is correct and return a reference
+    MooseSharedPointer<T> object = MooseSharedNamespace::dynamic_pointer_cast<T>(it->second);
+    if (object.get() == NULL)
+      mooseError("Internal error in GlobalManager store");
+
+    return *object;
+  }
+  else
+  {
+    // create a new instance of the object, insert it in the map, and return a reference
+    MooseSharedPointer<T> object(new T(*this));
+    MooseSharedPointer<T> gm_object(MooseSharedNamespace::dynamic_pointer_cast<GlobalManager>(object));
+    if (gm_object.get())
+      _global_managers.insert(std::make_pair(name, gm_object));
+    else
+      mooseError("Objects stored as globals need to inherit from the `GlobalManager` class.");
+
+    return *object;
+  }
+}
 
 #endif /* FEPROBLEM_H */
