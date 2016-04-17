@@ -58,7 +58,6 @@ class InternalSideIndicator;
 class Marker;
 class Material;
 class Transfer;
-class XFEMInterface;
 class SideUserObject;
 class NodalUserObject;
 class ElementUserObject;
@@ -816,18 +815,6 @@ public:
   virtual void adaptMesh();
 #endif //LIBMESH_ENABLE_AMR
 
-  /// Create XFEM controller object
-  void initXFEM(MooseSharedPointer<XFEMInterface> xfem);
-
-  /// Get a pointer to the XFEM controller object
-  MooseSharedPointer<XFEMInterface> getXFEM(){return _xfem;}
-
-  /// Find out whether the current analysis is using XFEM
-  bool haveXFEM() { return _xfem != NULL; }
-
-  /// Update the mesh due to changing XFEM cuts
-  virtual bool updateMeshXFEM();
-
   virtual void meshChanged();
 
   /**
@@ -1128,9 +1115,6 @@ protected:
 #ifdef LIBMESH_ENABLE_AMR
   Adaptivity _adaptivity;
 #endif
-
-  /// Pointer to XFEM controller
-  MooseSharedPointer<XFEMInterface> _xfem;
 
   // Displaced mesh /////
   MooseMesh * _displaced_mesh;

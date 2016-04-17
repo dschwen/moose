@@ -74,7 +74,6 @@
 #include "Control.h"
 #include "ScalarInitialCondition.h"
 #include "InternalSideIndicator.h"
-#include "XFEMInterface.h"
 #include "ConsoleUtils.h"
 
 #include "libmesh/exodusII_io.h"
@@ -485,13 +484,6 @@ void FEProblem::initialSetup()
 
   if (_material_props.hasStatefulProperties() || _bnd_material_props.hasStatefulProperties())
     _has_initialized_stateful = true;
-
-  if (!_app.isRecovering())
-  {
-    if (haveXFEM() &&
-        updateMeshXFEM())
-      _console << "XFEM updated mesh on initializaton" << std::endl;
-  }
 
   // Call initialSetup on the nonlinear system
   _nl.initialSetup();
@@ -3659,41 +3651,6 @@ FEProblem::adaptMesh()
   }
 }
 #endif //LIBMESH_ENABLE_AMR
-
-void
-FEProblem::initXFEM(MooseSharedPointer<XFEMInterface> xfem)
-{
-  _xfem = xfem;
-  _xfem->setMesh(&_mesh.getMesh());
-  if (_displaced_mesh)
-    _xfem->setSecondMesh(&_displaced_mesh->getMesh());
-  _xfem->setMaterialData(&_material_data);
-
-  unsigned int n_threads = libMesh::n_threads();
-  for (unsigned int i = 0; i < n_threads; ++i)
-  {
-    _assembly[i]->setXFEM(_xfem);
-    if (_displaced_problem != NULL)
-      _displaced_problem->assembly(i).setXFEM(_xfem);
-  }
-}
-
-bool
-FEProblem::updateMeshXFEM()
-{
-  bool updated = false;
-  if (haveXFEM())
-  {
-    updated = _xfem->update(_time);
-    if (updated)
-    {
-      meshChanged();
-      _xfem->initSolution(_nl, _aux);
-      restoreSolutions();
-    }
-  }
-  return updated;
-}
 
 void
 FEProblem::meshChanged()
