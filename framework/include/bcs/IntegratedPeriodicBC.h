@@ -37,6 +37,8 @@ public:
   void computeResidual();
 
 protected:
+  void rebuildOppositeElementMap();
+
   /// A pointer to the periodic boundary constraints object
   PeriodicBoundaries *_pbs;
 

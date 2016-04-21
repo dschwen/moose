@@ -44,12 +44,25 @@ IntegratedPeriodicBC::IntegratedPeriodicBC(const InputParameters & parameters) :
   // Get the IDs from the supplied names
   _current_boundary_id = _mesh.getBoundaryID(boundary_names[0]);
   _opposite_boundary_id = _mesh.getBoundaryID(_opposite_boundary_name);
+
+  rebuildOppositeElementMap();
 }
 
 void
 IntegratedPeriodicBC::meshChanged()
 {
-  // rebuild the opposite element map
+  rebuildOppositeElementMap();
+}
+
+void
+IntegratedPeriodicBC::rebuildOppositeElementMap()
+{
+  // loop over boundary elements
+  MooseMesh::bnd_elem_iterator bnd_it = _mesh.bndElemsBegin();
+  for (; bnd_it != _mesh.bndElemsEnd(); _bnd_it)
+  {
+
+  }
 }
 
 void
