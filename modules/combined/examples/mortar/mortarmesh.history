@@ -1,0 +1,42 @@
+set node constraint on
+
+# main subdomain
+create surface rectangle width 1 height 1 zplane
+surface 1 interval 10
+mesh surface 1
+
+# mortar interfaces
+create curve location -.5 0.6 0  location .5 0.6 0
+curve 5  interval 10
+curve 5  scheme bias factor 1.0
+mesh curve 5
+
+create curve location 0.6 -.5 0  location 0.6 .5 0
+curve 6  interval 10
+curve 6  scheme bias factor 1.0
+mesh curve 6
+
+block 1 surface 1
+block 1 element type quad4
+
+# top
+Sideset 1 edge with y_coord = 0.5
+
+# bottom
+sideset 2 edge with y_coord = -0.5
+
+# left
+Sideset 3 edge with x_coord = -0.5
+
+# right
+sideset 4 edge with x_coord = 0.5
+
+# save a copy without the mortar interfaces
+set large exodus file off
+export mesh "~/plainmesh.e" dimension 2 overwrite
+
+block 2 curve 5
+block 3 curve 6
+
+# save a copy with the mortar interfaces
+export mesh "~/mortarmesh.e" dimension 2 overwrite
