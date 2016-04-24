@@ -81,6 +81,8 @@ FaceFaceConstraint::reinit()
 
   for (_qp = 0; _qp < nqp; _qp++)
   {
+    Moose::out << "_qp = " << _qp << " in FaceFaceConstraint::reinit()" << std::endl;
+
     const Node * current_node = _mesh.getQuadratureNode(_current_elem, 0, _qp);
 
     PenetrationInfo * master_pinfo = _master_penetration_locator._penetration_info[current_node->id()];

@@ -870,6 +870,13 @@ MooseMesh::addQuadratureNode(const Elem * elem, const unsigned short int side, c
 Node *
 MooseMesh::getQuadratureNode(const Elem * elem, const unsigned short int side, const unsigned int qp)
 {
+  Moose::out << "getQuadratureNode (size=" << _elem_to_side_to_qp_to_quadrature_nodes.size() << ")" << std::endl;
+  std::map<dof_id_type, std::map<unsigned int, std::map<dof_id_type, Node *> > >::iterator it = _elem_to_side_to_qp_to_quadrature_nodes.begin();
+  for (; it != _elem_to_side_to_qp_to_quadrature_nodes.end(); ++it)
+    Moose::out << it->first << ' ' << it->second.size() << '\n';
+
+  if (_elem_to_side_to_qp_to_quadrature_nodes.find(elem->id()) == _elem_to_side_to_qp_to_quadrature_nodes.end())
+    Moose::out << "Elem " << elem << ' ' << elem->id() << std::endl;
   mooseAssert(_elem_to_side_to_qp_to_quadrature_nodes.find(elem->id()) != _elem_to_side_to_qp_to_quadrature_nodes.end(), "Elem has no quadrature nodes!");
   mooseAssert(_elem_to_side_to_qp_to_quadrature_nodes[elem->id()].find(side) != _elem_to_side_to_qp_to_quadrature_nodes[elem->id()].end(), "Side has no quadrature nodes!");
   mooseAssert(_elem_to_side_to_qp_to_quadrature_nodes[elem->id()][side].find(qp) != _elem_to_side_to_qp_to_quadrature_nodes[elem->id()][side].end(), "qp not found on side!");
@@ -890,6 +897,7 @@ MooseMesh::clearQuadratureNodes()
   }
 
   _quadrature_nodes.clear();
+  Moose::out << "Clearing _elem_to_side_to_qp_to_quadrature_nodes\n";
   _elem_to_side_to_qp_to_quadrature_nodes.clear();
   _extra_bnd_nodes.clear();
 }

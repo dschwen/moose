@@ -30,6 +30,7 @@
   [./local_energy]
     order = CONSTANT
     family = MONOMIAL
+    block = 1
   [../]
 []
 
@@ -198,15 +199,16 @@
   # declare a few constants, such as mobilities (L,M) and interface gradient prefactors (kappa*)
   [./consts]
     type = GenericConstantMaterial
-    block = 1
+    block = '1 2 3'
     prop_names  = 'M   kappa_c'
     prop_values = '0.2 0.2    '
   [../]
 
   [./eigendep]
     type = DerivativeParsedMaterial
+    block = 1
     function = 'd:=c-0.5; d^2+d^3'
-    f_name = weight2
+    f_name = eigendep
     args = c
   [../]
 
@@ -225,10 +227,10 @@
 
   [./eigenstrain]
     type = ComputeVariableEigenstrain
+    block = 1
     eigen_base = '1 1 0 0 0 0'
     prefactor = eigendep
     args = c
-    block = 1
   [../]
 
   [./stress]
@@ -250,8 +252,8 @@
   # elastic free energies
   [./elastic_free_energy]
     type = ElasticEnergyMaterial
-    f_name = Fe
     block = 1
+    f_name = Fe
     args = 'c'
     outputs = exodus
     output_properties = Fe
