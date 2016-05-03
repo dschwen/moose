@@ -141,7 +141,6 @@
     function = 1-h
   [../]
 
-  # undersized solute (voidlike)
   [./elasticity_tensor_potato]
     type = ComputeElasticityTensor
     block = 0
@@ -260,26 +259,6 @@
   [../]
 []
 
-[Adaptivity]
-  max_h_level = 4
-  marker = mark
-  initial_steps = 3
-  [./Markers]
-    [./mark]
-      type = ErrorToleranceMarker
-      indicator = grad
-      coarsen = 0.1
-      refine = 0.2
-    [../]
-  [../]
-  [./Indicators]
-    [./grad]
-      type = GradientJumpIndicator
-      variable = c
-    [../]
-  [../]
-[]
-
 [Executioner]
   type = Transient
   scheme = bdf2
@@ -303,6 +282,7 @@
 
   [./Adaptivity]
     max_h_level = 4
+    interval = 3
     print_changed_info = true
     initial_adaptivity = 4
     refine_fraction = 0.7
