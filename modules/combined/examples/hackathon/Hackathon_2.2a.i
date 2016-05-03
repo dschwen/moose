@@ -53,13 +53,17 @@
     order = FIRST
     family = LAGRANGE
     [./InitialCondition]
-      type = SmoothCircleIC
+      type = SmoothSuperellipsoidIC
       x1 = 0
       y1 = 0
-      radius = 99.90174885142402
+      z1 = 0
+      a = 155.0
+      b = 42.0
+      c = 155.0
+      n = 2
       invalue = 1.0
       outvalue = 0.0
-      int_width = 20.0
+      int_width = 10.0
     [../]
   [../]
   [./w]
@@ -130,6 +134,12 @@
     function_name = h
     eta = c
   [../]
+  [./oneminus]
+    type = DerivativeParsedMaterial
+    material_property_names = h(c)
+    f_name = ih
+    function = 1-h
+  [../]
 
   # undersized solute (voidlike)
   [./elasticity_tensor_potato]
@@ -139,11 +149,18 @@
     C_ijkl = '1458.75 903.125 726.875 1806.25 508.75 2375.625 621.875 548.75 701.875'
     fill_method = symmetric9
   [../]
+  [./elasticity_tensor_matrix]
+    type = ComputeElasticityTensor
+    block = 0
+    base_name = matrix
+    C_ijkl = '1e-10 1e-10'
+    fill_method = symmetric_isotropic
+  [../]
   [./elasticity_tensor]
     type = CompositeElasticityTensor
-    tensors = potato
+    tensors = 'potato matrix'
+    weights = 'h      ih'
     args = c
-    weights = h
   [../]
 
   [./stress]
@@ -224,13 +241,42 @@
     variable = c
     execute_on = 'initial TIMESTEP_END'
   [../]
+  [./dofs]
+    type = NumDOFs
+    execute_on = 'initial TIMESTEP_END'
+  [../]
+  [./runtime]
+    type = RunTime
+    time_type = active
+    execute_on = 'initial TIMESTEP_END'
+  [../]
 []
 
 [Preconditioning]
   # active = ' '
   [./SMP]
     type = SMP
-    full = true
+    coupled_groups = 'c,w disp_x,disp_y,disp_z'
+  [../]
+[]
+
+[Adaptivity]
+  max_h_level = 4
+  marker = mark
+  initial_steps = 3
+  [./Markers]
+    [./mark]
+      type = ErrorToleranceMarker
+      indicator = grad
+      coarsen = 0.1
+      refine = 0.2
+    [../]
+  [../]
+  [./Indicators]
+    [./grad]
+      type = GradientJumpIndicator
+      variable = c
+    [../]
   [../]
 []
 
@@ -238,11 +284,9 @@
   type = Transient
   scheme = bdf2
 
-  solve_type = 'PJFNK'
-  petsc_options_iname = '-pc_type  -sub_pc_type -sub_pc_factor_shift_type -sub_pc_factor_shift_amount'
-  petsc_options_value = 'asm       lu           NONZERO                   1e-10'
-  #petsc_options_iname = '-pc_type -pc_factor_shift_type -pc_factor_shift_amount'
-  #petsc_options_value = ' lu       NONZERO               1e-10'
+  solve_type = 'NEWTON'
+  petsc_options_iname = '-pc_type  -sub_pc_type -pc_asm_overlap'
+  petsc_options_value = 'asm       ilu          1'
 
   l_max_its = 30
   nl_max_its = 10
@@ -254,14 +298,15 @@
 
   [./TimeStepper]
     type = SolutionTimeAdaptiveDT
-    dt = 1
+    dt = 10
   [../]
 
   [./Adaptivity]
-    max_h_level = 3
-    initial_adaptivity = 3
-    refine_fraction = 0.8
-    coarsen_fraction = 0.05
+    max_h_level = 4
+    print_changed_info = true
+    initial_adaptivity = 4
+    refine_fraction = 0.7
+    coarsen_fraction = 0.1
   [../]
 []
 
