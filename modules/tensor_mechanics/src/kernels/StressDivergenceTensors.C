@@ -59,25 +59,13 @@ StressDivergenceTensors::computeQpJacobian()
 Real
 StressDivergenceTensors::computeQpOffDiagJacobian(unsigned int jvar)
 {
-  unsigned int coupled_component = 0;
-  bool active(false);
-
   for (unsigned int i = 0; i < _ndisp; ++i)
     if (jvar == _disp_var[i])
-    {
-      coupled_component = i;
-      active = true;
-    }
+      return ElasticityTensorTools::elasticJacobian(_Jacobian_mult[_qp], _component, i,
+                                                    _grad_test[_i][_qp], _grad_phi[_j][_qp]);
 
-  if (active)
-    return ElasticityTensorTools::elasticJacobian(_Jacobian_mult[_qp], _component, coupled_component,
-                                          _grad_test[_i][_qp], _grad_phi[_j][_qp]);
+  // if (_temp_coupled && jvar == _temp_var)
+  //   return _d_stress_dT[_qp].rowDot(_component, _grad_test[_i][_qp]) * _phi[_j][_qp];
 
-  if (_temp_coupled && jvar == _temp_var)
-  {
-    //return _d_stress_dT[_qp].rowDot(_component, _grad_test[_i][_qp]) * _phi[_j][_qp];
-    return 0.0;
-  }
-
-  return 0;
+  return 0.i;
 }
