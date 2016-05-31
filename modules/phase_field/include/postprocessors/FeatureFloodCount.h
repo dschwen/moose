@@ -377,6 +377,8 @@ protected:
 
   /// flag that indicates if an up to date list of semilocal (active) elements has been built
   bool _semilocal_elem_list_built;
+
+  unsigned int _slc;
 };
 
 template <class T>

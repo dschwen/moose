@@ -191,14 +191,20 @@ FeatureFloodCount::initialize()
   // build semilocal element list
   if (_is_elemental && !_semilocal_elem_list_built)
   {
+    unsigned int slc = 0;
     MeshBase::const_element_iterator       el  = _mesh.getMesh().active_elements_begin();
     const MeshBase::const_element_iterator end = _mesh.getMesh().active_elements_end();
     const processor_id_type my_pid = processor_id();
 
     _semilocal_elem_list.clear();
     for (; el != end; ++el)
+    {
+      slc++;
       if ((*el)->is_semilocal(my_pid))
         _semilocal_elem_list.insert(*el);
+    }
+
+    Moose::out << slc << " calls to is_semilocal in initialize\n";
 
     _semilocal_elem_list_built = true;
   }
@@ -207,6 +213,7 @@ FeatureFloodCount::initialize()
 void
 FeatureFloodCount::execute()
 {
+  _slc = 0;
   const MeshBase::element_iterator end = _mesh.getMesh().active_local_elements_end();
   for (MeshBase::element_iterator el = _mesh.getMesh().active_local_elements_begin(); el != end; ++el)
   {
@@ -230,6 +237,8 @@ FeatureFloodCount::execute()
       }
     }
   }
+
+  Moose::out << _slc << " calls avoided in execute\n";
 }
 
 void FeatureFloodCount::communicateAndMerge()
@@ -767,6 +776,7 @@ FeatureFloodCount::visitElementalNeighbors(const Elem * elem, int current_idx, F
     processor_id_type my_proc_id = processor_id();
 
     // Only recurse on elems this processor can see
+    _slc++;
     if (neighbor && _semilocal_elem_list.find(neighbor) != _semilocal_elem_list.end())
     {
       if (neighbor->processor_id() != my_proc_id)
