@@ -52,9 +52,10 @@ public:
   /**
    * A special method unique to this class for adding Block, Neighbor, and Face material objects.
    */
-  void addObjects(std::shared_ptr<Material> block,
-                  std::shared_ptr<Material> neighbor,
-                  std::shared_ptr<Material> face,
+  void addObjects(std::shared_ptr<T> block,
+                  std::shared_ptr<T> neighbor,
+                  std::shared_ptr<T> face,
+                  std::shared_ptr<T> dirac,
                   THREAD_ID tid = 0);
 
 protected:
@@ -63,6 +64,9 @@ protected:
 
   /// Stroage for face material objects (Block are stored in the base class)
   MooseObjectWarehouse<Material> _face_materials;
+
+  /// Stroage for dirac material objects (Block are stored in the base class)
+  MooseObjectWarehouse<Material> _dirac_materials;
 };
 
 #endif // MATERIALWAREHOUSE_H

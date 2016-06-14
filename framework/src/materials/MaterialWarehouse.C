@@ -20,11 +20,13 @@ void
 MaterialWarehouse::addObjects(std::shared_ptr<Material> block,
                               std::shared_ptr<Material> neighbor,
                               std::shared_ptr<Material> face,
+                              std::shared_ptr<Material> dirac,
                               THREAD_ID tid /*=0*/)
 {
   MooseObjectWarehouse<Material>::addObject(block, tid);
   _neighbor_materials.addObject(neighbor, tid);
   _face_materials.addObject(face, tid);
+  _dirac_materials.addObject(dirac, tid);
 }
 
 const MooseObjectWarehouse<Material> & MaterialWarehouse::
@@ -37,6 +39,9 @@ operator[](Moose::MaterialDataType data_type) const
       break;
     case Moose::FACE_MATERIAL_DATA:
       return _face_materials;
+      break;
+    case Moose::DIRAC_MATERIAL_DATA:
+      return _dirac_materials;
       break;
     default:
       return *this;

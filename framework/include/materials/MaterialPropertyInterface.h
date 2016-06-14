@@ -406,6 +406,9 @@ MaterialPropertyInterface::getMaterialPropertyOldByName(const MaterialPropertyNa
 
   _material_property_dependencies.insert(_material_data->getPropertyId(name));
 
+  // Update the boolean flag.
+  _get_material_property_called = true;
+
   return _material_data->getPropertyOld<T>(name);
 }
 
@@ -423,6 +426,9 @@ MaterialPropertyInterface::getMaterialPropertyOlderByName(const MaterialProperty
   markMatPropRequested(name);
 
   _material_property_dependencies.insert(_material_data->getPropertyId(name));
+
+  // Update the boolean flag.
+  _get_material_property_called = true;
 
   return _material_data->getPropertyOlder<T>(name);
 }

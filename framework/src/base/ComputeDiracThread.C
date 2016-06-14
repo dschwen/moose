@@ -92,6 +92,9 @@ ComputeDiracThread::onElement(const Elem * elem)
     }
   }
 
+  if (need_reinit_materials)
+    _fe_problem.reinitMaterialsDirac(_subdomain, _tid);
+
   for (const auto & dirac_kernel : dkernels)
   {
     if (!dirac_kernel->hasPointsOnElem(elem))
@@ -126,6 +129,9 @@ ComputeDiracThread::onElement(const Elem * elem)
       }
     }
   }
+
+  if (need_reinit_materials)
+    _fe_problem.swapBackMaterialsDirac(_tid);
 
   // Note that we do not call swapBackMaterials() here as they were
   // never swapped in the first place.  This avoids messing up

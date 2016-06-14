@@ -172,6 +172,8 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters)
         declareRestartableDataWithContext<MaterialPropertyStorage>("material_props", &_mesh)),
     _bnd_material_props(
         declareRestartableDataWithContext<MaterialPropertyStorage>("bnd_material_props", &_mesh)),
+    _dirac_material_props(
+        declareRestartableDataWithContext<MaterialPropertyStorage>("dirac_material_props", &_mesh)),
     _pps_data(*this),
     _vpps_data(*this),
     _general_user_objects(/*threaded=*/false),
@@ -232,11 +234,13 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters)
   _material_data.resize(n_threads);
   _bnd_material_data.resize(n_threads);
   _neighbor_material_data.resize(n_threads);
+  _dirac_material_data.resize(n_threads);
   for (unsigned int i = 0; i < n_threads; i++)
   {
     _material_data[i] = std::make_shared<MaterialData>(_material_props);
     _bnd_material_data[i] = std::make_shared<MaterialData>(_bnd_material_props);
     _neighbor_material_data[i] = std::make_shared<MaterialData>(_bnd_material_props);
+    _dirac_material_data[i] = std::make_shared<MaterialData>(_dirac_material_props);
   }
 
   _active_elemental_moose_variables.resize(n_threads);
@@ -557,6 +561,7 @@ FEProblemBase::initialSetup()
                                      _neighbor_material_data,
                                      _material_props,
                                      _bnd_material_props,
+                                     _dirac_material_props,
                                      _assembly);
     /**
      * The ComputeMaterialObjectThread object now allocates memory as needed for the material
@@ -736,6 +741,7 @@ FEProblemBase::initialSetup()
                                      _neighbor_material_data,
                                      _material_props,
                                      _bnd_material_props,
+                                     _dirac_material_props,
                                      _assembly);
     Threads::parallel_reduce(elem_range, cmt);
   }
@@ -2148,12 +2154,16 @@ FEProblemBase::getMaterial(std::string name,
     case Moose::FACE_MATERIAL_DATA:
       name += "_face";
       break;
+    case Moose::DIRAC_MATERIAL_DATA:
+      name += "_dirac";
+      break;
     default:
       break;
   }
 
   std::shared_ptr<Material> material = _all_materials[type].getActiveObject(name, tid);
-  if (!no_warn && material->getParam<bool>("compute") && type == Moose::BLOCK_MATERIAL_DATA)
+  if (!no_warn && material->getParam<bool>("compute") &&
+      (type == Moose::BLOCK_MATERIAL_DATA || type == Moose::DIRAC_MATERIAL_DATA))
     mooseWarning("You are retrieving a Material object (",
                  material->name(),
                  "), but its compute flag is set to true. This indicates that MOOSE is "
@@ -2178,6 +2188,9 @@ FEProblemBase::getMaterialData(Moose::MaterialDataType type, THREAD_ID tid)
     case Moose::BOUNDARY_MATERIAL_DATA:
     case Moose::FACE_MATERIAL_DATA:
       output = _bnd_material_data[tid];
+      break;
+    case Moose::DIRAC_MATERIAL_DATA:
+      output = _dirac_material_data[tid];
       break;
   }
   return output;
@@ -2251,13 +2264,22 @@ FEProblemBase::addMaterial(const std::string & mat_name,
       std::shared_ptr<Material> neighbor_material =
           _factory.create<Material>(mat_name, object_name, current_parameters, tid);
 
+      // dirac material
+      current_parameters.set<Moose::MaterialDataType>("_material_data_type") =
+          Moose::DIRAC_MATERIAL_DATA;
+      current_parameters.set<bool>("_dirac") = true;
+      object_name = name + "_dirac";
+      std::shared_ptr<Material> dirac_material =
+          _factory.create<Material>(mat_name, object_name, current_parameters, tid);
+
       // Store the material objects
-      _all_materials.addObjects(material, neighbor_material, face_material, tid);
+      _all_materials.addObjects(material, neighbor_material, face_material, dirac_material, tid);
 
       if (discrete)
-        _discrete_materials.addObjects(material, neighbor_material, face_material, tid);
+        _discrete_materials.addObjects(
+            material, neighbor_material, face_material, dirac_material, tid);
       else
-        _materials.addObjects(material, neighbor_material, face_material, tid);
+        _materials.addObjects(material, neighbor_material, face_material, dirac_material, tid);
 
       // link enabled parameter of face and neighbor materials
       MooseObjectParameterName name(MooseObjectName("Material", material->name()), "enabled");
@@ -2265,8 +2287,11 @@ FEProblemBase::addMaterial(const std::string & mat_name,
                                          "enabled");
       MooseObjectParameterName neighbor_name(MooseObjectName("Material", neighbor_material->name()),
                                              "enabled");
+      MooseObjectParameterName dirac_name(MooseObjectName("Material", dirac_material->name()),
+                                          "enabled");
       _app.getInputParameterWarehouse().addControllableParameterConnection(name, face_name);
       _app.getInputParameterWarehouse().addControllableParameterConnection(name, neighbor_name);
+      _app.getInputParameterWarehouse().addControllableParameterConnection(name, dirac_name);
     }
   }
 }
@@ -2397,6 +2422,37 @@ FEProblemBase::reinitMaterialsBoundary(BoundaryID boundary_id, THREAD_ID tid, bo
 }
 
 void
+FEProblemBase::reinitMaterialsDirac(SubdomainID blk_id, THREAD_ID tid, bool swap_stateful)
+{
+  if (_all_materials[Moose::DIRAC_MATERIAL_DATA].hasActiveBlockObjects(blk_id, tid))
+  {
+    const Elem *& elem = _assembly[tid]->elem();
+    unsigned int n_points = _assembly[tid]->qRule()->n_points();
+
+    if (_dirac_material_data[tid]->nQPoints() != n_points)
+      _dirac_material_data[tid]->resize(n_points);
+
+    if (_dirac_material_props.needInitialized(n_points, *elem))
+      _dirac_material_props.initStatefulProps(
+          *_dirac_material_data[tid],
+          _all_materials[Moose::DIRAC_MATERIAL_DATA].getActiveBlockObjects(blk_id, tid),
+          n_points,
+          *elem);
+
+    if (swap_stateful && !_dirac_material_data[tid]->isSwapped())
+      _dirac_material_data[tid]->swap(*elem);
+
+    if (_discrete_materials[Moose::DIRAC_MATERIAL_DATA].hasActiveBlockObjects(blk_id, tid))
+      _dirac_material_data[tid]->reset(
+          _discrete_materials[Moose::DIRAC_MATERIAL_DATA].getActiveBlockObjects(blk_id, tid));
+
+    if (_materials[Moose::DIRAC_MATERIAL_DATA].hasActiveBlockObjects(blk_id, tid))
+      _dirac_material_data[tid]->reinit(
+          _materials[Moose::DIRAC_MATERIAL_DATA].getActiveBlockObjects(blk_id, tid));
+  }
+}
+
+void
 FEProblemBase::swapBackMaterials(THREAD_ID tid)
 {
   const Elem *& elem = _assembly[tid]->elem();
@@ -2418,6 +2474,13 @@ FEProblemBase::swapBackMaterialsNeighbor(THREAD_ID tid)
   const Elem *& neighbor = _assembly[tid]->neighbor();
   unsigned int neighbor_side = neighbor->which_neighbor_am_i(_assembly[tid]->elem());
   _neighbor_material_data[tid]->swapBack(*neighbor, neighbor_side);
+}
+
+void
+FEProblemBase::swapBackMaterialsDirac(THREAD_ID tid)
+{
+  const Elem *& elem = _assembly[tid]->elem();
+  _dirac_material_data[tid]->swapBack(*elem);
 }
 
 /**
@@ -3812,6 +3875,9 @@ FEProblemBase::advanceState()
 
   if (_bnd_material_props.hasStatefulProperties())
     _bnd_material_props.shift();
+
+  if (_dirac_material_props.hasStatefulProperties())
+    _dirac_material_props.shift();
 }
 
 void
@@ -4629,8 +4695,9 @@ FEProblemBase::checkProblemIntegrity()
                   std::ostream_iterator<unsigned int>(extra_subdomain_ids, " "));
 
         mooseError("The following blocks from your input mesh do not contain an active material: " +
-                   extra_subdomain_ids.str() + "\nWhen ANY mesh block contains a Material object, "
-                                               "all blocks must contain a Material object.\n");
+                   extra_subdomain_ids.str() +
+                   "\nWhen ANY mesh block contains a Material object, "
+                   "all blocks must contain a Material object.\n");
       }
     }
 

@@ -98,7 +98,8 @@ Material::Material(const InputParameters & parameters)
     _fe_problem(*parameters.get<FEProblemBase *>("_fe_problem_base")),
     _tid(parameters.get<THREAD_ID>("_tid")),
     _assembly(_subproblem.assembly(_tid)),
-    _bnd(_material_data_type != Moose::BLOCK_MATERIAL_DATA),
+    _bnd((_material_data_type != Moose::BLOCK_MATERIAL_DATA) &&
+         (_material_data_type != Moose::DIRAC_MATERIAL_DATA)),
     _neighbor(_material_data_type == Moose::NEIGHBOR_MATERIAL_DATA),
     _qp(std::numeric_limits<unsigned int>::max()),
     _qrule(_bnd ? _assembly.qRuleFace() : _assembly.qRule()),
