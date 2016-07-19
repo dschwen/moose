@@ -16,10 +16,10 @@
 #include "ACGrGrElasticDrivingForce.h"
 #include "ACGrGrPoly.h"
 #include "ACInterface.h"
-#include "ACMultiInterface.h"
 #include "ACInterfaceKobayashi1.h"
 #include "ACInterfaceKobayashi2.h"
 #include "ACSEDGPoly.h"
+#include "ACMultiInterface.h"
 #include "AllenCahn.h"
 #include "CahnHilliard.h"
 #include "CahnHilliardAniso.h"
@@ -53,6 +53,7 @@
 #include "MatAnisoDiffusion.h"
 #include "MatDiffusion.h"
 #include "MatReaction.h"
+#include "MinimizeProperty.h"
 #include "MultiGrainRigidBodyMotion.h"
 #include "PFFracBulkRate.h"
 #include "PFFracCoupledInterface.h"
@@ -163,16 +164,17 @@
  */
 #include "BndsCalcAux.h"
 #include "CrossTermGradientFreeEnergy.h"
-#include "EulerAngleVariables2RGBAux.h"
-#include "FeatureFloodCountAux.h"
-#include "KKSGlobalFreeEnergy.h"
-#include "PFCEnergyDensity.h"
-#include "PFCRFFEnergyDensity.h"
 #include "EBSDReaderAvgDataAux.h"
 #include "EBSDReaderPointDataAux.h"
-#include "TotalFreeEnergy.h"
-#include "OutputEulerAngles.h"
 #include "EulerAngleProvider2RGBAux.h"
+#include "EulerAngleVariables2RGBAux.h"
+#include "ExtremeMaterialIndexAux.h"
+#include "FeatureFloodCountAux.h"
+#include "KKSGlobalFreeEnergy.h"
+#include "OutputEulerAngles.h"
+#include "PFCEnergyDensity.h"
+#include "PFCRFFEnergyDensity.h"
+#include "TotalFreeEnergy.h"
 
 /*
  * Functions
@@ -277,10 +279,10 @@ PhaseFieldApp::registerObjects(Factory & factory)
   registerKernel(ACGrGrElasticDrivingForce);
   registerKernel(ACGrGrPoly);
   registerKernel(ACInterface);
-  registerKernel(ACMultiInterface);
   registerKernel(ACInterfaceKobayashi1);
   registerKernel(ACInterfaceKobayashi2);
   registerKernel(ACSEDGPoly);
+  registerKernel(ACMultiInterface);
   registerKernel(AllenCahn);
   registerKernel(CahnHilliard);
   registerKernel(CahnHilliardAniso);
@@ -314,6 +316,7 @@ PhaseFieldApp::registerObjects(Factory & factory)
   registerKernel(MatAnisoDiffusion);
   registerKernel(MatDiffusion);
   registerKernel(MatReaction);
+  registerKernel(MinimizeProperty);
   registerKernel(MultiGrainRigidBodyMotion);
   registerKernel(PFFracBulkRate);
   registerKernel(PFFracCoupledInterface);
@@ -377,9 +380,9 @@ PhaseFieldApp::registerObjects(Factory & factory)
   registerMaterial(ExternalForceDensityMaterial);
   registerMaterial(ForceDensityMaterial);
   registerMaterial(GBAnisotropy);
-  registerMaterial(GBEvolution);
   registerMaterial(GBDependentAnisotropicTensor);
   registerMaterial(GBDependentDiffusivity);
+  registerMaterial(GBEvolution);
   registerMaterial(GrainAdvectionVelocity);
   registerMaterial(InterfaceOrientationMaterial);
   registerMaterial(KKSXeVacSolidMaterial);
@@ -409,16 +412,17 @@ PhaseFieldApp::registerObjects(Factory & factory)
 
   registerAux(BndsCalcAux);
   registerAux(CrossTermGradientFreeEnergy);
-  registerAux(EulerAngleVariables2RGBAux);
-  registerAux(FeatureFloodCountAux);
-  registerAux(KKSGlobalFreeEnergy);
-  registerAux(PFCEnergyDensity);
-  registerAux(PFCRFFEnergyDensity);
   registerAux(EBSDReaderAvgDataAux);
   registerAux(EBSDReaderPointDataAux);
-  registerAux(TotalFreeEnergy);
-  registerAux(OutputEulerAngles);
   registerAux(EulerAngleProvider2RGBAux);
+  registerAux(EulerAngleVariables2RGBAux);
+  registerAux(ExtremeMaterialIndexAux);
+  registerAux(FeatureFloodCountAux);
+  registerAux(KKSGlobalFreeEnergy);
+  registerAux(OutputEulerAngles);
+  registerAux(PFCEnergyDensity);
+  registerAux(PFCRFFEnergyDensity);
+  registerAux(TotalFreeEnergy);
 
   registerUserObject(ComputeGrainCenterUserObject);
   registerUserObject(ComputeGrainForceAndTorque);
@@ -477,11 +481,11 @@ PhaseFieldApp::associateSyntax(Syntax & syntax, ActionFactory & action_factory)
   registerAction(BicrystalCircleGrainICAction, "add_ic");
   registerAction(CHPFCRFFSplitKernelAction, "add_kernel");
   registerAction(CHPFCRFFSplitVariablesAction, "add_variable");
-  registerAction(DisplacementGradientsAction, "add_variable");
-  registerAction(DisplacementGradientsAction, "add_material");
   registerAction(DisplacementGradientsAction, "add_kernel");
-  registerAction(EulerAngle2RGBAction, "add_aux_variable");
+  registerAction(DisplacementGradientsAction, "add_material");
+  registerAction(DisplacementGradientsAction, "add_variable");
   registerAction(EulerAngle2RGBAction, "add_aux_kernel");
+  registerAction(EulerAngle2RGBAction, "add_aux_variable");
   registerAction(HHPFCRFFSplitKernelAction, "add_kernel");
   registerAction(HHPFCRFFSplitVariablesAction, "add_variable");
   registerAction(MatVecRealGradAuxKernelAction, "add_aux_kernel");
