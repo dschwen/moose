@@ -27,6 +27,8 @@ protected:
   virtual Real computeQpJacobian();
 
   RealVectorValue _dir;
+
+  const Real _epsilon;
 };
 
 #endif // STABILIZEGRADIENT_H

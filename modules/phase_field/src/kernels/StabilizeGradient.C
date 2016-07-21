@@ -10,25 +10,29 @@ template<>
 InputParameters validParams<StabilizeGradient>()
 {
   InputParameters params = validParams<Kernel>();
-  params.addClassDescription("Enforce the gradient of a variable to be zero along a given direction");
+  params.addClassDescription("Enforce the gradient of a variable to be zero along a given direction ");
   params.addRequiredParam<RealVectorValue>("direction", "Direction to suppress gradient of the variable in");
+  params.addParam<Real>("epsilon", 1e-9, "Jacobian fill term magnitude");
   return params;
 }
 
 StabilizeGradient::StabilizeGradient(const InputParameters & parameters) :
     Kernel(parameters),
-    _dir(getParam<RealVectorValue>("direction"))
+    _dir(getParam<RealVectorValue>("direction")),
+    _epsilon(getParam<Real>("epsilon"))
 {
 }
 
 Real
 StabilizeGradient::computeQpResidual()
 {
-  return std::pow(_grad_u[_qp] * _dir, 2.0) * _test[_i][_qp];
+  return   (_grad_u[_qp] * _dir) * _test[_i][_qp]
+         + _epsilon * (_grad_u[_qp] * _grad_test[_i][_qp]);
 }
 
 Real
 StabilizeGradient::computeQpJacobian()
 {
-  return 2.0 * (_grad_u[_qp] * _dir) * (_grad_phi[_j][_qp] * _dir) * _test[_i][_qp];
+  return   (_grad_phi[_j][_qp] * _dir) * _test[_i][_qp]
+         + _epsilon * (_grad_phi[_j][_qp] * _grad_test[_i][_qp]);
 }
