@@ -44,6 +44,10 @@ protected:
 
   /// Grain tracker object
   const GrainTracker & _grain_tracker;
+
+  /// Vector containing values for color in regions without grains
+  const Point _no_grain_color;
+
 };
 
 #endif //EULERANGLEPROVIDER2RGBAUX_H
