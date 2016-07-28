@@ -35,6 +35,7 @@
 #include "CHSplitVar.h"
 #include "CoefCoupledTimeDerivative.h"
 #include "ConservedLangevinNoise.h"
+#include "CosineInterface.h"
 #include "CoupledAllenCahn.h"
 #include "CoupledSusceptibilityTimeDerivative.h"
 #include "GradientComponent.h"
@@ -295,6 +296,7 @@ PhaseFieldApp::registerObjects(Factory & factory)
   registerKernel(CHSplitFlux);
   registerKernel(CHSplitVar);
   registerKernel(CoefCoupledTimeDerivative);
+  registerKernel(CosineInterface);
   registerKernel(ConservedLangevinNoise);
   registerKernel(CoupledAllenCahn);
   registerKernel(CoupledSusceptibilityTimeDerivative);
