@@ -50,7 +50,7 @@ NodeFaceConstraint::NodeFaceConstraint(const InputParameters & parameters) :
     _master_qrule(_assembly.qRuleFace()),
 
     _penetration_locator(getPenetrationLocator(getParam<BoundaryName>("master"), getParam<BoundaryName>("slave"),
-                                               Utility::string_to_enum<Order>(getParam<MooseEnum>("order")))),
+                                               getParam<MooseEnum>("order").getEnum<Order>())),
 
     _current_node(_var.node()),
     _current_master(_var.neighbor()),

@@ -36,10 +36,10 @@ InputParameters validParams<SetupQuadratureAction>()
 
 SetupQuadratureAction::SetupQuadratureAction(InputParameters parameters) :
     Action(parameters),
-    _type(Moose::stringToEnum<QuadratureType>(getParam<MooseEnum>("type"))),
-    _order(Moose::stringToEnum<Order>(getParam<MooseEnum>("order"))),
-    _element_order(Moose::stringToEnum<Order>(getParam<MooseEnum>("element_order"))),
-    _side_order(Moose::stringToEnum<Order>(getParam<MooseEnum>("side_order")))
+    _type(getParam<MooseEnum>("type").getEnum<QuadratureType>()),
+    _order(getParam<MooseEnum>("order").getEnum<Order>()),
+    _element_order(getParam<MooseEnum>("element_order").getEnum<Order>()),
+    _side_order(getParam<MooseEnum>("side_order").getEnum<Order>())
 {
 }
 

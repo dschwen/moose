@@ -63,7 +63,7 @@ HHPFCRFFSplitVariablesAction::act()
 #endif
 
     _problem->addVariable(real_name,
-                          FEType(Utility::string_to_enum<Order>(getParam<MooseEnum>("order")),
+                          FEType(getParam<MooseEnum>("order").getEnum<Order>()),
                                  Utility::string_to_enum<FEFamily>(getParam<MooseEnum>("family"))),
                           getParam<Real>("scaling"));
 
@@ -78,10 +78,9 @@ HHPFCRFFSplitVariablesAction::act()
 #endif
 
       _problem->addVariable(imag_name,
-                            FEType(Utility::string_to_enum<Order>(getParam<MooseEnum>("order")),
+                            FEType(getParam<MooseEnum>("order").getEnum<Order>()),
                                    Utility::string_to_enum<FEFamily>(getParam<MooseEnum>("family"))),
                             getParam<Real>("scaling"));
     }
   }
 }
-

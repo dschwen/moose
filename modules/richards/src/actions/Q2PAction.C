@@ -164,27 +164,27 @@ Q2PAction::act()
     {
       // user wants nodal masses or total masses
       _problem->addAuxVariable("Q2P_nodal_water_mass_divided_by_dt",
-                               FEType(Utility::string_to_enum<Order>(getParam<MooseEnum>("ORDER")),
+                               FEType(getParam<MooseEnum>("ORDER").getEnum<Order>(),
                                       Utility::string_to_enum<FEFamily>("LAGRANGE")));
       _problem->addAuxVariable("Q2P_nodal_gas_mass_divided_by_dt",
-                               FEType(Utility::string_to_enum<Order>(getParam<MooseEnum>("ORDER")),
+                               FEType(getParam<MooseEnum>("ORDER").getEnum<Order>(),
                                       Utility::string_to_enum<FEFamily>("LAGRANGE")));
     }
     if (_save_gas_flux_in_Q2PGasFluxResidual)
       _problem->addAuxVariable("Q2PGasFluxResidual",
-                               FEType(Utility::string_to_enum<Order>(getParam<MooseEnum>("ORDER")),
+                               FEType(getParam<MooseEnum>("ORDER").getEnum<Order>(),
                                       Utility::string_to_enum<FEFamily>("LAGRANGE")));
     if (_save_water_flux_in_Q2PWaterFluxResidual)
       _problem->addAuxVariable("Q2PWaterFluxResidual",
-                               FEType(Utility::string_to_enum<Order>(getParam<MooseEnum>("ORDER")),
+                               FEType(getParam<MooseEnum>("ORDER").getEnum<Order>(),
                                       Utility::string_to_enum<FEFamily>("LAGRANGE")));
     if (_save_gas_Jacobian_in_Q2PGasJacobian)
       _problem->addAuxVariable("Q2PGasJacobian",
-                               FEType(Utility::string_to_enum<Order>(getParam<MooseEnum>("ORDER")),
+                               FEType(getParam<MooseEnum>("ORDER").getEnum<Order>(),
                                       Utility::string_to_enum<FEFamily>("LAGRANGE")));
     if (_save_water_Jacobian_in_Q2PWaterJacobian)
       _problem->addAuxVariable("Q2PWaterJacobian",
-                               FEType(Utility::string_to_enum<Order>(getParam<MooseEnum>("ORDER")),
+                               FEType(getParam<MooseEnum>("ORDER").getEnum<Order>(),
                                       Utility::string_to_enum<FEFamily>("LAGRANGE")));
   }
 

@@ -36,8 +36,7 @@ ContactPressureVarAction::act()
   }
 
   _problem->addAuxVariable("contact_pressure",
-                           FEType(Utility::string_to_enum<Order>(getParam<MooseEnum>("order")),
+                           FEType(getParam<MooseEnum>("order").getEnum<Order>()),
                                   Utility::string_to_enum<FEFamily>("LAGRANGE")));
 
 }
-

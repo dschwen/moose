@@ -17,7 +17,6 @@
 #include "Factory.h"
 
 #include "libmesh/fe.h"
-#include "libmesh/string_to_enum.h"
 
 
 template<>
@@ -47,7 +46,7 @@ void
 AddNodalNormalsAction::act()
 {
   // Set the order from the input
-  Order order = Utility::string_to_enum<Order>(getParam<MooseEnum>("order"));
+  Order order = getParam<MooseEnum>("order").getEnum<Order>();
   FEFamily family = LAGRANGE;
   FEType fe_type(order, family);
 

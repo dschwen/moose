@@ -18,9 +18,6 @@
 #include "MooseEnum.h"
 #include "MooseMesh.h"
 
-// libMesh includes
-#include "libmesh/string_to_enum.h"
-
 const Real PenetrationAux::NotPenetrated = -999999;
 
 template<>
@@ -55,16 +52,16 @@ PenetrationAux::PenetrationAux(const InputParameters & parameters) :
     AuxKernel(parameters),
 
     // Here we cast the value of the MOOSE enum to an integer to the class-based enum.
-    _quantity(PenetrationAux::PA_ENUM(int(getParam<MooseEnum>("quantity")))),
+    _quantity(getParam<MooseEnum>("quantity").getEnum<PenetrationAux::PA_ENUM>()),
     _penetration_locator(_nodal
       ? getPenetrationLocator(
           parameters.get<BoundaryName>("paired_boundary"),
           boundaryNames()[0],
-          Utility::string_to_enum<Order>(parameters.get<MooseEnum>("order")))
+          parameters.get<MooseEnum>("order").getEnum<Order>())
       : getQuadraturePenetrationLocator(
           parameters.get<BoundaryName>("paired_boundary"),
           boundaryNames()[0],
-          Utility::string_to_enum<Order>(parameters.get<MooseEnum>("order"))))
+          parameters.get<MooseEnum>("order").getEnum<Order>()))
 {
   if (parameters.isParamValid("tangential_tolerance"))
     _penetration_locator.setTangentialTolerance(getParam<Real>("tangential_tolerance"));
