@@ -20,6 +20,7 @@ protected:
   virtual Real computeQpResidual();
   virtual Real computeQpJacobian();
 
+  RealVectorValue _direction;
   const Real _a;
 };
 
