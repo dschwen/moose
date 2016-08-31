@@ -113,6 +113,7 @@
 #include "ParsedAux.h"
 #include "VariableTimeIntegrationAux.h"
 #include "ElementLengthAux.h"
+#include "ElementL2ErrorFunctionAux.h"
 
 // dirac kernels
 #include "ConstantPointSource.h"
@@ -536,6 +537,7 @@ registerObjects(Factory & factory)
   registerAux(ParsedAux);
   registerAux(VariableTimeIntegrationAux);
   registerAux(ElementLengthAux);
+  registerAux(ElementL2ErrorFunctionAux);
 
   // Initial Conditions
   registerInitialCondition(ConstantIC);
