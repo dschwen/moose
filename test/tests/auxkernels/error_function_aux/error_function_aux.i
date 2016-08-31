@@ -16,6 +16,14 @@
     order = CONSTANT
     family = MONOMIAL
   [../]
+  [./test]
+    order = CONSTANT
+    family = MONOMIAL
+  [../]
+  [./vol]
+    order = CONSTANT
+    family = MONOMIAL
+  [../]
 []
 
 [Functions]
@@ -49,6 +57,16 @@
     function = exact_fn
     solution_variable = u
   [../]
+  [./test]
+    type = ParsedAux
+    variable = test
+    function = element_l2_error/vol
+    args = 'element_l2_error vol'
+  [../]
+  [./vol]
+    type = ElementVolumeAux
+    variable = vol
+  [../]
 []
 
 [BCs]
@@ -57,6 +75,21 @@
     variable = u
     boundary = 'bottom left right top'
     function = exact_fn
+  [../]
+[]
+
+[Adaptivity]
+  initial_marker = box
+  initial_steps = 2
+
+  [./Markers]
+    [./box]
+      type = BoxMarker
+      bottom_left = '0 0 0'
+      top_right = '1 0.5 0'
+      inside = REFINE
+      outside = DO_NOTHING
+    [../]
   [../]
 []
 
@@ -80,4 +113,3 @@
 [Outputs]
   exodus = true
 []
-

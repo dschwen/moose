@@ -113,6 +113,7 @@
 #include "ParsedAux.h"
 #include "VariableTimeIntegrationAux.h"
 #include "ElementLengthAux.h"
+#include "ElementVolumeAux.h"
 #include "ElementL2ErrorFunctionAux.h"
 
 // dirac kernels
@@ -537,6 +538,7 @@ registerObjects(Factory & factory)
   registerAux(ParsedAux);
   registerAux(VariableTimeIntegrationAux);
   registerAux(ElementLengthAux);
+  registerAux(ElementVolumeAux);
   registerAux(ElementL2ErrorFunctionAux);
 
   // Initial Conditions
