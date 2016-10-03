@@ -6,8 +6,8 @@
 [Variables]
   # variable in the whole domain
   [./u]
-    order = FIRST
-    family = LAGRANGE
+    order = CONSTANT
+    family = MONOMIAL
 
     [./InitialCondition]
       type = ConstantIC
