@@ -204,6 +204,7 @@
  */
 #include "EBSDMesh.h"
 #include "MortarPeriodicMesh.h"
+#include "SphereSurfaceMesh.h"
 
 /*
  * Actions
@@ -450,6 +451,7 @@ PhaseFieldApp::registerObjects(Factory & factory)
 
   registerMesh(EBSDMesh);
   registerMesh(MortarPeriodicMesh);
+  registerMesh(SphereSurfaceMesh);
 }
 
 // External entry point for dynamic syntax association
