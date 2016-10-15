@@ -1,4 +1,5 @@
 #include "SphereSurfaceMesh.h"
+#include "RankTwoTensor.h"
 
 // libMesh includes
 #include "libmesh/unstructured_mesh.h"
@@ -85,15 +86,15 @@ SphereSurfaceMesh::buildMesh()
    */
 
   // faces (first 3 entries for the corner nodes, last three for the edge list)
-  using SphereFace = std::array<unsigned int, 6>;
+  using SphereFace = std::array<unsigned int, 3>;
   std::vector<SphereFace> face_list = {
-    {1, 3, 4}, {0, 3, 4}, {0, 2, 4}, {1, 2, 4},
-    {1, 3, 5}, {0, 3, 5}, {0, 2, 5}, {1, 2, 5}
+    {{1, 3, 4}}, {{0, 3, 4}}, {{0, 2, 4}}, {{1, 2, 4}},
+    {{1, 3, 5}}, {{0, 3, 5}}, {{0, 2, 5}}, {{1, 2, 5}}
   };
   face_list.reserve(faces);
 
   // edges (extra entry for pending nodes to be created)
-  using SphereEdge = std::array<unsigned int, 3>;
+  using SphereEdge = std::pair<unsigned int, unsigned int>;
   std::vector<SphereEdge> edge_list = {
     {0, 2}, {0, 3}, {0, 4}, {0, 5},
     {1, 2}, {1, 3}, {1, 4}, {1, 5},
@@ -101,136 +102,140 @@ SphereSurfaceMesh::buildMesh()
   };
   edge_list.reserve(edges);
 
-  // build face list from edges
-  for (auto i = beginIndex(edge_list); i < edge_list.size(); ++i)
-  {
-    SphereEdge & edge_i = edge_list[i];
-
-    for (auto j = i + 1; j < edge_list.size(); ++j)
-    {
-      SphereEdge & edge_j = edge_list[j];
-
-      // edges i and j connected?
-      std::array<decltype(i), 2> kk;
-      if (edge_i[0] == edge_j[0])
-        kk = {1,1};
-      else if (edge_i[1] == edge_j[0])
-        kk = {0,1};
-      else if (edge_i[0] == edge_j[1])
-        kk = {1,0};
-      else if (edge_i[1] == edge_j[1])
-        kk = {0,0};
-      else
-        continue;
-
-      for (auto k = j + 1; k < edge_list.size(); ++k)
-      {
-        SphereEdge & edge_k = edge_list[k];
-
-        if ((edge_k[0] == edge_i[kk[0]] && edge_k[1] == edge_j[kk[1]]) ||
-            (edge_k[1] == edge_i[kk[0]] && edge_k[0] == edge_j[kk[1]]))
-          std::cout << i << ',' << j << ',' << k << '\n';
-      }
-    }
-  }
-
-  mooseError("done");
-
-  // helper vector to link split edges
-  std::vector<unsigned int> other_half(edges);
+  // midpoint map
+  std::map<std::pair<unsigned int, unsigned int>, unsigned int> midpoint_map;
 
   // iterate
   unsigned int node_id = 6;
   for (unsigned int i = 0; i < _depth; ++i)
   {
     // 1. split edges (loop over edge set of previous iteration)
+    midpoint_map.clear();
     const unsigned int num_edges_1 = edge_list.size();
     for (unsigned int j = 0; j < num_edges_1; ++j)
     {
       SphereEdge & edge = edge_list[j];
 
-std::cout << node_id << " = " << edge[0] << " - " << edge[1] << '\n';
+      // make sure edges always go from the low node ID to the high node ID
+      if (edge.first > edge.second)
+        std::swap(edge.first, edge.second);
 
       // compute edge center snapped to surface
-      Point center = *(mesh.node_ptr(edge[0])) + *(mesh.node_ptr(edge[1]));
+      Point center = *(mesh.node_ptr(edge.first)) + *(mesh.node_ptr(edge.second));
+
+      // add to the midpoint map
+      midpoint_map.insert(std::make_pair(edge, node_id));
 
       // add new second half edge
-      other_half[j] = edge_list.size();
-      edge_list.push_back({ edge[1], node_id });
+      edge_list.push_back({ edge.second, node_id });
 
       // modify existing edge to represent first half
-      edge[1] = node_id;
+      edge.second = node_id;
 
       // add center node
       center *= _radius / center.norm();
       mesh.add_point(center, node_id++);
     }
-    const unsigned int num_edges_2 = edge_list.size();
 
     // 2. split faces
     const unsigned int num_faces = face_list.size();
     for (unsigned int j = 0; j < num_faces; ++j)
     {
       SphereFace & face = face_list[j];
+      SphereFace new_face;
 
-      // for each face find the two half edges (and the half nodes) adjacent to each corner.
-      std::array<std::pair<unsigned int, unsigned int>, 3> halfway_nodes;
-
-      // center triangle nodes (unique halfway nodes)
-      SphereFace unique_halfway_nodes;
-      unsigned int found = 0;
-
-      // iterate over the first half edges
-      for (unsigned int k = 0; k < num_edges_1; ++k)
-      {
-        // the edge entries will always contain the face corner ids in their first component
-        SphereEdge & edge = edge_list[k];
-        SphereEdge & other_edge = edge_list[other_half[k]];
-
-        for (unsigned int l = 0; l < 3; ++l)
-        {
-          if (edge[0] == face[l])
-          {
-            unsigned int other_l;
-            if (other_edge[0] == face[(l+1) % 3])
-              other_l = (l+1) % 3;
-            else if (other_edge[0] == face[(l+2) % 3])
-              other_l = (l+2) % 3;
-            else
-              continue;
-
-            halfway_nodes[l].first = edge[1];
-            halfway_nodes[other_l].second = edge[1];
-
-            // add halfway node if it is unique
-            for (unsigned int m = 0; m < found; ++m)
-              if (unique_halfway_nodes[m] == edge[1])
-                continue;
-
-            mooseAssert(found < 3, "Geometry error");
-            unique_halfway_nodes[found++] = edge[1];
-          }
-        }
-      }
-
-      // for each original face node
+      // iterator over corners
       for (unsigned int l = 0; l < 3; ++l)
       {
-        // add internal edge
-        edge_list.push_back({ halfway_nodes[l].first, halfway_nodes[l].second });
-std::cout << halfway_nodes[l].first << ',' << halfway_nodes[l].second << '\n';
+        // edges at that node
+        auto edge_next = std::make_pair(std::min(face[l], face[(l+1)%3]), std::max(face[l], face[(l+1)%3]));
+        auto edge_prev = std::make_pair(std::min(face[l], face[(l+2)%3]), std::max(face[l], face[(l+2)%3]));
 
-        // add corner triangle
-        face_list.push_back({ face[l], halfway_nodes[l].first, halfway_nodes[l].second });
-std::cout << face[l] << ',' << halfway_nodes[l].first << ',' << halfway_nodes[l].second << '\n';
+        // the current corner and the two adjacent midpoints make the corner triangle
+        mooseAssert(midpoint_map.find(edge_next) != midpoint_map.end(), "Midpoint not found " << edge_next.first << ' ' << edge_next.second);
+        auto mid_next = midpoint_map[edge_next];
+        mooseAssert(midpoint_map.find(edge_prev) != midpoint_map.end(), "Midpoint not found " << edge_prev.first << ' ' << edge_prev.second);
+        auto mid_prev = midpoint_map[edge_prev];
+
+        // insert corner triangle
+        face_list.push_back({{ face[l], mid_next, mid_prev }});
+
+        // insert adjacent inner edge
+        edge_list.push_back(std::make_pair(mid_next, mid_prev));
+
+        // store one of the midpoints for teh center tri
+        new_face[l] = mid_prev;
       }
 
-      // modify existing face to center trangle, add three corner triangles
-      face = unique_halfway_nodes;
-std::cout << face[0] << ',' << face[1] << ',' << face[2] << '\n';
-std::cout << '\n';
+      // transform current face into center tri
+      face = new_face;
     }
   }
+
+  std::cout << "start moving nodes\n";
+
+  // optimize nodes for equidistant distribution
+  std::vector<RealVectorValue> force;
+  std::vector<RankTwoTensor> dforce;
+  RealVectorValue f;
+  RankTwoTensor df;
+  for (unsigned int i = 0; i < 1; ++i)
+  {
+    // compute forces and force derivatives by iterating over edges
+    force.assign(nodes, RealVectorValue());
+    dforce.assign(nodes, RankTwoTensor());
+
+    Real min_dist = _radius * _radius;
+    for (auto j = beginIndex(edge_list); j < edge_list.size(); ++j)
+    {
+      const auto & edge = edge_list[j];
+      const auto & node1 = *(mesh.node_ptr(edge.first));
+      const auto & node2 = *(mesh.node_ptr(edge.second));
+
+      // potential is (node1 - node2).norm_sq()
+      // force is -2 * (node1 - node2)
+      // hessian is 2 * I
+      const RealVectorValue dr = node1 - node2;
+      const Real dist2 = dr.norm_sq();
+      const Real dist4 = dist2 * dist2;
+      f = dr / dist2;
+
+      for (unsigned int k = 0; k < 3; ++k)
+        for (unsigned int l = 0; l < 3; ++l)
+          df(k,l) = (k == l ? 1.0 / dist2 : 0.0) - 2.0 * dr(k) * dr(l) / dist4;
+
+      // keep track of minimum distance
+      if (dist2 < min_dist)
+        min_dist = dist2;
+
+      force[edge.first] += f;
+      force[edge.second] -= f;
+
+      dforce[edge.first] += df;
+      dforce[edge.second] += df;
+    }
+
+    // move nodes (skip original octahedron corners)
+    Real max_move;
+    for (unsigned int j = 6; j < nodes; ++j)
+    {
+      auto & node = *(mesh.node_ptr(j));
+
+      // move node
+      const RealVectorValue move = 0.5 * dforce[j].inverse() * force[j];
+      const Real move2 = move.norm_sq();
+      if (move2 > max_move)
+        max_move = move2;
+      node += move;
+
+      // reproject to sphere surface
+      node *= _radius / node.norm();
+    }
+
+    std::cout << "moved nodes " << std::sqrt(max_move) << '\n';
+  }
+
+  std::cout << "done moving nodes\n\n";
 
   // figure out element type
   MooseEnum elem_type_enum = getParam<MooseEnum>("elem_type");
