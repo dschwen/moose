@@ -172,47 +172,31 @@ SphereSurfaceMesh::buildMesh()
     }
   }
 
-  std::cout << "start moving nodes\n";
+  std::cout << "start moving nodes\n" << mesh.n_nodes() << " == " << nodes << '\n' << edge_list.size() << " == " << edges << '\n';
 
   // optimize nodes for equidistant distribution
   std::vector<RealVectorValue> force;
-  std::vector<RankTwoTensor> dforce;
   RealVectorValue f;
-  RankTwoTensor df;
-  for (unsigned int i = 0; i < 1; ++i)
+  for (unsigned int i = 0; i < 10; ++i)
   {
-    // compute forces and force derivatives by iterating over edges
+    // compute forces by iterating over edges
     force.assign(nodes, RealVectorValue());
-    dforce.assign(nodes, RankTwoTensor());
 
-    Real min_dist = _radius * _radius;
     for (auto j = beginIndex(edge_list); j < edge_list.size(); ++j)
     {
       const auto & edge = edge_list[j];
       const auto & node1 = *(mesh.node_ptr(edge.first));
       const auto & node2 = *(mesh.node_ptr(edge.second));
 
-      // potential is (node1 - node2).norm_sq()
-      // force is -2 * (node1 - node2)
-      // hessian is 2 * I
-      const RealVectorValue dr = node1 - node2;
-      const Real dist2 = dr.norm_sq();
-      const Real dist4 = dist2 * dist2;
-      f = dr / dist2;
+      f = node1 - node2;
 
-      for (unsigned int k = 0; k < 3; ++k)
-        for (unsigned int l = 0; l < 3; ++l)
-          df(k,l) = (k == l ? 1.0 / dist2 : 0.0) - 2.0 * dr(k) * dr(l) / dist4;
+      // std::cout << "EL " << node1(0) << ' ' << node1(1) << ' ' << node1(2) << '\n';
+      // std::cout << "EL " << node2(0) << ' ' << node2(1) << ' ' << node2(2) << "\nEL\nEL\n";
 
-      // keep track of minimum distance
-      if (dist2 < min_dist)
-        min_dist = dist2;
-
-      force[edge.first] += f;
-      force[edge.second] -= f;
-
-      dforce[edge.first] += df;
-      dforce[edge.second] += df;
+      force[edge.first] += f * 0.5;
+      force[edge.second] -= f * 0.5;
+      // force[edge.first] += RealVectorValue(1,0,1);
+      // force[edge.second] += RealVectorValue(0,1,1);
     }
 
     // move nodes (skip original octahedron corners)
@@ -221,15 +205,25 @@ SphereSurfaceMesh::buildMesh()
     {
       auto & node = *(mesh.node_ptr(j));
 
+      // restrict force to tangential plane
+      RealVectorValue n = node / node.norm();
+      const RealVectorValue move = force[j] - force[j] * n * n;
+
+      // std::cout << j << ": " << force[j] << " -> " << move << '\n';
+
+      // std::cout << "FE " << node(0) << ' ' << node(1) << ' ' << node(2) << '\n';
+      // std::cout << "FE " << force[j](0) << ' ' << force[j](1) << ' ' << force[j](2) << "\nFE\nFE\n";
+
       // move node
-      const RealVectorValue move = 0.5 * dforce[j].inverse() * force[j];
       const Real move2 = move.norm_sq();
       if (move2 > max_move)
-        max_move = move2;
-      node += move;
+        max_move = 0.1 * move2;
+      node += -move;
 
       // reproject to sphere surface
       node *= _radius / node.norm();
+
+      // std::cout << "FE " << node(0) << ' ' << node(1) << ' ' << node(2) << "\nFE\nFE\n";
     }
 
     std::cout << "moved nodes " << std::sqrt(max_move) << '\n';
