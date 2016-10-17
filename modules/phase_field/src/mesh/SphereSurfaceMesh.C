@@ -15,13 +15,15 @@ InputParameters validParams<SphereSurfaceMesh>()
   params.addParam<MooseEnum>("elem_type", elem_types, "The type of triangle element from libMesh to generate");
   params.addParam<Real>("radius", 1.0, "Sphere radius");
   params.addParam<unsigned int>("depth", 4, "Iteration steps in the triangle bisection construction");
+  params.addParam<unsigned int>("relax", 20, "Relaxation cycles to equilibrate triangle sizes");
   return params;
 }
 
 SphereSurfaceMesh::SphereSurfaceMesh(const InputParameters & parameters) :
     MooseMesh(parameters),
     _radius(getParam<Real>("radius")),
-    _depth(getParam<unsigned int>("depth"))
+    _depth(getParam<unsigned int>("depth")),
+    _relax(getParam<unsigned int>("relax"))
 {
 }
 
@@ -175,58 +177,38 @@ SphereSurfaceMesh::buildMesh()
   std::cout << "start moving nodes\n" << mesh.n_nodes() << " == " << nodes << '\n' << edge_list.size() << " == " << edges << '\n';
 
   // optimize nodes for equidistant distribution
-  std::vector<RealVectorValue> force;
-  RealVectorValue f;
-  for (unsigned int i = 0; i < 10; ++i)
+  std::vector<RealVectorValue> center;
+  for (unsigned int i = 0; i < _relax; ++i)
   {
-    // compute forces by iterating over edges
-    force.assign(nodes, RealVectorValue());
-
+    // compute center of surrounding nodes
+    center.assign(nodes, RealVectorValue());
     for (auto j = beginIndex(edge_list); j < edge_list.size(); ++j)
     {
       const auto & edge = edge_list[j];
-      const auto & node1 = *(mesh.node_ptr(edge.first));
-      const auto & node2 = *(mesh.node_ptr(edge.second));
-
-      f = node1 - node2;
-
-      // std::cout << "EL " << node1(0) << ' ' << node1(1) << ' ' << node1(2) << '\n';
-      // std::cout << "EL " << node2(0) << ' ' << node2(1) << ' ' << node2(2) << "\nEL\nEL\n";
-
-      force[edge.first] += f * 0.5;
-      force[edge.second] -= f * 0.5;
-      // force[edge.first] += RealVectorValue(1,0,1);
-      // force[edge.second] += RealVectorValue(0,1,1);
+      center[edge.first] += *(mesh.node_ptr(edge.second));
+      center[edge.second] += *(mesh.node_ptr(edge.first));
     }
 
-    // move nodes (skip original octahedron corners)
-    Real max_move;
+    // move nodes to new centers and reproject (skip original octahedron corners)
+    Real max_move = 0.0;
     for (unsigned int j = 6; j < nodes; ++j)
     {
       auto & node = *(mesh.node_ptr(j));
-
-      // restrict force to tangential plane
-      RealVectorValue n = node / node.norm();
-      const RealVectorValue move = force[j] - force[j] * n * n;
-
-      // std::cout << j << ": " << force[j] << " -> " << move << '\n';
-
-      // std::cout << "FE " << node(0) << ' ' << node(1) << ' ' << node(2) << '\n';
-      // std::cout << "FE " << force[j](0) << ' ' << force[j](1) << ' ' << force[j](2) << "\nFE\nFE\n";
+      RealVectorValue old_node = node;
 
       // move node
-      const Real move2 = move.norm_sq();
-      if (move2 > max_move)
-        max_move = 0.1 * move2;
-      node += -move;
+      node = center[j];
 
       // reproject to sphere surface
       node *= _radius / node.norm();
 
-      // std::cout << "FE " << node(0) << ' ' << node(1) << ' ' << node(2) << "\nFE\nFE\n";
+      // keep track of max displacement
+      const Real move2 = (node - old_node).norm_sq();
+      if (move2 > max_move)
+        max_move = move2;
     }
 
-    std::cout << "moved nodes " << std::sqrt(max_move) << '\n';
+    std::cout << "moved nodes " << std::sqrt(max_move)/_radius << '\n';
   }
 
   std::cout << "done moving nodes\n\n";

@@ -35,6 +35,7 @@ protected:
 
   /// iteration depth
   const unsigned int _depth;
+  const unsigned int _relax;
 };
 
 #endif // SPHERESURFACEMESH_H
