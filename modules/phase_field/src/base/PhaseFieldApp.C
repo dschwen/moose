@@ -112,6 +112,7 @@
 #include "AsymmetricCrossTermBarrierFunctionMaterial.h"
 #include "BarrierFunctionMaterial.h"
 #include "CompositeMobilityTensor.h"
+#include "ComputePolycrystalEigenstrain.h"
 #include "ComputePolycrystalElasticityTensor.h"
 #include "ConstantAnisotropicMobility.h"
 #include "CrossTermBarrierFunctionMaterial.h"
@@ -156,6 +157,7 @@
 #include "FeatureFloodCount.h"
 #include "GrainTracker.h"
 #include "GrainTrackerElasticity.h"
+#include "GrainTrackerRankTwo.h"
 #include "FauxGrainTracker.h"
 #include "PFCElementEnergyIntegral.h"
 
@@ -372,6 +374,7 @@ PhaseFieldApp::registerObjects(Factory & factory)
   registerMaterial(AsymmetricCrossTermBarrierFunctionMaterial);
   registerMaterial(BarrierFunctionMaterial);
   registerMaterial(CompositeMobilityTensor);
+  registerMaterial(ComputePolycrystalEigenstrain);
   registerMaterial(ComputePolycrystalElasticityTensor);
   registerMaterial(ConstantAnisotropicMobility);
   registerMaterial(CrossTermBarrierFunctionMaterial);
@@ -415,6 +418,7 @@ PhaseFieldApp::registerObjects(Factory & factory)
   registerDeprecatedObjectName(FauxGrainTracker, "GrainCentersPostprocessor", "11/01/2016 00:00");
   registerPostprocessor(GrainTracker);
   registerPostprocessor(GrainTrackerElasticity);
+  registerPostprocessor(GrainTrackerRankTwo);
   registerPostprocessor(PFCElementEnergyIntegral);
 
   registerAux(BndsCalcAux);

@@ -14,7 +14,7 @@
 class GrainTrackerElasticity;
 class EulerAngleProvider;
 
-template<>
+template <>
 InputParameters validParams<GrainTrackerElasticity>();
 
 /**
@@ -26,7 +26,7 @@ public:
   GrainTrackerElasticity(const InputParameters & parameters);
 
 protected:
-  RankFourTensor newGrain(unsigned int new_grain_id);
+  RankFourTensor newGrain(unsigned int new_grain_id) override;
 
   /// generate random rotations when the Euler Angle provider runs out of data (otherwise error out)
   const bool _random_rotations;
