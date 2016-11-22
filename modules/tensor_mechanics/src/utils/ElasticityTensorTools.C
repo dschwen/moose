@@ -60,4 +60,15 @@ momentJacobianWC(const RankFourTensor & r4t, unsigned int i, unsigned int k, Rea
   return test * phi * sum;
 }
 
+Real
+momentNormalJacobian(const RankFourTensor & r4t, unsigned int i, unsigned int k, Real test, const RealGradient & grad_phi, const RealVectorValue & normals )
+{
+  // Jacobian entry for antiperiodic traction residual
+  Real sum = 0.0;
+  for (unsigned int m = 0; m < LIBMESH_DIM; ++m)
+    for (unsigned int n = 0; n < LIBMESH_DIM; ++n)
+      sum +=  r4t(i, m, k, n) * normals(m) * grad_phi(n);
+  return test * sum;
+}
+
 }

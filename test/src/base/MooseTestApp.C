@@ -158,6 +158,7 @@
 #include "DGFunctionConvectionDirichletBC.h"
 #include "CoupledKernelGradBC.h"
 
+// interface kernels
 #include "InterfaceDiffusion.h"
 
 #include "ExplicitODE.h"

@@ -12,18 +12,12 @@
   ymin = -0.5
   ymax = 0.5
   periodic_directions = 'x y'
+[]
 
-  [./MortarInterfaces]
-    [./left_right]
-      master = 1
-      slave = 3
-      subdomain = 10
-    [../]
-    [./up_down]
-      master = 0
-      slave = 2
-      subdomain = 11
-    [../]
+[Modules/PhaseField/MortarPeriodicity]
+  [./strain]
+    variable = 'disp_x disp_y'
+    periodicity = gradient
   [../]
 []
 
@@ -52,30 +46,6 @@
     order = CONSTANT
     family = MONOMIAL
   [../]
-  [./strain_xx_elastic]
-    order = CONSTANT
-    family = MONOMIAL
-  [../]
-  [./strain_yy_elastic]
-    order = CONSTANT
-    family = MONOMIAL
-  [../]
-  [./strain_xy_elastic]
-    order = CONSTANT
-    family = MONOMIAL
-  [../]
-  [./strain_xz_elastic]
-    order = CONSTANT
-    family = MONOMIAL
-  [../]
-  [./strain_zz_elastic]
-    order = CONSTANT
-    family = MONOMIAL
-  [../]
-  [./strain_yz_elastic]
-    order = CONSTANT
-    family = MONOMIAL
-  [../]
 []
 
 [AuxKernels]
@@ -86,60 +56,6 @@
     variable = local_energy
     interfacial_vars = 'c'
     kappa_names = 'kappa_c'
-  [../]
-  [./matl_e11]
-    type = RankTwoAux
-    rank_two_tensor = elastic_strain
-    index_i = 0
-    index_j = 0
-    variable = strain_xx_elastic
-    block = 0
-    execute_on = 'timestep_end'
-  [../]
-  [./matl_e12]
-    type = RankTwoAux
-    rank_two_tensor = elastic_strain
-    index_i = 0
-    index_j = 1
-    variable = strain_xy_elastic
-    block = 0
-    execute_on = 'timestep_end'
-  [../]
-  [./matl_e13]
-    type = RankTwoAux
-    rank_two_tensor = elastic_strain
-    index_i = 0
-    index_j = 2
-    variable = strain_xz_elastic
-    block = 0
-    execute_on = 'timestep_end'
-  [../]
-  [./matl_e22]
-    type = RankTwoAux
-    rank_two_tensor = elastic_strain
-    index_i = 1
-    index_j = 1
-    variable = strain_yy_elastic
-    block = 0
-    execute_on = 'timestep_end'
-  [../]
-  [./matl_e23]
-    type = RankTwoAux
-    rank_two_tensor = elastic_strain
-    index_i = 1
-    index_j = 2
-    variable = strain_yz_elastic
-    block = 0
-    execute_on = 'timestep_end'
-  [../]
-  [./matl_e33]
-    type = RankTwoAux
-    rank_two_tensor = elastic_strain
-    index_i = 2
-    index_j = 2
-    variable = strain_zz_elastic
-    block = 0
-    execute_on = 'timestep_end'
   [../]
 []
 
@@ -163,109 +79,6 @@
   [../]
   [./disp_y]
     block = 0
-  [../]
-
-  # Lagrange multipliers for gradient component periodicity
-  [./lm_left_right_xx]
-    order = FIRST
-    family = LAGRANGE
-    block = 10
-  [../]
-  [./lm_left_right_xy]
-    order = FIRST
-    family = LAGRANGE
-    block = 10
-  [../]
-  [./lm_left_right_yx]
-    order = FIRST
-    family = LAGRANGE
-    block = 10
-  [../]
-  [./lm_left_right_yy]
-    order = FIRST
-    family = LAGRANGE
-    block = 10
-  [../]
-
-  [./lm_up_down_xx]
-    order = FIRST
-    family = LAGRANGE
-    block = 11
-  [../]
-  [./lm_up_down_xy]
-    order = FIRST
-    family = LAGRANGE
-    block = 11
-  [../]
-  [./lm_up_down_yx]
-    order = FIRST
-    family = LAGRANGE
-    block = 11
-  [../]
-  [./lm_up_down_yy]
-    order = FIRST
-    family = LAGRANGE
-    block = 11
-  [../]
-[]
-
-[Constraints]
-  [./ud_disp_x_grad_x]
-    type = EqualGradientConstraint
-    variable = lm_up_down_xx
-    interface = up_down
-    component = 0
-    master_variable = disp_x
-  [../]
-  [./ud_disp_x_grad_y]
-    type = EqualGradientConstraint
-    variable = lm_up_down_xy
-    interface = up_down
-    component = 1
-    master_variable = disp_x
-  [../]
-  [./ud_disp_y_grad_x]
-    type = EqualGradientConstraint
-    variable = lm_up_down_yx
-    interface = up_down
-    component = 0
-    master_variable = disp_y
-  [../]
-  [./ud_disp_y_grad_y]
-    type = EqualGradientConstraint
-    variable = lm_up_down_yy
-    interface = up_down
-    component = 1
-    master_variable = disp_y
-  [../]
-
-  [./lr_disp_x_grad_x]
-    type = EqualGradientConstraint
-    variable = lm_left_right_xx
-    interface = left_right
-    component = 0
-    master_variable = disp_x
-  [../]
-  [./lr_disp_x_grad_y]
-    type = EqualGradientConstraint
-    variable = lm_left_right_xy
-    interface = left_right
-    component = 1
-    master_variable = disp_x
-  [../]
-  [./lr_disp_y_grad_x]
-    type = EqualGradientConstraint
-    variable = lm_left_right_yx
-    interface = left_right
-    component = 0
-    master_variable = disp_y
-  [../]
-  [./lr_disp_y_grad_y]
-    type = EqualGradientConstraint
-    variable = lm_left_right_yy
-    interface = left_right
-    component = 1
-    master_variable = disp_y
   [../]
 []
 
@@ -355,7 +168,7 @@
     type = ComputeSmallStrain
     block = 0
     displacements = 'disp_x disp_y'
-    eigenstrain_names = eigenstrain
+    eigenstrains = eigenstrain
   [../]
 
   [./eigenstrain]

@@ -36,6 +36,11 @@ Real momentJacobian(const RankFourTensor & r4t,unsigned int i, unsigned int k, R
  */
 Real momentJacobianWC(const RankFourTensor & r4t,unsigned int i, unsigned int k, Real test, Real phi);
 
+/**
+ * This is used for the RVEAntiperiodicTraction implementation. This is the same as momentJacobian but also needs to sum over the normals at the boundary
+ */
+Real momentNormalJacobian(const RankFourTensor & r4t,unsigned int i, unsigned int k, Real test, const RealGradient & grad_phi, const RealVectorValue & normals);
+
 }
 
 #endif //ELASTICITYTENSORTOOLS_H

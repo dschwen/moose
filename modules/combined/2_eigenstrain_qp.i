@@ -1,29 +1,30 @@
 #
-# Eigenstrain with Mortar gradient periodicity
+# Eigenstrain with neighbor relation of quasiperiodicity
 #
 
 [Mesh]
-  type = MortarPeriodicMesh
+  type = GeneratedMesh
   dim = 2
   nx = 50
   ny = 50
   xmin = -0.5
   xmax = 0.5
+
   ymin = -0.5
   ymax = 0.5
-  periodic_directions = 'x y'
 
-  [./MortarInterfaces]
-    [./left_right]
-      master = 1
-      slave = 3
-      subdomain = 10
-    [../]
-    [./up_down]
-      master = 0
-      slave = 2
-      subdomain = 11
-    [../]
+[]
+
+[UserObjects]
+  [./quasiperiodicneighbors_x]
+    type = QuasiPeriodicNeighbors
+    execute_on = 'initial linear nonlinear timestep_begin'
+    component = 0
+  [../]
+  [./quasiperiodicneighbors_y]
+    type = QuasiPeriodicNeighbors
+    execute_on = 'initial linear nonlinear timestep_begin'
+    component = 1
   [../]
 []
 
@@ -33,22 +34,108 @@
     coord = '0.0 0.0'
     new_boundary = 100
   [../]
+
   [./anode]
     type = AddExtraNodeset
     coord = '0.0 0.5'
     new_boundary = 101
   [../]
+
+
+  [./cornernode_1]
+    type = AddExtraNodeset
+    coord = '-0.5 0.0'
+    new_boundary = 102
+  [../]
+  [./cornernode_2]
+    type = AddExtraNodeset
+    coord = '0.0 -0.5'
+    new_boundary = 103
+  [../]
+  [./cornernode_3]
+    type = AddExtraNodeset
+    coord = '0.5 0.0'
+    new_boundary = 104
+  [../]
+  [./cornernode_4]
+    type = AddExtraNodeset
+    coord = '0.5 0.5'
+    new_boundary = 105
+  [../]
+
 []
 
 [GlobalParams]
+  penalty = 1.0 #10 with du/dt on seems pretty good, problems with solve after some time
   derivative_order = 2
   enable_jit = true
+  D = 1.0
+  D_neighbor = 1.0
   displacements = 'disp_x disp_y'
+  use_displaced_mesh = false
+[]
+
+[Variables]
+  # Solute concentration variable
+  [./c]
+    [./InitialCondition]
+      type = RandomIC
+      seed = 2
+      min = 0.49
+      max = 0.51
+    [../]
+    block = 0
+  [../]
+  [./w]
+    block = 0
+  [../]
+
+  # Mesh displacement
+  [./disp_x]
+    block = 0
+    #[./InitialCondition]
+    #  type = RandomIC
+    #  min = -1e-4
+    #  max = 1e-4
+    #[../]
+  [../]
+  [./disp_y]
+    block = 0
+    #[./InitialCondition]
+    #  type = RandomIC
+    #  min = -1e-4
+    #  max = 1e-4
+    #[../]
+  [../]
 []
 
 # AuxVars to compute the free energy density for outputting
 [AuxVariables]
   [./local_energy]
+    order = CONSTANT
+    family = MONOMIAL
+  [../]
+  [./stress_xx_elastic]
+    order = CONSTANT
+    family = MONOMIAL
+  [../]
+  [./stress_yy_elastic]
+    order = CONSTANT
+    family = MONOMIAL
+  [../]
+  [./stress_xy_elastic]
+    order = CONSTANT
+    family = MONOMIAL
+  [../]
+  [./stress_xz_elastic]
+    order = CONSTANT
+    family = MONOMIAL
+  [../]
+  [./stress_zz_elastic]
+    order = CONSTANT
+    family = MONOMIAL
+  [../]
+  [./stress_yz_elastic]
     order = CONSTANT
     family = MONOMIAL
   [../]
@@ -76,9 +163,32 @@
     order = CONSTANT
     family = MONOMIAL
   [../]
+  [./R_disp_x]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+  [./R_disp_y]
+    order = FIRST
+    family = LAGRANGE
+  [../]
 []
 
 [AuxKernels]
+  [./comp_R_disp_x]
+    type = DebugResidualAux
+    block = 0
+    execute_on = 'timestep_end'
+    variable = R_disp_x
+    debug_variable = disp_x
+  [../]
+  [./comp_R_disp_y]
+    type = DebugResidualAux
+    block = 0
+    execute_on = 'timestep_end'
+    variable = R_disp_y
+    debug_variable = disp_y
+  [../]
+
   [./local_free_energy]
     type = TotalFreeEnergy
     block = 0
@@ -143,132 +253,6 @@
   [../]
 []
 
-[Variables]
-  # Solute concentration variable
-  [./c]
-    [./InitialCondition]
-      type = RandomIC
-      min = 0.49
-      max = 0.51
-    [../]
-    block = 0
-  [../]
-  [./w]
-    block = 0
-  [../]
-
-  # Mesh displacement
-  [./disp_x]
-    block = 0
-  [../]
-  [./disp_y]
-    block = 0
-  [../]
-
-  # Lagrange multipliers for gradient component periodicity
-  [./lm_left_right_xx]
-    order = FIRST
-    family = LAGRANGE
-    block = 10
-  [../]
-  [./lm_left_right_xy]
-    order = FIRST
-    family = LAGRANGE
-    block = 10
-  [../]
-  [./lm_left_right_yx]
-    order = FIRST
-    family = LAGRANGE
-    block = 10
-  [../]
-  [./lm_left_right_yy]
-    order = FIRST
-    family = LAGRANGE
-    block = 10
-  [../]
-
-  [./lm_up_down_xx]
-    order = FIRST
-    family = LAGRANGE
-    block = 11
-  [../]
-  [./lm_up_down_xy]
-    order = FIRST
-    family = LAGRANGE
-    block = 11
-  [../]
-  [./lm_up_down_yx]
-    order = FIRST
-    family = LAGRANGE
-    block = 11
-  [../]
-  [./lm_up_down_yy]
-    order = FIRST
-    family = LAGRANGE
-    block = 11
-  [../]
-[]
-
-[Constraints]
-  [./ud_disp_x_grad_x]
-    type = EqualGradientConstraint
-    variable = lm_up_down_xx
-    interface = up_down
-    component = 0
-    master_variable = disp_x
-  [../]
-  [./ud_disp_x_grad_y]
-    type = EqualGradientConstraint
-    variable = lm_up_down_xy
-    interface = up_down
-    component = 1
-    master_variable = disp_x
-  [../]
-  [./ud_disp_y_grad_x]
-    type = EqualGradientConstraint
-    variable = lm_up_down_yx
-    interface = up_down
-    component = 0
-    master_variable = disp_y
-  [../]
-  [./ud_disp_y_grad_y]
-    type = EqualGradientConstraint
-    variable = lm_up_down_yy
-    interface = up_down
-    component = 1
-    master_variable = disp_y
-  [../]
-
-  [./lr_disp_x_grad_x]
-    type = EqualGradientConstraint
-    variable = lm_left_right_xx
-    interface = left_right
-    component = 0
-    master_variable = disp_x
-  [../]
-  [./lr_disp_x_grad_y]
-    type = EqualGradientConstraint
-    variable = lm_left_right_xy
-    interface = left_right
-    component = 1
-    master_variable = disp_x
-  [../]
-  [./lr_disp_y_grad_x]
-    type = EqualGradientConstraint
-    variable = lm_left_right_yx
-    interface = left_right
-    component = 0
-    master_variable = disp_y
-  [../]
-  [./lr_disp_y_grad_y]
-    type = EqualGradientConstraint
-    variable = lm_left_right_yy
-    interface = left_right
-    component = 1
-    master_variable = disp_y
-  [../]
-[]
-
 [Kernels]
   # Set up stress divergence kernels
   [./TensorMechanics]
@@ -280,6 +264,14 @@
     variable = w
     v = c
   [../]
+  #[./disp_x_dot]
+  #  type = TimeDerivative
+  #  variable = disp_x
+  #[../]
+  #[./disp_y_dot]
+  #  type = TimeDerivative
+  #  variable = disp_y
+  #[../]
   [./c_res]
     type = SplitCHParsed
     variable = c
@@ -298,7 +290,7 @@
   # declare a few constants, such as mobilities (L,M) and interface gradient prefactors (kappa*)
   [./consts]
     type = GenericConstantMaterial
-    block = '0 10 11'
+    block = '0'
     prop_names  = 'M   kappa_c'
     prop_values = '0.2 0.01   '
   [../]
@@ -366,12 +358,6 @@
     args = c
     eigenstrain_name = eigenstrain
   [../]
-
-  [./stress]
-    type = ComputeLinearElasticStress
-    block = 0
-  [../]
-
   # chemical free energies
   [./chemical_free_energy]
     type = DerivativeParsedMaterial
@@ -381,6 +367,11 @@
     args = 'c'
     outputs = exodus
     output_properties = Fc
+  [../]
+
+  [./stress]
+    type = ComputeLinearElasticStress
+    block = 0
   [../]
 
   # elastic free energies
@@ -403,18 +394,54 @@
   [../]
 []
 
+[InterfaceKernels]
+  [./xx_int_left]
+    type = QuasiPeriodicTestKernel
+    variable = disp_x
+    neighbor_var = disp_x
+    component = 0
+    boundary = 'left'
+  [../]
+
+  [./yx_int_left]
+    type = QuasiPeriodicTestKernel
+    variable = disp_y
+    neighbor_var = disp_y
+    component = 0
+    boundary = 'left'
+  [../]
+
+  ## -----top-----
+  [./xy_int_top]
+    type = QuasiPeriodicTestKernel
+    variable = disp_x
+    neighbor_var = disp_x
+    component = 1
+    boundary = 'top'
+  [../]
+
+  [./yy_int_top]
+    type = QuasiPeriodicTestKernel
+    variable = disp_y
+    neighbor_var = disp_y
+    component = 1
+    boundary = 'top'
+  [../]
+
+[]
+
 [BCs]
   [./Periodic]
     [./up_down]
       primary = top
       secondary = bottom
-      translation = '0 -1 0'
+      translation = '0 -1.0 0'
       variable = 'c w'
     [../]
     [./left_right]
       primary = left
       secondary = right
-      translation = '1 0 0'
+      translation = '1.0 0 0'
       variable = 'c w'
     [../]
   [../]
@@ -424,28 +451,22 @@
     type = PresetBC
     boundary = 100
     variable = disp_x
-    value = 0
+    value = 0.0
   [../]
   [./centerfix_y]
     type = PresetBC
     boundary = 100
     variable = disp_y
-    value = 0
+    value = 0.0
   [../]
 
-  # fix side point x coordinate to inhibit rotation
-  [./angularfix]
+
+  ## fix side point x coordinate to inhibit rotation
+  [./angularfix_1]
     type = PresetBC
     boundary = 101
     variable = disp_x
-    value = 0
-  [../]
-[]
-
-[Preconditioning]
-  [./SMP]
-    type = SMP
-    full = true
+    value = 0.0
   [../]
 []
 
@@ -463,14 +484,14 @@
     execute_on = 'initial TIMESTEP_END'
     variable = c
   [../]
-  [./min]
+  [./c_min]
     type = ElementExtremeValue
     block = 0
     execute_on = 'initial TIMESTEP_END'
     value_type = min
     variable = c
   [../]
-  [./max]
+  [./c_max]
     type = ElementExtremeValue
     block = 0
     execute_on = 'initial TIMESTEP_END'
@@ -479,38 +500,46 @@
   [../]
 []
 
+
+[Preconditioning]
+  [./SMP]
+    type = SMP
+    full = true
+    # mortar currently does not support MPI parallelization
+    petsc_options_iname = '-pc_type'
+    #does the null space mess this problem up??
+    petsc_options_value = ' lu'
+  [../]
+[]
+
 [Executioner]
   type = Transient
-  scheme = bdf2
+  scheme = bdf2 #does not seem to matter if bdf2 or implicit-euler
   solve_type = 'PJFNK'
-
-  line_search = basic
-
-  # mortar currently does not support MPI parallelization
-  petsc_options_iname = '-pc_type -pc_factor_shift_type -pc_factor_shift_amount'
-  petsc_options_value = ' lu       NONZERO               1e-10'
-
-  l_max_its = 30
-  nl_max_its = 12
-
-  l_tol = 1.0e-4
 
   nl_rel_tol = 1.0e-8
   nl_abs_tol = 1.0e-10
 
   start_time = 0.0
-  num_steps = 200
+  num_steps = 500
+
+
+  #nl_max_its = 15
+  #end_time = 0.05
 
   [./TimeStepper]
     type = SolutionTimeAdaptiveDT
     dt = 0.01
   [../]
+  #dt = 0.001
+  dtmax = 0.01
 []
 
 [Outputs]
   execute_on = 'timestep_end'
-  print_linear_residuals = false
+  print_linear_residuals = true
   exodus = true
+  file_base = out_test_strain
   [./table]
     type = CSV
     delimiter = ' '

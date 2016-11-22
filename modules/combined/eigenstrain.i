@@ -11,7 +11,7 @@
   xmax = 0.5
   ymin = -0.5
   ymax = 0.5
-  periodic_directions = 'x y'
+  periodic_directions = 'x'
 
   [./MortarInterfaces]
     [./left_right]
@@ -19,11 +19,11 @@
       slave = 3
       subdomain = 10
     [../]
-    [./up_down]
-      master = 0
-      slave = 2
-      subdomain = 11
-    [../]
+    #[./up_down]
+    #  master = 0
+    #  slave = 2
+    #  subdomain = 11
+    #[../]
   [../]
 []
 
@@ -187,57 +187,57 @@
     block = 10
   [../]
 
-  [./lm_up_down_xx]
-    order = FIRST
-    family = LAGRANGE
-    block = 11
-  [../]
-  [./lm_up_down_xy]
-    order = FIRST
-    family = LAGRANGE
-    block = 11
-  [../]
-  [./lm_up_down_yx]
-    order = FIRST
-    family = LAGRANGE
-    block = 11
-  [../]
-  [./lm_up_down_yy]
-    order = FIRST
-    family = LAGRANGE
-    block = 11
-  [../]
+  #[./lm_up_down_xx]
+  #  order = FIRST
+  #  family = LAGRANGE
+  #  block = 11
+  #[../]
+  #[./lm_up_down_xy]
+  #  order = FIRST
+  #  family = LAGRANGE
+  #  block = 11
+  #[../]
+  #[./lm_up_down_yx]
+  #  order = FIRST
+  #  family = LAGRANGE
+  #  block = 11
+  #[../]
+  #[./lm_up_down_yy]
+  #  order = FIRST
+  #  family = LAGRANGE
+  #  block = 11
+  #[../]
 []
 
 [Constraints]
-  [./ud_disp_x_grad_x]
-    type = EqualGradientConstraint
-    variable = lm_up_down_xx
-    interface = up_down
-    component = 0
-    master_variable = disp_x
-  [../]
-  [./ud_disp_x_grad_y]
-    type = EqualGradientConstraint
-    variable = lm_up_down_xy
-    interface = up_down
-    component = 1
-    master_variable = disp_x
-  [../]
-  [./ud_disp_y_grad_x]
-    type = EqualGradientConstraint
-    variable = lm_up_down_yx
-    interface = up_down
-    component = 0
-    master_variable = disp_y
-  [../]
-  [./ud_disp_y_grad_y]
-    type = EqualGradientConstraint
-    variable = lm_up_down_yy
-    interface = up_down
-    component = 1
-    master_variable = disp_y
-  [../]
+  #[./ud_disp_x_grad_x]
+  #  type = EqualGradientConstraint
+  #  variable = lm_up_down_xx
+  #  interface = up_down
+  #  component = 0
+  #  master_variable = disp_x
+  #[../]
+  #[./ud_disp_x_grad_y]
+  #  type = EqualGradientConstraint
+  #  variable = lm_up_down_xy
+  #  interface = up_down
+  #  component = 1
+  #  master_variable = disp_x
+  #[../]
+  #[./ud_disp_y_grad_x]
+  #  type = EqualGradientConstraint
+  #  variable = lm_up_down_yx
+  #  interface = up_down
+  #  component = 0
+  #  master_variable = disp_y
+  #[../]
+  #[./ud_disp_y_grad_y]
+  #  type = EqualGradientConstraint
+  #  variable = lm_up_down_yy
+  #  interface = up_down
+  #  component = 1
+  #  master_variable = disp_y
+  #[../]
 
   [./lr_disp_x_grad_x]
     type = EqualGradientConstraint
@@ -298,7 +298,7 @@
   # declare a few constants, such as mobilities (L,M) and interface gradient prefactors (kappa*)
   [./consts]
     type = GenericConstantMaterial
-    block = '0 10 11'
+    block = '0 10'
     prop_names  = 'M   kappa_c'
     prop_values = '0.2 0.01   '
   [../]
@@ -405,12 +405,12 @@
 
 [BCs]
   [./Periodic]
-    [./up_down]
-      primary = top
-      secondary = bottom
-      translation = '0 -1 0'
-      variable = 'c w'
-    [../]
+    #[./up_down]
+    #  primary = top
+    #  secondary = bottom
+    #  translation = '0 -1 0'
+    #  variable = 'c w'
+    #[../]
     [./left_right]
       primary = left
       secondary = right
