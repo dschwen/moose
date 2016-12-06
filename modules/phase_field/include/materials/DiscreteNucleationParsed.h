@@ -4,35 +4,30 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-#ifndef DISCRETENUCLEATION_H
-#define DISCRETENUCLEATION_H
+#ifndef DISCRETENUCLEATIONPARSED_H
+#define DISCRETENUCLEATIONPARSED_H
 
 #include "DiscreteNucleationBase.h"
 
 // Forward declaration
-class DiscreteNucleation;
+class DiscreteNucleationParsed;
 
 template<>
-InputParameters validParams<DiscreteNucleation>();
+InputParameters validParams<DiscreteNucleationParsed>();
 
 /**
  * Free energy penalty contribution to force the nucleation of subresolution particles
  */
-class DiscreteNucleation : public DiscreteNucleationBase
+class DiscreteNucleationParsed : public DiscreteNucleationBase
 {
 public:
-  DiscreteNucleation(const InputParameters & params);
+  DiscreteNucleationParsed(const InputParameters & params);
 
   virtual void computeProperties();
 
 protected:
-  unsigned int _nvar;
-
-  /// map op_names indices to _args indices
-  std::vector<unsigned int> _op_index;
-
-  /// Target concentration values
-  const std::vector<Real> _op_values;
+  /// Target material property value
+  const Real _F_value;
 };
 
-#endif //DISCRETENUCLEATION_H
+#endif //DISCRETENUCLEATIONPARSED_H

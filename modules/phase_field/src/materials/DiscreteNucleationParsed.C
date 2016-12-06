@@ -5,41 +5,30 @@
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
 
-#include "DiscreteNucleation.h"
+#include "DiscreteNucleationParsed.h"
 #include "DiscreteNucleationMap.h"
 
 // libmesh includes
 #include "libmesh/quadrature.h"
 
 template<>
-InputParameters validParams<DiscreteNucleation>()
+InputParameters validParams<DiscreteNucleationParsed>()
 {
   InputParameters params = validParams<DiscreteNucleationBase>();
-  params.addClassDescription("Free energy contribution for nucleating discrete particles");
-  params.addRequiredCoupledVar("op_names", "List of variables to force to a target concentration value");
-  params.addRequiredParam<std::vector<Real> >("op_values", "List of target concentration values");
+  params.addClassDescription("Free energy contribution for nucleating discrete particles based on an indirect order parameter (such as the concentration in a Grand Potential model)");
+  params.addRequiredCoupledVar("args", "List of variables the target order parameter property depends on");
+  params.addRequiredParam<Real>("value", "Target prder parameter property value");
   return params;
 }
 
-DiscreteNucleation::DiscreteNucleation(const InputParameters & params) :
+DiscreteNucleationParsed::DiscreteNucleationParsed(const InputParameters & params) :
     DiscreteNucleationBase(params),
-    _nvar(coupledComponents("op_names")),
-    _op_index(_nvar),
-    _op_values(getParam<std::vector<Real> >("op_values"))
+    _F_value(getParam<Real>("value"))
 {
-  // check inputs
-  if (_nvar != _op_values.size())
-    mooseError("The op_names and op_values parameter vectors must have the same number of entries");
-  if (_nvar != _args.size())
-    mooseError("Internal error.");
-
-  // get libMesh variable numbers
-  for (unsigned int i = 0; i < _nvar; ++i)
-    _op_index[i] = argIndex(coupled("op_names", i));
 }
 
 void
-DiscreteNucleation::computeProperties()
+DiscreteNucleationParsed::computeProperties()
 {
   // check if a nucleation event list is available for the current element
   const std::vector<Real> & nucleus = _map.nuclei(_current_elem);
