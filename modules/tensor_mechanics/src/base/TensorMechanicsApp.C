@@ -167,18 +167,6 @@
 
 #include "GeneralizedPlaneStrainUserObject.h"
 
-#include "RVEAntiperiodicTraction.h"
-#include "RVEPeriodicStrain.h"
-#include "RVEStrainBC.h"
-#include "RVEBC.h"
-#include "QuasiPeriodicTestKernel.h"
-#include "QuasiPeriodicGradientTestKernel.h"
-
-#include "InterfaceDiffusionBoundaryTerm.h"
-#include "InterfaceDiffusionFluxMatch.h"
-#include "EqualGradientLagrangeInterface.h"
-#include "EqualGradientLagrangeMultiplier.h"
-
 template<>
 InputParameters validParams<TensorMechanicsApp>()
 {
@@ -349,8 +337,6 @@ TensorMechanicsApp::registerObjects(Factory & factory)
   registerBoundaryCondition(DashpotBC);
   registerBoundaryCondition(PresetVelocity);
   registerBoundaryCondition(Pressure);
-  registerBoundaryCondition(RVEStrainBC);
-  registerBoundaryCondition(RVEBC);
   registerBoundaryCondition(DisplacementAboutAxis);
   registerBoundaryCondition(PresetDisplacement);
   registerBoundaryCondition(PresetAcceleration);
@@ -362,16 +348,6 @@ TensorMechanicsApp::registerObjects(Factory & factory)
 
   registerVectorPostprocessor(LineMaterialRankTwoSampler);
   registerVectorPostprocessor(LineMaterialRankTwoScalarSampler);
-
-  registerInterfaceKernel(RVEAntiperiodicTraction);
-  registerInterfaceKernel(RVEPeriodicStrain);
-  registerInterfaceKernel(QuasiPeriodicTestKernel);
-  registerInterfaceKernel(QuasiPeriodicGradientTestKernel);
-
-  registerInterfaceKernel(InterfaceDiffusionBoundaryTerm);
-  registerInterfaceKernel(InterfaceDiffusionFluxMatch);
-  registerInterfaceKernel(EqualGradientLagrangeInterface);
-  registerInterfaceKernel(EqualGradientLagrangeMultiplier);
 }
 
 // External entry point for dynamic syntax association
