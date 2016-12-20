@@ -49,6 +49,7 @@
   enable_jit = true
   displacements = 'disp_x disp_y'
   use_displaced_mesh = false
+  jacobian_fill = 0
 []
 
 [Variables]
