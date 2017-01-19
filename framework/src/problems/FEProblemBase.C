@@ -276,6 +276,7 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters)
     _fail_next_linear_convergence_check(false),
     _started_initial_setup(false),
     _has_internal_edge_residual_objects(false),
+    _cache_mesh_changed(false),
     _initial_setup_timer(registerTimedSection("initialSetup", 2)),
     _project_solution_timer(registerTimedSection("projectSolution", 2)),
     _compute_indicators_timer(registerTimedSection("computeIndicators", 1)),
@@ -5684,7 +5685,8 @@ FEProblemBase::meshChangedHelper(bool intermediate_change)
 {
   TIME_SECTION(_mesh_changed_helper_timer);
 
-  if (_material_props.hasStatefulProperties() || _bnd_material_props.hasStatefulProperties() ||
+  if (_cache_mesh_changed || _material_props.hasStatefulProperties() ||
+      _bnd_material_props.hasStatefulProperties() ||
       _neighbor_material_props.hasStatefulProperties())
   {
     CONSOLE_TIMED_PRINT("Caching changed lists");

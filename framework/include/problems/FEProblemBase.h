@@ -1598,6 +1598,9 @@ public:
 
   const VectorPostprocessorData & getVectorPostprocessorData() const;
 
+  /// force the changed element lists to be cached after adaptivity steps
+  void requestCacheMeshChanged() { _cache_mesh_changed = true; }
+
   /**
    * Returns _has_jacobian
    */
@@ -2019,6 +2022,9 @@ private:
 
   /// Whether the problem has dgkernels or interface kernels
   bool _has_internal_edge_residual_objects;
+
+  /// build lists of changed elements after refinement steps
+  bool _cache_mesh_changed;
 
   /// Timers
   const PerfID _initial_setup_timer;

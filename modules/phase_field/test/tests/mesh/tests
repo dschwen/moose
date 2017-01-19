@@ -1,0 +1,7 @@
+[Tests]
+  [./coarseningintegral]
+    type = 'CSVDiff'
+    input = 'coarseningintegral.i'
+    csvdiff = 'coarseningintegral_out.csv'
+  [../]
+[]
