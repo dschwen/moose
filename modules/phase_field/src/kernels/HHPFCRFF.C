@@ -1,3 +1,9 @@
+/****************************************************************/
+/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
+/*                                                              */
+/*          All contents are licensed under LGPL V2.1           */
+/*             See LICENSE for full restrictions                */
+/****************************************************************/
 #include "HHPFCRFF.h"
 
 template<>
@@ -55,4 +61,3 @@ HHPFCRFF::computeQpOffDiagJacobian(unsigned int jvar)
 
   return 0.0;
 }
-

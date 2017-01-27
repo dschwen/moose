@@ -98,6 +98,7 @@
     execute_on = 'initial timestep_end'
     variable = edrff0
     log_approach = tolerance
+    coeffs = '1 1 1 1'
     v = 'n u v'
   [../]
   [./Energy_rff1]
@@ -105,6 +106,7 @@
     execute_on = 'initial timestep_end'
     variable = edrff1
     log_approach = cancelation
+    coeffs = '1 1 1 1'
     v = 'n u v'
   [../]
   [./Energy_rff2]
@@ -112,6 +114,7 @@
     execute_on = 'initial timestep_end'
     variable = edrff2
     log_approach = expansion
+    coeffs = '1 1 1 1'
     v = 'n u v'
   [../]
 []

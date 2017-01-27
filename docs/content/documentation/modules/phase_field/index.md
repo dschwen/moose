@@ -13,7 +13,7 @@ The MOOSE phase field module is a library for simplifying the implementation of 
 * [Function Material Kernels](phase_field/FunctionMaterialKernels.md) - Working with Function Materials that carry around their own derivatives
 * Phase Field Model Units - Discussion of units in phase field models
 * Anisotropy - Support of anisotropic mobilities and interfacial energies
-* CALPHAD - Using thermodynamic databases to parameterize phase field models
+* [CALPHAD](phase_field/CALPHAD.md) - Using thermodynamic databases to parameterize phase field models
 * Quantitative Two Component Polynomial Free Energies - Simple two component models using polynomial free energies
 * [FAQ](phase_field/FAQ.md) - Frequently asked questions about the phase field modules
 

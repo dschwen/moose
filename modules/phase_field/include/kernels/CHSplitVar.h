@@ -1,3 +1,9 @@
+/****************************************************************/
+/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
+/*                                                              */
+/*          All contents are licensed under LGPL V2.1           */
+/*             See LICENSE for full restrictions                */
+/****************************************************************/
 #ifndef CHSPLITVAR_H
 #define CHSPLITVAR_H
 
@@ -18,9 +24,9 @@ public:
   CHSplitVar(const InputParameters & parameters);
 
 protected:
-  virtual RealGradient precomputeQpResidual();
-  virtual RealGradient precomputeQpJacobian();
-  virtual Real computeQpOffDiagJacobian(unsigned int jvar);
+  virtual RealGradient precomputeQpResidual() override;
+  virtual RealGradient precomputeQpJacobian() override;
+  virtual Real computeQpOffDiagJacobian(unsigned int jvar) override;
 
 private:
   Real _var_c;

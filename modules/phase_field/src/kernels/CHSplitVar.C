@@ -1,3 +1,9 @@
+/****************************************************************/
+/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
+/*                                                              */
+/*          All contents are licensed under LGPL V2.1           */
+/*             See LICENSE for full restrictions                */
+/****************************************************************/
 #include "CHSplitVar.h"
 
 template<>
@@ -19,7 +25,7 @@ CHSplitVar::CHSplitVar(const InputParameters & parameters) :
 RealGradient
 CHSplitVar::precomputeQpResidual()
 {
-  return  _grad_c[_qp]; // * _grad_test[_i][_qp]
+  return _grad_c[_qp];
 }
 
 RealGradient
@@ -36,4 +42,3 @@ CHSplitVar::computeQpOffDiagJacobian(unsigned int jvar)
 
   return 0.0;
 }
-

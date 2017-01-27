@@ -4,9 +4,8 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-
-#ifndef PFCRFF_ENERGY_DENSITY_H
-#define PFCRFF_ENERGY_DENSITY_H
+#ifndef PFCRFFENERGYDENSITY_H
+#define PFCRFFENERGYDENSITY_H
 
 #include "AuxKernel.h"
 #include <sstream>
@@ -22,18 +21,15 @@ public:
    PFCRFFEnergyDensity( const InputParameters & parameters);
 
 protected:
-  virtual Real computeValue();
+  virtual Real computeValue() override;
 
   unsigned int _order;
   std::vector<const VariableValue *> _vals;
 
-  Real _a;
-  Real _b;
-  Real _c;
-  unsigned int _num_exp_terms;
+  std::vector<Real> _coeffs;
+
   MooseEnum _log_approach;
   Real _tol;
-
 };
 
-#endif //PFCRFF_ENERGY_DENSITY_H
+#endif //PFCRFFENERGYDENSITY_H

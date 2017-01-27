@@ -1,6 +1,8 @@
 # Multiphase models
 
-Material objects that internally derive from `DerivativeFunctionMaterialBase` ([Doxygen](http://mooseframework.org/docs/doxygen/modules/classDerivativeFunctionMaterialBase.html)), like the materials for the [Parsed Function Kernels](FunctionMaterialKernels.md) are used to provide the free energy expressions for each phase.
+Material objects that internally derive from `DerivativeFunctionMaterialBase` ([Doxygen](http://mooseframework.org/docs/doxygen/modules/classDerivativeFunctionMaterialBase.html)),
+like the materials for the [Parsed Function Kernels](FunctionMaterialKernels.md)
+are used to provide the free energy expressions for each phase.
 
 The flexible **multiphase model** uses _n_ order parameters to control _n_ phases
 while employing a Lagrange multiplier based constraint to enforce the sum of all

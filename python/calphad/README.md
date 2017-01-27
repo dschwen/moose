@@ -14,9 +14,19 @@ The [pycalphad](https://github.com/richardotis/pycalphad) Python module is requi
 parsing of the ```*.tdb``` files. [SymPy](https://github.com/sympy/sympy) is required to build the
 functional forms of the calphad expressions.
 
-To install and/or upgrade these prerequisites use pip:
+To install and/or upgrade these prerequisites use conda (requires the `miniconda`
+module to be loaded):
+
 ```
-sudo -H pip install --upgrade pycalphad
+conda create -n calphad --clone=/opt/moose/miniconda
+conda install -n calphad sympy
+conda install -n calphad --channel https://conda.anaconda.org/conda-forge pycalphad
+```
+
+The new environment needs to be activated using:
+
+```
+source activate jupyter
 ```
 
 

@@ -25,7 +25,7 @@ InputParameters validParams<CoupledSwitchingTimeDerivative>();
  * \f$ \eta_{ai} \f$ is the order parameter that is the nonlinear variable, \f$ t \f$ is time,
  * and \f$ F_a, F_b,.. \f$ are functions for each phase. For the grand-potential
  * model susceptibility equation, \f$ F_a \f$ etc. are the phase densities.
- **/
+ */
 class CoupledSwitchingTimeDerivative : public DerivativeMaterialInterface<JvarMapKernelInterface<CoupledTimeDerivative> >
 {
 public:

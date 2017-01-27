@@ -17,9 +17,11 @@ class GrainTrackerInterface;
 template<>
 InputParameters validParams<GrainRigidBodyMotionBase>();
 
+/**
+ * Base class for adding rigid body motion to grains
+ */
 class GrainRigidBodyMotionBase :
     public NonlocalKernel
-
 {
 public:
   GrainRigidBodyMotionBase(const InputParameters & parameters);

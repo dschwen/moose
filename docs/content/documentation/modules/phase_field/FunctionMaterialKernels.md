@@ -9,9 +9,12 @@ necessary derivatives to build the _Residuals_ and _Jacobian_ elements computed
 automatically using automatic differentiation
 ([`DerivativeParsedMaterial`](/DerivativeParsedMaterial.md)).
 
-This enables rapid implementation of new Phase Field models without writing custom kernels and recompiling the code.
+This enables rapid implementation of new Phase Field models without writing custom
+kernels and recompiling the code.
 
 ## See also
 
-* [Automatic Differentiation](Function Materials/Automatic Differentiation.md) for MOOSE application developers
-* [ExpressionBuilder](Function Materials/ExpressionBuilder.md) - building FParser expressions at compile time using operator overloading
+* [Automatic Differentiation](Function Materials/Automatic Differentiation.md) for
+  MOOSE application developers
+* [ExpressionBuilder](Function Materials/ExpressionBuilder.md) - building FParser
+  expressions at compile time using operator overloading

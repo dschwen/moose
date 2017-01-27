@@ -45,9 +45,9 @@ $$
 
 where $u$ is the analytical solution, $u_h$ is the equilibrium solution from
 simulation, and $\Omega$ is the domain. The $L^2$ norm can be obtained in the
-MOOSE framework using the [`ElementL2Error`](Postprocessors/framework/ElementL2Error.md) postprocessor. It can be shown from
-the properties of the finite element method that for the linear Lagrange elements
-used in the split formulation,
+MOOSE framework using the [`ElementL2Error`](Postprocessors/framework/ElementL2Error.md)
+postprocessor. It can be shown from the properties of the finite element method
+that for the linear Lagrange elements used in the split formulation,
 
 $$
 |u - u_h|_{L^2} \le Ch^2

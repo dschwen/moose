@@ -1,6 +1,6 @@
 # Basic Phase Field Equations
 
-In the phase field approach, microstructural features are described using continuous variables.  These variables take two forms: conserved variables representing physical properties such as atom concentration or material density, and nonconserved order parameters describing the microstructure of the material, including grains and different phases.  The evolution of these continuous variables is a function of the Gibbs free energy and can be defined as a system of partial differential equations (PDEs). Thus, to define the kinetics of the system, the free energy must be described as a function of the continuous variables representing the microstructure.
+In the phase field approach, microstructural features are described using continuous variables.  These variables take two forms: conserved variables representing physical properties such as atom concentration or material density, and non-conserved order parameters describing the microstructure of the material, including grains and different phases.  The evolution of these continuous variables is a function of the Gibbs free energy and can be defined as a system of partial differential equations (PDEs). Thus, to define the kinetics of the system, the free energy must be described as a function of the continuous variables representing the microstructure.
 
 The system of PDEs representing the evolution of the various variables required to represent a given system and the free energy functional comprise a specific phase field model. The model may also be coupled to additional physics, such as mechanics or heat conduction. These model equations may be solved in many ways, including finite difference, spectral methods, and the finite element method (FEM). The MOOSE-Phase Field module provides the necessary tools to rapidly develop a phase field simulation tool with the equations solved via FEM.
 
@@ -12,7 +12,7 @@ $$
 \frac{\partial c_i}{\partial t} = \nabla \cdot M_i \nabla \frac{\delta F}{\delta c_i}
 $$
 
-where $c_i$ is a conserved variable and $M_i$ is the associated mobility.  The evolution of nonconserved order parameters is represented with an Allen-Cahn equation, according to
+where $c_i$ is a conserved variable and $M_i$ is the associated mobility.  The evolution of non-conserved order parameters is represented with an Allen-Cahn equation, according to
 
 $$
 \frac{\partial \eta_j}{\partial t} = - L_j \frac{\delta F}{\delta \eta_j}, \label{eq:AC}

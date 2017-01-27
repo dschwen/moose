@@ -18,7 +18,7 @@ InputParameters validParams<CHSplitConcentration>();
 /**
  * Solves Cahn-Hilliard equation using
  * chemical potential as non-linear variable
- **/
+ */
 class CHSplitConcentration : public DerivativeMaterialInterface<Kernel>
 {
 public:

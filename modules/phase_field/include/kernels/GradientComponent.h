@@ -14,6 +14,10 @@ class GradientComponent;
 template<>
 InputParameters validParams<GradientComponent>();
 
+/**
+ * Set the value of a non-linear variable to a given component of the gradient
+ * of a coupled variable.
+ */
 class GradientComponent : public Kernel
 {
 public:

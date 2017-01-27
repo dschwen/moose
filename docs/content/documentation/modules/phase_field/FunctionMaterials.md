@@ -1,7 +1,11 @@
 # Function Materials
 
-Function materials describe a family of [Moose material classes](/Materials/index.md) that are derived from the `FunctionMaterialBase`
-base class. A function material provides a `Real` material property that hold the value of an arbitrary function expression. A derivative function material in addition provides further material properties that hold the value of the derivatives of the function expression with respect to each coupled variable up to a defined `derivative_order`.
+Function materials describe a family of [Moose material classes](/Materials/index.md)
+that are derived from the `FunctionMaterialBase` base class. A function material
+provides a `Real` material property that hold the value of an arbitrary function
+expression. A derivative function material in addition provides further material
+properties that hold the value of the derivatives of the function expression with
+respect to each coupled variable up to a defined `derivative_order`.
 
 Available function materials are
 
@@ -18,4 +22,4 @@ Available function materials are
 
 ## See also
 
-- [Automatic Differentiation](Function Materials/Automatic Differentiation.md) for MOOSE application developers
+* [Automatic Differentiation](Function Materials/Automatic Differentiation.md) for MOOSE application developers

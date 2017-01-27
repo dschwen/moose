@@ -16,6 +16,9 @@ class ConservedLangevinNoise;
 template<>
 InputParameters validParams<LangevinNoise>();
 
+/**
+ * Source term for noise from a ConservativeNoise userobject
+ */
 class ConservedLangevinNoise : public LangevinNoise
 {
 public:
