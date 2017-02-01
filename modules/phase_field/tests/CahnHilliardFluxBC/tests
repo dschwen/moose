@@ -9,4 +9,15 @@
     input = 'anisotropic.i'
     exodiff = 'anisotropic_out.e'
   [../]
+
+  [./isotropic_split]
+    type = 'CSVDiff'
+    input = 'isotropic_split.i'
+    csvdiff = 'isotropic_split_out.csv'
+  [../]
+  [./isotropic_nonsplit]
+    type = 'CSVDiff'
+    input = 'isotropic_nonsplit.i'
+    csvdiff = 'isotropic_nonsplit_out.csv'
+  [../]
 []

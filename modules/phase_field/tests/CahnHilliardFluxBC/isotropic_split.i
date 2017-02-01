@@ -12,7 +12,11 @@
   [./c]
     order = FIRST
     family = LAGRANGE
-    initial_condition = -0.5
+    [./InitialCondition]
+      type = RandomIC
+      max = 0.1
+      min = -0.1
+    [../]
   [../]
   [./w]
     order = FIRST
@@ -53,7 +57,7 @@
 
   [./diff]
     type = MatDiffusion
-    D_name = 5.0
+    D_name = 10.0
     variable = d
   [../]
   [./time2]
@@ -67,7 +71,7 @@
     type = CahnHilliardFluxBC
     variable = w
     boundary = top
-    flux = '0 1.0 0'
+    flux = '0 0 0'
     mob_name = M
     args = 'c d'
   [../]
@@ -103,7 +107,7 @@
   [./mob]
     type = DerivativeParsedMaterial
     f_name = M
-    function = '10' # 'c^2+d+0.1'
+    function = 'c^2+d+0.1'
     args = 'c d'
   [../]
   [./F]
@@ -118,7 +122,20 @@
   [./total_solute]
     type = ElementIntegralVariablePostprocessor
     variable = c
-    execute_on = 'initial timestep_end'
+    execute_on = 'timestep_end'
+    outputs = none
+  [../]
+  [./initial_solute]
+    type = ElementIntegralVariablePostprocessor
+    variable = c
+    execute_on = 'initial'
+    outputs = none
+  [../]
+  [./solute_change]
+    type = DifferencePostprocessor
+    value1 = total_solute
+    value2 = initial_solute
+    execute_on = 'timestep_end'
   [../]
 []
 
@@ -130,16 +147,15 @@
   l_max_its = 30
   l_tol = 1.0e-3
   nl_max_its = 10
-  nl_rel_tol = 1.0e-11
-  nl_abs_tol = 1.0e-11
-  num_steps = 10
+  nl_rel_tol = 1.0e-12
+  nl_abs_tol = 1.0e-12
+  num_steps = 4
 
-  dt = 0.01
+  dt = 1
 []
 
 [Outputs]
-  exodus = true
-  interval = 5
+  csv = true
   print_linear_residuals = false
   print_perf_log = true
 []
