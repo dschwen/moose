@@ -41,8 +41,10 @@ OrderParameterInterfaceMarker::OrderParameterInterfaceMarker(const InputParamete
   for (auto i = decltype(_n_vars)(0); i < _n_vars; ++i)
   {
     _var_nodal[i] = getVar("interface_vars", i)->isNodal();
+    std::cout << getVar("interface_vars", i)->name() << " is nodal = " << _var_nodal[i] << '\n';
     _vals[i] = _var_nodal[i] ? &coupledNodalValue("interface_vars", i) : &coupledValue("interface_vars", i);
     _value_change[i] /= _elems_across_interface;
+    std::cout << "target value change " << _value_change[i] << '\n';
   }
 }
 
@@ -67,6 +69,9 @@ OrderParameterInterfaceMarker::computeElementMarker()
       if ((*_vals[i])[qp] < min)
         min = (*_vals[i])[qp];
     }
+
+    // std::cout << max << '-' << min << ' ';
+    std::cout << (*_vals[i])[0] << ',' << (*_vals[i])[1] << ' ';
 
     // if we are above the targeted change we need to refine
     if (max - min > _value_change[i])
