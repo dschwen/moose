@@ -6,24 +6,32 @@
 /****************************************************************/
 
 #include "OrderParameterInterfaceMarker.h"
+#include "MooseVariable.h"
 #include "Assembly.h"
 
 // libMesh includes
 #include "libmesh/quadrature.h"
 
-template<>
-InputParameters validParams<OrderParameterInterfaceMarker>()
+template <>
+InputParameters
+validParams<OrderParameterInterfaceMarker>()
 {
   InputParameters params = validParams<Marker>();
   params.addClassDescription("Adapt mesh to a target value change across an element. ");
   params.addCoupledVar("interface_vars", "Interface variables to base adaptivity on");
-  params.addParam<std::vector<Real>>("value_change", std::vector<Real>({1.0}), "Value change across an interface for each interface variable");
-  params.addRangeCheckedParam<Real>("elems_across_interface", 3.0, "elems_across_interface > 0", "target number of elements across an interface");
+  params.addParam<std::vector<Real>>(
+      "value_change",
+      std::vector<Real>({1.0}),
+      "Value change across an interface for each interface variable");
+  params.addRangeCheckedParam<Real>("elems_across_interface",
+                                    3.0,
+                                    "elems_across_interface > 0",
+                                    "target number of elements across an interface");
   return params;
 }
 
-OrderParameterInterfaceMarker::OrderParameterInterfaceMarker(const InputParameters & parameters) :
-    Marker(parameters),
+OrderParameterInterfaceMarker::OrderParameterInterfaceMarker(const InputParameters & parameters)
+  : Marker(parameters),
     Coupleable(this, true),
     _qrule(_assembly.qRule()),
     _n_vars(coupledComponents("interface_vars")),
@@ -40,11 +48,11 @@ OrderParameterInterfaceMarker::OrderParameterInterfaceMarker(const InputParamete
 
   for (auto i = decltype(_n_vars)(0); i < _n_vars; ++i)
   {
-    _var_nodal[i] = getVar("interface_vars", i)->isNodal();
-    std::cout << getVar("interface_vars", i)->name() << " is nodal = " << _var_nodal[i] << '\n';
-    _vals[i] = _var_nodal[i] ? &coupledNodalValue("interface_vars", i) : &coupledValue("interface_vars", i);
+    if (!getVar("interface_vars", i)->isNodal())
+      mooseError("Variable needs to be nodal");
+
+    _vals[i] = &coupledValue("interface_vars", i);
     _value_change[i] /= _elems_across_interface;
-    std::cout << "target value change " << _value_change[i] << '\n';
   }
 }
 
@@ -57,12 +65,11 @@ OrderParameterInterfaceMarker::computeElementMarker()
 
   for (auto i = decltype(_n_vars)(0); i < _n_vars; ++i)
   {
-    const unsigned int num_point = _var_nodal[i] ? _current_elem->n_nodes() : _qrule->n_points();
     mooseAssert(_vals.size() > 0, "Empty MooseVariable encountered");
 
     Real min = (*_vals[i])[0];
     Real max = min;
-    for (unsigned int qp = 1; qp < num_point; ++qp)
+    for (unsigned int qp = 1; qp < _current_elem->n_nodes(); ++qp)
     {
       if ((*_vals[i])[qp] > max)
         max = (*_vals[i])[qp];
@@ -70,8 +77,7 @@ OrderParameterInterfaceMarker::computeElementMarker()
         min = (*_vals[i])[qp];
     }
 
-    // std::cout << max << '-' << min << ' ';
-    std::cout << (*_vals[i])[0] << ',' << (*_vals[i])[1] << ' ';
+    std::cout << (*_vals[i])[0] << ", " << (*_vals[i])[1] << "  ";
 
     // if we are above the targeted change we need to refine
     if (max - min > _value_change[i])

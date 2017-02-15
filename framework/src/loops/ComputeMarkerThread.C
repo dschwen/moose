@@ -41,16 +41,11 @@ void
 ComputeMarkerThread::subdomainChanged()
 {
   _fe_problem.subdomainSetup(_subdomain, _tid);
+
   _marker_whs.subdomainSetup(_tid);
 
   std::set<MooseVariableFEBase *> needed_moose_vars;
   _marker_whs.updateVariableDependency(needed_moose_vars, _tid);
-
-  for (const auto & it : _aux_sys._elem_vars[_tid])
-  {
-    MooseVariable * var = it.second;
-    var->prepareAux();
-  }
 
   _fe_problem.setActiveElementalMooseVariables(needed_moose_vars, _tid);
   _fe_problem.prepareMaterials(_subdomain, _tid);
@@ -59,7 +54,14 @@ ComputeMarkerThread::subdomainChanged()
 void
 ComputeMarkerThread::onElement(const Elem * elem)
 {
+  for (const auto & it : _aux_sys._elem_vars[_tid])
+  {
+    MooseVariable * var = it.second;
+    var->prepareAux();
+  }
+
   _fe_problem.prepare(elem, _tid);
+  std::cout << " Reinit " << elem << '\n';
   _fe_problem.reinitElem(elem, _tid);
 
   // Set up Sentinel class so that, even if reinitMaterials() throws, we
