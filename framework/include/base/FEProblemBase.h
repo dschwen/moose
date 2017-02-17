@@ -530,26 +530,26 @@ public:
   // NL /////
   NonlinearSystemBase & getNonlinearSystemBase() { return *_nl; }
   virtual NonlinearSystem & getNonlinearSystem();
-  void addVariable(const std::string & var_name,
+  virtual void addVariable(const std::string & var_name,
                    const FEType & type,
                    Real scale_factor,
                    const std::set<SubdomainID> * const active_subdomains = NULL);
-  void addScalarVariable(const std::string & var_name,
+  virtual void addScalarVariable(const std::string & var_name,
                          Order order,
                          Real scale_factor = 1.,
                          const std::set<SubdomainID> * const active_subdomains = NULL);
-  void
+  virtual void
   addKernel(const std::string & kernel_name, const std::string & name, InputParameters parameters);
-  void addNodalKernel(const std::string & kernel_name,
+  virtual void addNodalKernel(const std::string & kernel_name,
                       const std::string & name,
                       InputParameters parameters);
-  void addScalarKernel(const std::string & kernel_name,
+  virtual void addScalarKernel(const std::string & kernel_name,
                        const std::string & name,
                        InputParameters parameters);
-  void addBoundaryCondition(const std::string & bc_name,
+  virtual void addBoundaryCondition(const std::string & bc_name,
                             const std::string & name,
                             InputParameters parameters);
-  void
+  virtual void
   addConstraint(const std::string & c_name, const std::string & name, InputParameters parameters);
 
   virtual void setInputParametersFEProblem(InputParameters & parameters)
@@ -558,46 +558,46 @@ public:
   }
 
   // Aux /////
-  void addAuxVariable(const std::string & var_name,
+  virtual void addAuxVariable(const std::string & var_name,
                       const FEType & type,
                       const std::set<SubdomainID> * const active_subdomains = NULL);
-  void addAuxScalarVariable(const std::string & var_name,
+  virtual void addAuxScalarVariable(const std::string & var_name,
                             Order order,
                             Real scale_factor = 1.,
                             const std::set<SubdomainID> * const active_subdomains = NULL);
-  void addAuxKernel(const std::string & kernel_name,
+  virtual void addAuxKernel(const std::string & kernel_name,
                     const std::string & name,
                     InputParameters parameters);
-  void addAuxScalarKernel(const std::string & kernel_name,
+  virtual void addAuxScalarKernel(const std::string & kernel_name,
                           const std::string & name,
                           InputParameters parameters);
 
   AuxiliarySystem & getAuxiliarySystem() { return *_aux; }
 
   // Dirac /////
-  void addDiracKernel(const std::string & kernel_name,
+  virtual void addDiracKernel(const std::string & kernel_name,
                       const std::string & name,
                       InputParameters parameters);
 
   // DG /////
-  void addDGKernel(const std::string & kernel_name,
+  virtual void addDGKernel(const std::string & kernel_name,
                    const std::string & name,
                    InputParameters parameters);
 
   // Interface /////
-  void addInterfaceKernel(const std::string & kernel_name,
+  virtual void addInterfaceKernel(const std::string & kernel_name,
                           const std::string & name,
                           InputParameters parameters);
 
   // IC /////
-  void addInitialCondition(const std::string & ic_name,
+  virtual void addInitialCondition(const std::string & ic_name,
                            const std::string & name,
                            InputParameters parameters);
 
   void projectSolution();
 
   // Materials /////
-  void addMaterial(const std::string & kernel_name,
+  virtual void addMaterial(const std::string & kernel_name,
                    const std::string & name,
                    InputParameters parameters);
 
@@ -755,7 +755,7 @@ public:
   getVectorPostprocessorVectors(const std::string & vpp_name);
 
   // Dampers /////
-  void addDamper(std::string damper_name, const std::string & name, InputParameters parameters);
+  virtual void addDamper(std::string damper_name, const std::string & name, InputParameters parameters);
   void setupDampers();
 
   /**
@@ -764,16 +764,16 @@ public:
   bool hasDampers() { return _has_dampers; }
 
   // Indicators /////
-  void
+  virtual void
   addIndicator(std::string indicator_name, const std::string & name, InputParameters parameters);
 
   // Markers //////
-  void addMarker(std::string marker_name, const std::string & name, InputParameters parameters);
+  virtual void addMarker(std::string marker_name, const std::string & name, InputParameters parameters);
 
   /**
    * Add a MultiApp to the problem.
    */
-  void addMultiApp(const std::string & multi_app_name,
+  virtual void addMultiApp(const std::string & multi_app_name,
                    const std::string & name,
                    InputParameters parameters);
 
@@ -824,7 +824,7 @@ public:
   /**
    * Add a Transfer to the problem.
    */
-  void addTransfer(const std::string & transfer_name,
+  virtual void addTransfer(const std::string & transfer_name,
                    const std::string & name,
                    InputParameters parameters);
 

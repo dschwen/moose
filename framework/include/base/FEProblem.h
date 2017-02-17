@@ -27,7 +27,6 @@ InputParameters validParams<FEProblem>();
 
 /**
  * Specialization of SubProblem for solving nonlinear equations plus auxiliary equations
- *
  */
 class FEProblem : public FEProblemBase
 {
