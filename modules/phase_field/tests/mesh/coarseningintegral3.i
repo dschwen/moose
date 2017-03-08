@@ -15,35 +15,23 @@
       function = 'x^2+y^2'
     [../]
   [../]
-  [./v]
-    [./InitialCondition]
-      type = FunctionIC
-      function = 'x^2+y^2'
-    [../]
-  [../]
 []
 
 [Kernels]
-  [./dt_u]
+  [./dt]
     type = TimeDerivative
     variable = u
   [../]
-  [./diff_u]
-    type = Diffusion
-    variable = u
-  [../]
-  [./src_u]
+  [./src]
     type = CoarseningIntegralCompensation
     variable = u
     tracker = comp
   [../]
-  [./dt_v]
-    type = TimeDerivative
-    variable = v
-  [../]
-  [./diff_v]
-    type = Diffusion
-    variable = v
+  [./extra_src]
+    # this adds an additional source to test this with dynamic variable evolution
+    type = BodyForce
+    variable = u
+    value = 2.5
   [../]
 []
 
@@ -63,11 +51,6 @@
     variable = u
     execute_on = 'initial timestep_end'
   [../]
-  [./V]
-    type = ElementIntegralVariablePostprocessor
-    variable = v
-    execute_on = 'initial timestep_end'
-  [../]
 []
 
 [UserObjects]
@@ -79,7 +62,7 @@
 
 [Executioner]
   type = Transient
-  dt = 1e-4
+  dt = 0.1
   num_steps = 6
   nl_abs_tol = 1e-9
 []
