@@ -32,7 +32,7 @@ $$
 f_{gr} = \sum_i^N \frac{\kappa_i}{2} |\nabla c_i|^2 + \sum^M_j \frac{\kappa_j}{2} |\nabla \eta_j|^2
 $$
 
-where $\kappa_i$ and $\kappa_j$ are gradient energy coefficients.  Finally, $E_d$ describes any additional sources of energy in the system, such as deformation or electrostatic energy.  By combining the equations listed above and evaluating the functional derivatives ([further explanations](Derivationexplanations)), the evolution of the variables is described as
+where $\kappa_i$ and $\kappa_j$ are gradient energy coefficients.  Finally, $E_d$ describes any additional sources of energy in the system, such as deformation or electrostatic energy.  By combining the equations listed above and evaluating the functional derivatives ([further explanations](phase_field/Further Explanations.md)), the evolution of the variables is described as
 
 $$
 \begin{eqnarray}

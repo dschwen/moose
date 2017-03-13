@@ -5,32 +5,32 @@
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
 
-#ifndef LAPLACIANSPLIT_H
-#define LAPLACIANSPLIT_H
+#ifndef COEFLAPLACIANSPLIT_H
+#define COEFLAPLACIANSPLIT_H
 
-#include "KernelGrad.h"
+#include "LaplacianSplit.h"
 
 // Forward Declarations
-class LaplacianSplit;
+class CoefLaplacianSplit;
 
 template <>
-InputParameters validParams<LaplacianSplit>();
+InputParameters validParams<CoefLaplacianSplit>();
 
 /**
- * Split with a variable that holds the Laplacian of the phase field.
+ * Split with a variable that holds the Laplacian of the phase field
+ * multiplied by a coefficient.
  */
-class LaplacianSplit : public KernelGrad
+class CoefLaplacianSplit : public LaplacianSplit
 {
 public:
-  LaplacianSplit(const InputParameters & parameters);
+  CoefLaplacianSplit(const InputParameters & parameters);
 
 protected:
   virtual RealGradient precomputeQpResidual() override;
-  virtual RealGradient precomputeQpJacobian() override;
   virtual Real computeQpOffDiagJacobian(unsigned int jvar) override;
 
-  const unsigned int _var_c;
-  const VariableGradient & _grad_c;
+  /// Laplacian pre-factor
+  const MaterialProperty<Real> & _coef;
 };
 
-#endif // LAPLACIANSPLIT_H
+#endif // COEFLAPLACIANSPLIT_H
