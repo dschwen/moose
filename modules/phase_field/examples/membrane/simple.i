@@ -18,15 +18,19 @@
 []
 
 [Kernels]
-  [./curvature]
+  [./curvature1]
+    type = Reaction
+    variable = u
+  [../]
+  [./curvature2]
     type = LaplacianSplit
     variable = u
     c = h
   [../]
   [./bend]
-    type = BodyForce
+    type = CoupledForce
     variable = u
-    value = 0.1
+    v = h
   [../]
 
   [./dt]
@@ -42,8 +46,8 @@
 
 [Preconditioning]
   [./smp]
-    #type = SMP
-    type = FDP
+    type = SMP
+    #type = FDP
     full = true
   [../]
 []
@@ -52,28 +56,28 @@
   [./clamp]
     type = DirichletBC
     variable = h
-    boundary = 'top bottom left right'
+    boundary = 'top' #  bottom left right
     value = 0
   [../]
 []
 
 [Executioner]
   type = Transient
-  solve_type = NEWTON
-  line_search = none
-  petsc_options_iname = '-pc_type -sub_pc_factor_shift_type'
-  petsc_options_value = 'lu       nonzero'
-  dt = 1
+  #solve_type = NEWTON
+  #line_search = none
+  #petsc_options_iname = '-pc_type -sub_pc_factor_shift_type'
+  #petsc_options_value = 'lu       nonzero'
+  dt = 0.1
 
   nl_rel_tol = 1e-08
   nl_abs_tol = 1e-10
   l_max_its = 100
 
-  num_steps = 10
+  num_steps = 40
 []
 
 [Debug]
-  show_var_residual_norms = true
+  #show_var_residual_norms = true
 []
 
 [Outputs]
