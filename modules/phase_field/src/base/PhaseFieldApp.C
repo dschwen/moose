@@ -156,6 +156,7 @@
 #include "PFMobility.h"
 #include "PFParamsPolyFreeEnergy.h"
 #include "PhaseNormalTensor.h"
+#include "PiecewiseFreeEnergy.h"
 #include "PolynomialFreeEnergy.h"
 #include "RegularSolutionFreeEnergy.h"
 #include "StrainGradDispDerivatives.h"
@@ -427,6 +428,7 @@ PhaseFieldApp::registerObjects(Factory & factory)
   registerMaterial(PFFracBulkRateMaterial);
   registerMaterial(PFParamsPolyFreeEnergy);
   registerMaterial(PhaseNormalTensor);
+  registerMaterial(PiecewiseFreeEnergy);
   registerMaterial(PolynomialFreeEnergy);
   registerMaterial(RegularSolutionFreeEnergy);
   registerMaterial(StrainGradDispDerivatives);
