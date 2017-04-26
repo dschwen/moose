@@ -12,10 +12,10 @@
 []
 
 [GlobalParams]
+  displacements = 'disp_x disp_y'
   op_num = 8
   var_name_base = gr
   grain_num = 36
-  #use_displaced_mesh = true
 []
 
 [Variables]
@@ -41,8 +41,6 @@
 
 [AuxVariables]
   [./bnds]
-    order = FIRST
-    family = LAGRANGE
   [../]
   [./elastic_strain11]
     order = CONSTANT
@@ -84,7 +82,6 @@
   [./PolycrystalElasticDrivingForce]
   [../]
   [./TensorMechanics]
-    displacements = 'disp_x disp_y'
   [../]
 []
 
@@ -187,7 +184,6 @@
 [Materials]
   [./Copper]
     type = GBEvolution
-    block = 0
     T = 500 # K
     wGB = 15 # nm
     GBmob0 = 2.5e-6 # m^4/(Js) from Schoenfelder 1997
@@ -196,17 +192,13 @@
   [../]
   [./ElasticityTensor]
     type = ComputePolycrystalElasticityTensor
-    block = 0
     grain_tracker = grain_tracker
   [../]
   [./strain]
     type = ComputeSmallStrain
-    block = 0
-    displacements = 'disp_x disp_y'
   [../]
   [./stress]
     type = ComputeLinearElasticStress
-    block = 0
   [../]
 []
 
@@ -252,8 +244,7 @@
 [Preconditioning]
   [./SMP]
     type = SMP
-    off_diag_row = 'disp_x disp_y'
-    off_diag_column = 'disp_y disp_x'
+    coupled_groups = 'disp_x,disp_y'
   [../]
 []
 
