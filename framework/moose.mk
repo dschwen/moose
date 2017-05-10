@@ -17,6 +17,7 @@ pcre_LIB       :=  $(pcre_DIR)/libpcre-$(METHOD).la
 # dependency files
 pcre_deps      := $(patsubst %.cc, %.$(obj-suffix).d, $(pcre_srcfiles)) \
                   $(patsubst %.c, %.$(obj-suffix).d, $(pcre_csrcfiles))
+
 #
 # gtest
 #
@@ -26,6 +27,17 @@ gtest_objects   := $(patsubst %.cc, %.$(obj-suffix), $(gtest_srcfiles))
 gtest_LIB       := $(gtest_DIR)/libgtest.la
 # dependency files
 gtest_deps      := $(patsubst %.cc, %.$(obj-suffix).d, $(gtest_srcfiles))
+
+#
+# ANN nearest neighbor search library
+#
+ANN_DIR         := $(FRAMEWORK_DIR)/contrib/ann_1.1.2
+ANN_srcfiles    := $(shell find $(ANN_DIR)/src -maxdepth 1 -name "*.cpp")
+ANN_objects     := $(patsubst %.cpp, %.$(obj-suffix), $(ANN_srcfiles))
+ANN_LIB         :=  $(ANN_DIR)/libANN-$(METHOD).la
+# dependency files
+ANN_deps        := $(patsubst %.cpp, %.$(obj-suffix).d, $(ANN_srcfiles))
+
 
 moose_INC_DIRS := $(shell find $(FRAMEWORK_DIR)/include -type d -not -path "*/.svn*")
 moose_INC_DIRS += $(shell find $(FRAMEWORK_DIR)/contrib/*/include -type d -not -path "*/.svn*")
@@ -37,7 +49,7 @@ moose_INCLUDE  := $(foreach i, $(moose_INC_DIRS), -I$(i))
 # Making a .la object instead.  This is what you make out of .lo objects...
 moose_LIB := $(FRAMEWORK_DIR)/libmoose-$(METHOD).la
 
-moose_LIBS := $(moose_LIB) $(pcre_LIB)
+moose_LIBS := $(moose_LIB) $(pcre_LIB) $(ANN_LIB)
 
 # source files
 moose_srcfiles    := $(shell find $(moose_SRC_DIRS) -name "*.C")
@@ -87,16 +99,22 @@ $(pcre_LIB): $(pcre_objects)
 	  $(libmesh_CC) $(libmesh_CFLAGS) -o $@ $(pcre_objects) $(libmesh_LIBS) $(libmesh_LDFLAGS) $(EXTERNAL_FLAGS) -rpath $(pcre_DIR)
 	@$(libmesh_LIBTOOL) --mode=install --quiet install -c $(pcre_LIB) $(pcre_DIR)
 
+$(ANN_LIB): $(ANN_objects)
+	@echo "Linking Library "$@"..."
+	@$(libmesh_LIBTOOL) --tag=CC $(LIBTOOLFLAGS) --mode=link --quiet \
+	  $(libmesh_CC) $(libmesh_CFLAGS) -o $@ $(ANN_objects) $(libmesh_LIBS) $(libmesh_LDFLAGS) $(EXTERNAL_FLAGS) -rpath $(ANN_DIR)
+	@$(libmesh_LIBTOOL) --mode=install --quiet install -c $(ANN_LIB) $(ANN_DIR)
+
 $(gtest_LIB): $(gtest_objects)
 	@echo "Linking Library "$@"..."
 	@$(libmesh_LIBTOOL) --tag=CC $(LIBTOOLFLAGS) --mode=link --quiet \
 	  $(libmesh_CC) $(libmesh_CFLAGS) -o $@ $(gtest_objects) $(libmesh_LIBS) $(libmesh_LDFLAGS) $(EXTERNAL_FLAGS) -rpath $(gtest_DIR)
 	@$(libmesh_LIBTOOL) --mode=install --quiet install -c $(gtest_LIB) $(gtest_DIR)
 
-$(moose_LIB): $(moose_objects) $(pcre_LIB) $(gtest_LIB)
+$(moose_LIB): $(moose_objects) $(pcre_LIB) $(ANN_LIB) $(gtest_LIB)
 	@echo "Linking Library "$@"..."
 	@$(libmesh_LIBTOOL) --tag=CXX $(LIBTOOLFLAGS) --mode=link --quiet \
-	  $(libmesh_CXX) $(libmesh_CXXFLAGS) -o $@ $(moose_objects) $(pcre_LIB) $(libmesh_LIBS) $(libmesh_LDFLAGS) $(EXTERNAL_FLAGS) -rpath $(FRAMEWORK_DIR)
+	  $(libmesh_CXX) $(libmesh_CXXFLAGS) -o $@ $(moose_objects) $(pcre_LIB) $(ANN_LIB) $(libmesh_LIBS) $(libmesh_LDFLAGS) $(EXTERNAL_FLAGS) -rpath $(FRAMEWORK_DIR)
 	@$(libmesh_LIBTOOL) --mode=install --quiet install -c $(moose_LIB) $(FRAMEWORK_DIR)
 
 ## Clang static analyzer
@@ -107,7 +125,8 @@ sa:: $(moose_analyzer)
 
 -include $(wildcard $(FRAMEWORK_DIR)/contrib/mtwist/src/*.d)
 -include $(wildcard $(FRAMEWORK_DIR)/contrib/jsoncpp/src/*.d)
--include $(wildcard $(FRAMEWORK_DIR)/contrib/pcre/src/*.d)
+-include $(wildcard $(pcre_DIR)/src/*.d)
+-include $(wildcard $(ANN_DIR)/src/*.d)
 -include $(wildcard $(FRAMEWORK_DIR)/contrib/gtest/*.d)
 
 #
@@ -141,9 +160,9 @@ $(exodiff_APP): $(exodiff_objects)
 
 # Set up app-specific variables for MOOSE, so that it can use the same clean target as the apps
 app_EXEC := $(exodiff_APP)
-app_LIB  := $(moose_LIBS) $(pcre_LIB) $(gtest_LIB)
-app_objects := $(moose_objects) $(exodiff_objects) $(pcre_objects) $(gtest_objects)
-app_deps := $(moose_deps) $(exodiff_deps) $(pcre_deps) $(gtest_deps)
+app_LIB  := $(moose_LIBS) $(pcre_LIB) $(ANN_LIB) $(gtest_LIB)
+app_objects := $(moose_objects) $(exodiff_objects) $(pcre_objects) $(ANN_objects) $(gtest_objects)
+app_deps := $(moose_deps) $(exodiff_deps) $(pcre_deps) $(ANN_deps) $(gtest_deps)
 
 # The clean target removes everything we can remove "easily",
 # i.e. stuff which we have Makefile variables for.  Notes:
