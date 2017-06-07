@@ -24,9 +24,9 @@ validParams<EvaluateOnSphere>()
 
 EvaluateOnSphere::EvaluateOnSphere(const InputParameters & parameters)
   : Function(parameters),
-    _subproblem(getParam<SubProblem *>("_subproblem")),
+    _fe_problem(<FEProblemBase *>("_fe_problem_base")),
     _tid(getParam<THREAD_ID>("_tid")),
-    _function(_subproblem->getFunction(getParam<FunctionName>("function"), _tid)),
+    _function(_fe_problem->getFunction(getParam<FunctionName>("function"), _tid)),
     _radius(getParam<Real>("radius")),
     _deg(getParam<MooseEnum>("angles") == "DEG")
 {

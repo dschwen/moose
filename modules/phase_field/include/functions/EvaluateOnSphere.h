@@ -26,7 +26,7 @@ public:
   virtual Real value(Real t, const Point & p) override;
 
 protected:
-  SubProblem * _subproblem;
+  FEProblemBase * _fe_problem;
   THREAD_ID _tid;
 
   Function & _function;
