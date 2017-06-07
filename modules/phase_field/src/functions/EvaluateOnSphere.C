@@ -24,7 +24,9 @@ validParams<EvaluateOnSphere>()
 
 EvaluateOnSphere::EvaluateOnSphere(const InputParameters & parameters)
   : Function(parameters),
-    _function(getFunction("function")),
+    _subproblem(getParam<SubProblem *>("_subproblem")),
+    _tid(getParam<THREAD_ID>("_tid")),
+    _function(_subproblem->getFunction(getParam<FunctionName>("function"), _tid)),
     _radius(getParam<Real>("radius")),
     _deg(getParam<MooseEnum>("angles") == "DEG")
 {
@@ -47,5 +49,5 @@ EvaluateOnSphere::value(Real t, const Point & p)
   if (_deg)
     sphere *= 180.0 / libMesh::pi;
 
-  return _function(t, sphere);
+  return _function.value(t, sphere);
 }

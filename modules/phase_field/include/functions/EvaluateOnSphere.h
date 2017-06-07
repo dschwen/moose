@@ -26,7 +26,10 @@ public:
   virtual Real value(Real t, const Point & p) override;
 
 protected:
-  const Function & _function;
+  SubProblem * _subproblem;
+  THREAD_ID _tid;
+
+  Function & _function;
   const Real _radius;
   const bool _deg;
 };
