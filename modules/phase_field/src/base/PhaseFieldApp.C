@@ -86,6 +86,7 @@
 #include "ClosePackIC.h"
 #include "CrossIC.h"
 #include "LatticeSmoothCircleIC.h"
+#include "LoadXYZIC.h"
 #include "MultiBoundingBoxIC.h"
 #include "MultiSmoothCircleIC.h"
 #include "MultiSmoothSuperellipsoidIC.h"
@@ -375,6 +376,7 @@ PhaseFieldApp::registerObjects(Factory & factory)
   registerInitialCondition(ClosePackIC);
   registerInitialCondition(CrossIC);
   registerInitialCondition(LatticeSmoothCircleIC);
+  registerInitialCondition(LoadXYZIC);
   registerInitialCondition(MultiBoundingBoxIC);
   registerInitialCondition(MultiSmoothCircleIC);
   registerInitialCondition(MultiSmoothSuperellipsoidIC);
