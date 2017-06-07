@@ -107,6 +107,11 @@
 #include "TricrystalTripleJunctionIC.h"
 
 /*
+ * Functions
+ */
+#include "EvaluateOnSphere.h"
+
+/*
  * Boundary Conditions
  */
 #include "CahnHilliardAnisoFluxBC.h"
@@ -395,6 +400,8 @@ PhaseFieldApp::registerObjects(Factory & factory)
   registerInitialCondition(ThumbIC);
   registerInitialCondition(Tricrystal2CircleGrainsIC);
   registerInitialCondition(TricrystalTripleJunctionIC);
+
+  registerFunction(EvaluateOnSphere);
 
   registerBoundaryCondition(CahnHilliardAnisoFluxBC);
   registerBoundaryCondition(CahnHilliardFluxBC);
