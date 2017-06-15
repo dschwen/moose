@@ -81,19 +81,18 @@ ComputeDiracThread::onElement(const Elem * elem)
   // Only call reinitMaterials() if one or more DiracKernels has
   // actually called getMaterialProperty().  Loop over all the
   // DiracKernels and check whether this is the case.
+  bool need_swap_back = false;
   for (const auto & dirac_kernel : dkernels)
   {
     // If any of the DiracKernels have had getMaterialProperty()
     // called, we need to reinit Materials.
     if (dirac_kernel->getMaterialPropertyCalled())
     {
-      _fe_problem.reinitMaterials(_subdomain, _tid, /*swap_stateful=*/false);
+      _fe_problem.reinitMaterialsDirac(_subdomain, _tid, /*swap_stateful=*/true);
+      need_swap_back = true;
       break;
     }
   }
-
-  if (need_reinit_materials)
-    _fe_problem.reinitMaterialsDirac(_subdomain, _tid);
 
   for (const auto & dirac_kernel : dkernels)
   {
@@ -130,12 +129,8 @@ ComputeDiracThread::onElement(const Elem * elem)
     }
   }
 
-  if (need_reinit_materials)
+  if (need_swap_back)
     _fe_problem.swapBackMaterialsDirac(_tid);
-
-  // Note that we do not call swapBackMaterials() here as they were
-  // never swapped in the first place.  This avoids messing up
-  // stored values of stateful material properties.
 }
 
 void

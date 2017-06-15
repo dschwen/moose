@@ -30,16 +30,15 @@ class Assembly;
 class ComputeMaterialsObjectThread : public ThreadedElementLoop<ConstElemRange>
 {
 public:
-  ComputeMaterialsObjectThread(
-      FEProblem & fe_problem,
-      std::vector<MooseSharedPointer<MaterialData>> & material_data,
-      std::vector<MooseSharedPointer<MaterialData>> & bnd_material_data,
-      std::vector<MooseSharedPointer<MaterialData>> & neighbor_material_data,
-      std::vector<MooseSharedPointer<MaterialData>> & dirac_material_data,
-      MaterialPropertyStorage & material_props,
-      MaterialPropertyStorage & bnd_material_props,
-      MaterialPropertyStorage & dirac_material_props,
-      std::vector<Assembly *> & assembly);
+  ComputeMaterialsObjectThread(FEProblemBase & fe_problem,
+                               std::vector<std::shared_ptr<MaterialData>> & material_data,
+                               std::vector<std::shared_ptr<MaterialData>> & bnd_material_data,
+                               std::vector<std::shared_ptr<MaterialData>> & neighbor_material_data,
+                               std::vector<std::shared_ptr<MaterialData>> & dirac_material_data,
+                               MaterialPropertyStorage & material_props,
+                               MaterialPropertyStorage & bnd_material_props,
+                               MaterialPropertyStorage & dirac_material_props,
+                               std::vector<Assembly *> & assembly);
 
   // Splitting Constructor
   ComputeMaterialsObjectThread(ComputeMaterialsObjectThread & x, Threads::split split);
@@ -55,12 +54,12 @@ public:
   void join(const ComputeMaterialsObjectThread & /*y*/);
 
 protected:
-  FEProblem & _fe_problem;
+  FEProblemBase & _fe_problem;
   NonlinearSystemBase & _nl;
-  std::vector<MooseSharedPointer<MaterialData>> & _material_data;
-  std::vector<MooseSharedPointer<MaterialData>> & _bnd_material_data;
-  std::vector<MooseSharedPointer<MaterialData>> & _neighbor_material_data;
-  std::vector<MooseSharedPointer<MaterialData>> & _dirac_material_data;
+  std::vector<std::shared_ptr<MaterialData>> & _material_data;
+  std::vector<std::shared_ptr<MaterialData>> & _bnd_material_data;
+  std::vector<std::shared_ptr<MaterialData>> & _neighbor_material_data;
+  std::vector<std::shared_ptr<MaterialData>> & _dirac_material_data;
   MaterialPropertyStorage & _material_props;
   MaterialPropertyStorage & _bnd_material_props;
   MaterialPropertyStorage & _dirac_material_props;
