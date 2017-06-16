@@ -14,25 +14,25 @@
 
 #include "StatefulPointSource.h"
 
-template<>
-InputParameters validParams<StatefulPointSource>()
+template <>
+InputParameters
+validParams<StatefulPointSource>()
 {
   InputParameters params = validParams<DiracKernel>();
-  params.addRequiredParam<Point>("point", "The x,y,z coordinates of the point");
   return params;
 }
 
-StatefulPointSource::StatefulPointSource(const InputParameters & parameters) :
-    DiracKernel(parameters),
-    _p(getParam<Point>("point")),
-    _value(getMaterialPropertyOld<Real>("thermal_conductivity"))
+StatefulPointSource::StatefulPointSource(const InputParameters & parameters)
+  : DiracKernel(parameters),
+    _value_old(getMaterialPropertyOld<Real>("thermal_conductivity")),
+    _value(getMaterialProperty<Real>("thermal_conductivity"))
 {
 }
 
 void
 StatefulPointSource::addPoints()
 {
-  addPoint(_p);
+  addPoint(Point(0.2, 0.3, 0));
 
   if (_t > 1.5)
     addPoint(Point(0.6, 0.8, 0));
@@ -44,9 +44,10 @@ StatefulPointSource::addPoints()
 Real
 StatefulPointSource::computeQpResidual()
 {
-  _console << "Thermal conductivity=" << _value[_qp] << std::endl;
+  _console << "Thermal conductivity =" << _value[_qp] << '\n'
+           << "Thermal conductivity old =" << _value_old[_qp] << '\n';
 
   // This is negative because it's a forcing function that has been
   // brought over to the left side.
-  return -_test[_i][_qp]*_value[_qp];
+  return -_test[_i][_qp] * _value_old[_qp];
 }

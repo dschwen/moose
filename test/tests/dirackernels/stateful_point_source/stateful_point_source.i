@@ -32,7 +32,6 @@
   [./material_source]
     type = StatefulPointSource
     variable = u
-    point = '0.2 0.3 0.0'
   [../]
 []
 
@@ -40,7 +39,8 @@
 [Materials]
   [./stateful]
     type = StatefulTest
-    block = '0'
+    prop_names = 'thermal_conductivity'
+    prop_values = '1'
   [../]
 []
 

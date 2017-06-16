@@ -18,16 +18,15 @@
 // Moose Includes
 #include "DiracKernel.h"
 
-//Forward Declarations
+// Forward Declarations
 class StatefulPointSource;
 
-template<>
+template <>
 InputParameters validParams<StatefulPointSource>();
 
 /**
  * Similar to the MaterialPointSource, but uses getMaterialPropertyOld
- * to induce the stateful material property machinery, which is not
- * supported for DiracKernels.
+ * to induce the stateful material property machinery
  */
 class StatefulPointSource : public DiracKernel
 {
@@ -38,9 +37,8 @@ public:
   virtual Real computeQpResidual();
 
 protected:
-  Point _p;
-
+  const MaterialProperty<Real> & _value_old;
   const MaterialProperty<Real> & _value;
 };
 
-#endif //STATEFULPOINTSOURCE_H
+#endif // STATEFULPOINTSOURCE_H
