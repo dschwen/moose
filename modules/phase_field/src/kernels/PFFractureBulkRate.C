@@ -20,7 +20,7 @@ validParams<PFFractureBulkRate>()
 }
 
 PFFractureBulkRate::PFFractureBulkRate(const InputParameters & parameters)
-  : PFFractureBulkRateBase(parameters), _u_second(coupledSecond(_var.name()))
+  : PFFractureBulkRateBase(parameters), _u_second(_var.secondSlnOld())
 {
 }
 
@@ -67,7 +67,7 @@ PFFractureBulkRate::computeQpOffDiagJacobian(unsigned int jvar)
     const Real & gc = _gc_prop[_qp];
     const Real beta = _u_second[_qp].tr();
 
-    const Real x = _width * beta + 2.0 * (1.0 - c) * (_G0_pos[_qp] / gc) - c / _width;
+    const Real x = _width * beta + 2.0 * (1.0 - c) * _G0_pos[_qp] / gc - c / _width;
     const Real xfac = -MathUtils::heavyside(x) / _viscosity * 2.0 * (1.0 - c) / gc;
 
     Real val = 0.0;

@@ -16,7 +16,7 @@ template <>
 InputParameters validParams<SplitPFFractureBulkRate>();
 
 /**
- * Phase field based fracture model
+ * Phase field based fracture model, split form where beta = laplace(c)
  * This kernel computes the residual and Jacobian for bulk free energy contribution to c
  * Refer to Formulation: Miehe et. al., Int. J. Num. Methods Engg., 2010, 83. 1273-1311 Equation 63
  */
