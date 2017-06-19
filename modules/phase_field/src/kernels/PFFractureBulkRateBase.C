@@ -11,7 +11,7 @@ template <>
 InputParameters
 validParams<PFFractureBulkRateBase>()
 {
-  InputParameters params = validParams<KernelValue>();
+  InputParameters params = validParams<Kernel>();
   params.addClassDescription(
       "Kernel to compute bulk energy contribution to damage order parameter residual equation");
   params.addRequiredParam<Real>("width", "Width of the smooth crack representation");
@@ -35,7 +35,7 @@ validParams<PFFractureBulkRateBase>()
 }
 
 PFFractureBulkRateBase::PFFractureBulkRateBase(const InputParameters & parameters)
-  : KernelValue(parameters),
+  : Kernel(parameters),
     _gc_prop(getMaterialProperty<Real>("gc")),
     _G0_pos(getMaterialProperty<Real>("G0")),
     _dG0_pos_dstrain(

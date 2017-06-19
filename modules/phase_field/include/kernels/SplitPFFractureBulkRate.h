@@ -26,8 +26,8 @@ public:
   SplitPFFractureBulkRate(const InputParameters & parameters);
 
 protected:
-  virtual Real precomputeQpResidual();
-  virtual Real precomputeQpJacobian();
+  virtual Real computeQpResidual();
+  virtual Real computeQpJacobian();
   virtual Real computeQpOffDiagJacobian(unsigned int jvar);
 
   /// Auxiliary variable: beta = Laplacian of c

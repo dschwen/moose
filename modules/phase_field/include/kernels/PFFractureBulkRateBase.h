@@ -7,7 +7,7 @@
 #ifndef PFFRACTUREBULKRATEBASE_H
 #define PFFRACTUREBULKRATEBASE_H
 
-#include "KernelValue.h"
+#include "Kernel.h"
 
 // Forward Declarations
 class RankTwoTensor;
@@ -21,7 +21,7 @@ InputParameters validParams<PFFractureBulkRateBase>();
  * This kernel computes the residual and Jacobian for bulk free energy contribution to c
  * Refer to Formulation: Miehe et. al., Int. J. Num. Methods Engg., 2010, 83. 1273-1311 Equation 63
  */
-class PFFractureBulkRateBase : public KernelValue
+class PFFractureBulkRateBase : public Kernel
 {
 public:
   PFFractureBulkRateBase(const InputParameters & parameters);

@@ -25,27 +25,45 @@ PFFractureBulkRate::PFFractureBulkRate(const InputParameters & parameters)
 }
 
 Real
-PFFractureBulkRate::precomputeQpResidual()
+PFFractureBulkRate::computeQpResidual()
 {
   const Real & gc = _gc_prop[_qp];
   const Real & c = _u[_qp];
   const Real beta = _second_u[_qp].tr();
-  const Real x = _width * beta + 2.0 * (1.0 - c) * _G0_pos[_qp] / gc - c / _width;
+  const Real x2 = 2.0 * (1.0 - c) * _G0_pos[_qp] / gc - c / _width;
+  const Real x1 = _width * beta;
 
-  return -MathUtils::positivePart(x) / _viscosity;
+  /**
+   * This if implements the <...>+ positive part operator. To determine if the
+   * expression is positive we use the original form that is _not_ integrated by parts.
+   * The residual we return, however, replaces x1 with the expression that is integrated by parts
+   * once (_second_u[_qp].tr() * _test[_i][_qp] -> -_grad_u[_qp] * _grad_test[_i][_qp]).
+   * This allows the user to use C1 shape functions (such as second order Lagrange).
+   */
+  if (x1 + x2 > 0)
+    return -(-_width * _grad_u[_qp] * _grad_test[_i][_qp] + x2 * _test[_i][_qp]) / _viscosity;
+
+  return 0.0;
 }
 
 Real
-PFFractureBulkRate::precomputeQpJacobian()
+PFFractureBulkRate::computeQpJacobian()
 {
   const Real & gc = _gc_prop[_qp];
   const Real & c = _u[_qp];
   const Real beta = _second_u[_qp].tr();
   const Real x = _width * beta + 2.0 * (1.0 - c) * _G0_pos[_qp] / gc - c / _width;
-  const Real dx = _width * _second_phi[_j][_qp].tr() - 2.0 * _phi[_j][_qp] * _G0_pos[_qp] / gc -
-                  _phi[_j][_qp] / _width;
 
-  return -MathUtils::heavyside(x) / _viscosity * dx;
+  if (x > 0)
+  {
+    const Real dx =
+        -_width * _grad_phi[_j][_qp] * _grad_test[_i][_qp] -
+        (2.0 * _phi[_j][_qp] * _G0_pos[_qp] / gc - _phi[_j][_qp] / _width) * _test[_i][_qp];
+
+    return -dx / _viscosity;
+  }
+
+  return 0.0;
 }
 
 Real

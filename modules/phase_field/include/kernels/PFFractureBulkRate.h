@@ -26,8 +26,8 @@ public:
   PFFractureBulkRate(const InputParameters & parameters);
 
 protected:
-  virtual Real precomputeQpResidual();
-  virtual Real precomputeQpJacobian();
+  virtual Real computeQpResidual();
+  virtual Real computeQpJacobian();
   virtual Real computeQpOffDiagJacobian(unsigned int jvar);
 
   /// second derivative of the kernel variable

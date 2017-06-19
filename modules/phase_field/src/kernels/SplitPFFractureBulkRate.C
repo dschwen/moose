@@ -25,24 +25,24 @@ SplitPFFractureBulkRate::SplitPFFractureBulkRate(const InputParameters & paramet
 }
 
 Real
-SplitPFFractureBulkRate::precomputeQpResidual()
+SplitPFFractureBulkRate::computeQpResidual()
 {
   const Real & gc = _gc_prop[_qp];
   const Real & c = _u[_qp];
   const Real x = _width * _beta[_qp] + 2.0 * (1.0 - c) * _G0_pos[_qp] / gc - c / _width;
 
-  return -MathUtils::positivePart(x) / _viscosity;
+  return -MathUtils::positivePart(x) / _viscosity * _test[_i][_qp];
 }
 
 Real
-SplitPFFractureBulkRate::precomputeQpJacobian()
+SplitPFFractureBulkRate::computeQpJacobian()
 {
   const Real & gc = _gc_prop[_qp];
   const Real & c = _u[_qp];
   const Real x = _width * _beta[_qp] + 2.0 * (1.0 - c) * _G0_pos[_qp] / gc - c / _width;
   const Real dx = -2.0 * _G0_pos[_qp] / gc - 1.0 / _width;
 
-  return -MathUtils::heavyside(x) / _viscosity * dx * _phi[_j][_qp];
+  return -MathUtils::heavyside(x) / _viscosity * dx * _phi[_j][_qp] * _test[_i][_qp];
 }
 
 Real
