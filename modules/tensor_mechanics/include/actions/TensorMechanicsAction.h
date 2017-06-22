@@ -79,6 +79,9 @@ protected:
   /// use displaced mesh (true unless _strain is SMALL)
   bool _use_displaced_mesh;
 
+  /// add the displacement variables?
+  const bool _add_variables;
+
   /// output aux variables to generate for sclar stress/strain tensor quantities
   std::vector<std::string> _generate_output;
 };

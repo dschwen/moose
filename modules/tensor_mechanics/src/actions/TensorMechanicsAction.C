@@ -48,7 +48,8 @@ TensorMechanicsAction::TensorMechanicsAction(const InputParameters & params)
     _subdomain_names(getParam<std::vector<SubdomainName>>("block")),
     _subdomain_ids(),
     _strain(getParam<MooseEnum>("strain").getEnum<Strain>()),
-    _planar_formulation(getParam<MooseEnum>("planar_formulation").getEnum<PlanarFormulation>())
+    _planar_formulation(getParam<MooseEnum>("planar_formulation").getEnum<PlanarFormulation>()),
+    _add_variables(getParam<bool>("add_variables"))
 {
   // determine if incremental strains are to be used
   if (isParamValid("incremental"))
@@ -160,7 +161,7 @@ TensorMechanicsAction::act()
   //
   // Add variables (optional)
   //
-  else if (_current_task == "add_variable" && getParam<bool>("add_variables"))
+  else if (_current_task == "add_variable" && _add_variables)
   {
     // determine necessary order
     const bool second = _problem->mesh().hasSecondOrderElements();
@@ -305,7 +306,7 @@ TensorMechanicsAction::actOutputGeneration()
   //
   // Add variables (optional)
   //
-  if (_current_task == "add_aux_variable" && getParam<bool>("add_variables"))
+  if (_current_task == "add_aux_variable" && _add_variables)
   {
     // Loop through output aux variables
     for (auto out : _generate_output)
@@ -379,7 +380,7 @@ TensorMechanicsAction::actGatherActionParameters()
   //
   // Gather info about all other master actions when we add variables
   //
-  if (_current_task == "validate_coordinate_systems" && getParam<bool>("add_variables"))
+  if (_current_task == "validate_coordinate_systems" && _add_variables)
   {
     auto actions = _awh.getActions<TensorMechanicsAction>();
     for (const auto & action : actions)
