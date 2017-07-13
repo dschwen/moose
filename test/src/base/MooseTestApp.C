@@ -272,6 +272,7 @@
 #include "AddMatAndKernel.h"
 #include "ConvDiffMetaAction.h"
 #include "AddLotsOfAuxVariablesAction.h"
+#include "AddLotsOfVariablesAction.h"
 #include "ApplyCoupledVariablesTestAction.h"
 #include "AddLotsOfDiffusion.h"
 #include "TestGetActionsAction.h"
@@ -629,6 +630,7 @@ MooseTestApp::associateSyntax(Syntax & syntax, ActionFactory & action_factory)
   // and add more
   registerAction(ConvDiffMetaAction, "meta_action");
   registerAction(AddLotsOfAuxVariablesAction, "meta_action");
+  registerAction(AddLotsOfVariablesAction, "meta_action");
   registerAction(BadAddKernelAction, "add_kernel");
 
   registerAction(AddLotsOfDiffusion, "add_variable");
@@ -640,6 +642,7 @@ MooseTestApp::associateSyntax(Syntax & syntax, ActionFactory & action_factory)
   registerSyntax("ConvDiffMetaAction", "ConvectionDiffusion");
   registerSyntaxTask("AddAuxVariableAction", "MoreAuxVariables/*", "add_aux_variable");
   registerSyntaxTask("AddLotsOfAuxVariablesAction", "LotsOfAuxVariables/*", "add_variable");
+  registerSyntaxTask("AddLotsOfVariablesAction", "LotsOfVariables/*", "add_variable");
 
   registerAction(ApplyCoupledVariablesTestAction, "meta_action");
   registerSyntax("ApplyCoupledVariablesTestAction", "ApplyInputParametersTest");
