@@ -8,17 +8,19 @@
 #include "CoarseningIntegralCompensation.h"
 #include "CoarseningIntegralTracker.h"
 
-template<>
-InputParameters validParams<CoarseningIntegralCompensation>()
+template <>
+InputParameters
+validParams<CoarseningIntegralCompensation>()
 {
   InputParameters params = validParams<Kernel>();
-  params.addClassDescription("Apply a correction obtained by a CoarseningIntegralTracker to compensate for variable integrals due to mesh coarsening.");
+  params.addClassDescription("Apply a correction obtained by a CoarseningIntegralTracker to "
+                             "compensate for variable integrals due to mesh coarsening.");
   params.addRequiredParam<UserObjectName>("tracker", "Coarsening integral tracker user object");
   return params;
 }
 
-CoarseningIntegralCompensation::CoarseningIntegralCompensation(const InputParameters & parameters) :
-    Kernel(parameters),
+CoarseningIntegralCompensation::CoarseningIntegralCompensation(const InputParameters & parameters)
+  : Kernel(parameters),
     _tracker(getUserObject<CoarseningIntegralTracker>("tracker")),
     _dt(_fe_problem.dt())
 {

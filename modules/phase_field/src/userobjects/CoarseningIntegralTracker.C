@@ -11,8 +11,9 @@
 // libmesh includes
 #include "libmesh/quadrature.h"
 
-template<>
-InputParameters validParams<CoarseningIntegralTracker>()
+template <>
+InputParameters
+validParams<CoarseningIntegralTracker>()
 {
   InputParameters params = validParams<ElementUserObject>();
   params.addClassDescription("Track the pre-coarsening integral of elements.");
@@ -20,8 +21,8 @@ InputParameters validParams<CoarseningIntegralTracker>()
   return params;
 }
 
-CoarseningIntegralTracker::CoarseningIntegralTracker(const InputParameters & parameters) :
-    ElementUserObject(parameters),
+CoarseningIntegralTracker::CoarseningIntegralTracker(const InputParameters & parameters)
+  : ElementUserObject(parameters),
     _mesh(_fe_problem.mesh()),
     _v(coupledValue("v")),
     _pre_adaptivity_ran(false)
@@ -92,7 +93,8 @@ void
 CoarseningIntegralTracker::threadJoin(const UserObject & y)
 {
   const CoarseningIntegralTracker & uo = static_cast<const CoarseningIntegralTracker &>(y);
-  _pre_adaptivity_integral.insert(uo._pre_adaptivity_integral.begin(), uo._pre_adaptivity_integral.end());
+  _pre_adaptivity_integral.insert(uo._pre_adaptivity_integral.begin(),
+                                  uo._pre_adaptivity_integral.end());
 }
 
 Real

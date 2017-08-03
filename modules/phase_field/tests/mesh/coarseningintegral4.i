@@ -5,7 +5,22 @@
   ny = 1
   xmin = -1
   ymin = -1
-  uniform_refine = 3
+  uniform_refine = 6
+[]
+
+[AuxVariables]
+  [./coarsen]
+    order = CONSTANT
+    family = MONOMIAL
+  [../]
+[]
+
+[AuxKernels]
+  [./coarsen]
+    type = FunctionAux
+    variable = coarsen
+    function = 's:=int(t*1e4)%2;if((s=0&x>=0)|(s!=0&x<0),1,0)'
+  [../]
 []
 
 [Variables]
@@ -22,6 +37,8 @@
     [../]
   [../]
 []
+
+[Functions]
 
 [Kernels]
   [./dt_u]
@@ -47,32 +64,17 @@
   [../]
 []
 
-[AuxVariables]
-  [./flip]
-    order = CONSTANT
-    family = MONOMIAL
-  [../]
-[]
-
-[AuxKernels]
-  [./flip]
-    type = FunctionAux
-    variable = flip
-    function = 'int(t*1e4)%4/3.0'
-  [../]
-[]
-
 [Adaptivity]
   [./Markers]
-    [./alternate]
+    [./steps]
       # with the AuxKernel above this alternates between coarsening and refinement
       type = ValueThresholdMarker
-      variable = flip
-      refine = 0.55
-      coarsen = 0.45
+      variable = coarsen
+      refine = 2
+      coarsen = 0.5
     [../]
   [../]
-  marker = alternate
+  marker = steps
 []
 
 [Postprocessors]
