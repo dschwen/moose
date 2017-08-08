@@ -40,10 +40,10 @@ ComputeInterfaceStress::ComputeInterfaceStress(const InputParameters & parameter
 void
 ComputeInterfaceStress::computeQpProperties()
 {
-  const Real _grad_norm_sq = _grad_v[_qp].norm_sq();
   _planar_stress[_qp].zero();
 
   // no interface, return zero stress
+  const Real _grad_norm_sq = _grad_v[_qp].norm_sq();
   if (_grad_norm_sq < libMesh::TOLERANCE)
     return;
 
@@ -61,12 +61,10 @@ ComputeInterfaceStress::computeQpProperties()
   _col[2]((max_component + 2) % 3) = 1.0;
 
   // make the two vectors perpendicular to _grad_v (modified Gram-Schmidt)
-  _col[1] -= (_col[1] * _col[0]) / _col[0].norm_sq() * _col[0];
-  _col[2] -= (_col[2] * _col[0]) / _col[0].norm_sq() * _col[0];
-  _col[2] -= (_col[2] * _col[1]) / _col[1].norm_sq() * _col[1];
-
-  // normalize new basis vectors
+  _col[1] -= (_col[1] * _col[0]) * _col[0];
   _col[1] /= _col[1].norm();
+  _col[2] -= (_col[2] * _col[0]) * _col[0];
+  _col[2] -= (_col[2] * _col[1]) * _col[1];
   _col[2] /= _col[2].norm();
 
   // build Eigenvalue matrix M (only set in-plane stress)
