@@ -1,8 +1,12 @@
 [Tests]
   [./coarseningintegral]
     type = 'CSVDiff'
-    input = 'coarseningintegral.i'
-    csvdiff = 'coarseningintegral_out.csv'
+    input = 'coarseningintegral1.i'
+    csvdiff = 'coarseningintegral1_out.csv'
+  [../]
+  [./coarseningintegral1b]
+    type = 'RunApp'
+    input = 'coarseningintegral1b.i'
   [../]
   [./coarseningintegral2]
     type = 'CSVDiff'
@@ -13,5 +17,17 @@
     type = 'CSVDiff'
     input = 'coarseningintegral3.i'
     csvdiff = 'coarseningintegral3_out.csv'
+  [../]
+  [./coarseningintegral4]
+    type = 'RunApp'
+    input = 'coarseningintegral4.i'
+  [../]
+  [./coarseningintegral4b]
+    type = 'RunApp'
+    input = 'coarseningintegral4b.i'
+  [../]
+  [./coarseningintegral5]
+    type = 'RunApp'
+    input = 'coarseningintegral5.i'
   [../]
 []

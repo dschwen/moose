@@ -8,6 +8,22 @@
   uniform_refine = 6
 []
 
+[AuxVariables]
+  [./u_comp]
+    order = CONSTANT
+    family = MONOMIAL
+  [../]
+[]
+
+[AuxKernels]
+  [./u_comp]
+    type = CoarseningIntegralAux
+    execute_on = timestep_begin
+    variable = u_comp
+    tracker = comp
+  [../]
+[]
+
 [Variables]
   [./u]
     [./InitialCondition]
@@ -69,4 +85,5 @@
 
 [Outputs]
   csv = true
+  exodus = true
 []

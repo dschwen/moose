@@ -11,6 +11,30 @@
   uniform_refine = 3
 []
 
+[AuxVariables]
+  [./ccomp]
+    order = CONSTANT
+    family = MONOMIAL
+  [../]
+  [./proc]
+    order = CONSTANT
+    family = MONOMIAL
+  [../]
+[]
+
+[AuxKernels]
+  [./ccomp]
+    type = CoarseningIntegralAux
+    execute_on = timestep_begin
+    variable = ccomp
+    tracker = comp
+  [../]
+  [./proc]
+    type = ProcessorIDAux
+    variable = proc
+  [../]
+[]
+
 [Variables]
   [./c]
     order = FIRST

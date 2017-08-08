@@ -8,6 +8,22 @@
   uniform_refine = 6
 []
 
+[AuxVariables]
+  [./u_comp]
+    order = CONSTANT
+    family = MONOMIAL
+  [../]
+[]
+
+[AuxKernels]
+  [./u_comp]
+    type = CoarseningIntegralAux
+    execute_on = timestep_begin
+    variable = u_comp
+    tracker = comp
+  [../]
+[]
+
 [Variables]
   [./u]
     [./InitialCondition]
@@ -29,8 +45,9 @@
     variable = u
   [../]
   [./diff_u]
-    type = Diffusion
+    type = MatDiffusion
     variable = u
+    D_name = 0
   [../]
   [./src_u]
     type = CoarseningIntegralCompensation
@@ -42,8 +59,9 @@
     variable = v
   [../]
   [./diff_v]
-    type = Diffusion
+    type = MatDiffusion
     variable = v
+    D_name = 0
   [../]
 []
 
@@ -86,4 +104,5 @@
 
 [Outputs]
   csv = true
+  exodus = true
 []

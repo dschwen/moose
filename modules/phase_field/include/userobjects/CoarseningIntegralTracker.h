@@ -9,10 +9,11 @@
 #define COARSENINGINTEGRALTRACKER_H
 
 #include "ElementUserObject.h"
+#include <map>
 
 class CoarseningIntegralTracker;
 
-template<>
+template <>
 InputParameters validParams<CoarseningIntegralTracker>();
 
 /**
@@ -25,7 +26,7 @@ public:
 
   virtual void initialize() override;
   virtual void execute() override;
-  virtual void finalize() override {};
+  virtual void finalize() override;
 
   virtual void meshChanged() override;
 
@@ -42,8 +43,11 @@ protected:
   /// variable to correct
   const VariableValue & _v;
 
-  /// pre-adaptivity element integrals
-  std::map<const Elem *, Real> _pre_adaptivity_integral;
+  /// coupled variable object
+  MooseVariable * _v_var;
+
+  /// pre-adaptivity element integrals of child elements indexed by their parent id
+  std::multimap<dof_id_type, Real> _pre_adaptivity_integral;
 
   /// corrective source term
   std::map<const Elem *, Real> _corrective_source;
@@ -52,4 +56,4 @@ protected:
   bool _pre_adaptivity_ran;
 };
 
-#endif //COARSENINGINTEGRALTRACKER_H
+#endif // COARSENINGINTEGRALTRACKER_H
