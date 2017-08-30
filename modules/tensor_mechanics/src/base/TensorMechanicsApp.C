@@ -82,6 +82,8 @@
 #include "ComputeFiniteStrainElasticStress.h"
 #include "ComputeEigenstrain.h"
 #include "ComputeExtraStressConstant.h"
+#include "ComputeIdealGasPressure.h"
+#include "ComputeVanDerWaalsGasPressure.h"
 #include "ComputeVariableBaseEigenStrain.h"
 #include "ComputeVariableEigenstrain.h"
 #include "ComputeThermalExpansionEigenstrain.h"
@@ -313,6 +315,8 @@ TensorMechanicsApp::registerObjects(Factory & factory)
   registerMaterial(ComputeFiniteStrainElasticStress);
   registerMaterial(ComputeEigenstrain);
   registerMaterial(ComputeExtraStressConstant);
+  registerMaterial(ComputeIdealGasPressure);
+  registerMaterial(ComputeVanDerWaalsGasPressure);
   registerMaterial(ComputeVariableBaseEigenStrain);
   registerMaterial(ComputeVariableEigenstrain);
   registerMaterial(ComputeThermalExpansionEigenstrain);
