@@ -303,6 +303,8 @@ Transient::execute()
     _steps_taken++;
   }
 
+  _problem.execMultiAppTransfers(EXEC_FINAL, MultiAppTransfer::FROM_MULTIAPP);
+
   if (!_app.halfTransient())
     _problem.outputStep(EXEC_FINAL);
 

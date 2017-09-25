@@ -38,9 +38,13 @@ validParams<Transfer>()
                         "in the case this is true but no "
                         "displacements are provided in the Mesh block "
                         "the undisplaced mesh will still be used.");
-  // Add the SetupInterface parameter, 'execute_on', and set it to a default of 'timestep_begin'
+
+  // Add the SetupInterface parameter, 'execute_on', add final option, and set it to a default of
+  // 'timestep_begin'
   params += validParams<SetupInterface>();
-  params.set<MultiMooseEnum>("execute_on") = "timestep_begin";
+  MultiMooseEnum transfer_execute_on(
+      params.get<MultiMooseEnum>("execute_on").getRawNames() + " final", "timestep_begin"); //=0x20
+  params.set<MultiMooseEnum>("execute_on") = transfer_execute_on;
 
   params.registerBase("Transfer");
 

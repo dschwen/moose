@@ -100,7 +100,7 @@ enum ExecFlagType
   EXEC_TIMESTEP_END = 0x08, // 8
   /// Object is evaluated at the beginning of every time step
   EXEC_TIMESTEP_BEGIN = 0x10, // 16
-  /// Object is evaluated at the end of the simulations (output only)
+  /// Object is evaluated at the end of the simulations
   EXEC_FINAL = 0x20, // 32
   /// Forces execution to occur (output only)
   EXEC_FORCED = 0x40, // 64
