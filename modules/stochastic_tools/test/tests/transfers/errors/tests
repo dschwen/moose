@@ -2,7 +2,7 @@
   [./multiapp_type]
     type = RunException
     input = master_multiapp_type_error.i
-    expect_err = "The 'multi_app' parameter must provide a 'SamplerMultiApp' object."
+    expect_err = "The 'multi_app' parameter must provide a 'Sampler' type MultiApp object."
   [../]
   [./control_missing]
     type = RunException

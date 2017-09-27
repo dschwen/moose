@@ -31,7 +31,7 @@
 
 [MultiApps]
   [./runner]
-    type = SamplerMultiApp
+    type = SamplerTransientMultiApp
     sampler = mc
     input_files = 'sub.i'
 #    positions = '0 0 0

@@ -2,7 +2,7 @@
   [./wrong_multi_app]
     type = RunException
     input = wrong_multi_app.i
-    expect_err = "The 'multi_app' parameter must provide a 'SamplerMultiApp' object."
+    expect_err = "The 'multi_app' parameter must provide a 'Sampler' type MultiApp object."
   [../]
   [./require_stochastic_results]
     type = RunException
