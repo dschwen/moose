@@ -21,7 +21,8 @@
 #include "StochasticResults.h"
 
 // MultiApps
-#include "SamplerMultiApp.h"
+#include "SamplerFullSolveMultiApp.h"
+#include "SamplerTransientMultiApp.h"
 
 // Transfers
 #include "SamplerTransfer.h"
@@ -88,12 +89,12 @@ StochasticToolsApp::registerObjects(Factory & factory)
   registerVectorPostprocessor(StochasticResults);
 
   // MultiApps
-  registerMultiApp(SamplerMultiApp);
+  registerMultiApp(SamplerFullSolveMultiApp);
+  registerMultiApp(SamplerTransientMultiApp);
 
   // Transfers
   registerTransfer(SamplerTransfer);
   registerTransfer(SamplerPostprocessorTransfer);
-
   // Controls
   registerControl(SamplerReceiver);
 }

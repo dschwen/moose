@@ -7,7 +7,8 @@
 
 // StochasticTools includes
 #include "SamplerPostprocessorTransfer.h"
-#include "SamplerMultiApp.h"
+#include "SamplerMultiAppInterface.h"
+#include "MultiApp.h"
 #include "SamplerReceiver.h"
 #include "StochasticResults.h"
 
@@ -30,12 +31,12 @@ validParams<SamplerPostprocessorTransfer>()
 SamplerPostprocessorTransfer::SamplerPostprocessorTransfer(const InputParameters & parameters)
   : MultiAppTransfer(parameters),
     _results_name(getParam<VectorPostprocessorName>("results")),
-    _sampler_multi_app(std::dynamic_pointer_cast<SamplerMultiApp>(_multi_app).get()),
+    _sampler_multi_app(std::dynamic_pointer_cast<SamplerMultiAppInterface>(_multi_app).get()),
     _sampler(_sampler_multi_app->getSampler()),
     _sub_pp_name(getParam<std::string>("postprocessor"))
 {
   if (!_sampler_multi_app)
-    mooseError("The 'multi_app' must be a 'SamplerMultiApp.'");
+    mooseError("The 'multi_app' must be a 'Sampler' type MultiApp.'");
 }
 
 void

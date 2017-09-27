@@ -5,23 +5,21 @@
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
 
-#ifndef SAMPLERMULTIAPP_H
-#define SAMPLERMULTIAPP_H
+#ifndef SAMPLERMULTIAPPINTERFACE_H
+#define SAMPLERMULTIAPPINTERFACE_H
 
-// MOOSE includes
-#include "TransientMultiApp.h"
-#include "SamplerInterface.h"
-#include "Sampler.h"
+#include "InputParameters.h"
 
-class SamplerMultiApp;
+class SamplerMultiAppInterface;
+class Sampler;
 
 template <>
-InputParameters validParams<SamplerMultiApp>();
+InputParameters validParams<SamplerMultiAppInterface>();
 
-class SamplerMultiApp : public TransientMultiApp, public SamplerInterface
+class SamplerMultiAppInterface
 {
 public:
-  SamplerMultiApp(const InputParameters & parameters);
+  SamplerMultiAppInterface(Sampler & sampler) : _sampler(sampler) {}
 
   /**
    * Return the Sampler object for this MultiApp.
@@ -33,4 +31,4 @@ protected:
   Sampler & _sampler;
 };
 
-#endif
+#endif // SAMPLERMULTIAPPINTERFACE_H

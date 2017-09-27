@@ -7,8 +7,9 @@
 
 // MOOSE includes
 #include "SamplerTransfer.h"
-#include "SamplerMultiApp.h"
+#include "SamplerMultiAppInterface.h"
 #include "SamplerReceiver.h"
+#include "MultiApp.h"
 
 template <>
 InputParameters
@@ -36,9 +37,9 @@ SamplerTransfer::SamplerTransfer(const InputParameters & parameters)
 {
 
   // Determine the Sampler
-  std::shared_ptr<SamplerMultiApp> ptr = std::dynamic_pointer_cast<SamplerMultiApp>(_multi_app);
+  auto ptr = std::dynamic_pointer_cast<SamplerMultiAppInterface>(_multi_app);
   if (!ptr)
-    mooseError("The 'multi_app' parameter must provide a 'SamplerMultiApp' object.");
+    mooseError("The 'multi_app' parameter must provide a 'Sampler' type MultiApp object.");
   _sampler_ptr = &(ptr->getSampler());
 
   // Compute the matrix and row for each

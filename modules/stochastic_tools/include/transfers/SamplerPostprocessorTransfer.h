@@ -15,7 +15,7 @@
 // Forward declarations
 class SamplerPostprocessorTransfer;
 class SamplerReceiver;
-class SamplerMultiApp;
+class SamplerMultiAppInterface;
 class StochasticResults;
 
 template <>
@@ -35,10 +35,10 @@ protected:
   /// Name of VPP that will store the data
   const VectorPostprocessorName & _results_name;
 
-  /// SamplerMultiApp that this transfer is working with
-  SamplerMultiApp * _sampler_multi_app;
+  /// Sampler MultiApp that this transfer is working with
+  SamplerMultiAppInterface * _sampler_multi_app;
 
-  /// Sampler object that is retrieved from the SamplerMultiApp
+  /// Sampler object that is retrieved from the Sampler MultiApp
   Sampler & _sampler;
 
   /// Storage for StochasticResults object that data will be transferred to/from

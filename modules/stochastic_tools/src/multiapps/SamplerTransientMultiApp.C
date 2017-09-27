@@ -6,15 +6,15 @@
 /****************************************************************/
 
 // StochasticTools includes
-#include "SamplerMultiApp.h"
+#include "SamplerTransientMultiApp.h"
+#include "Sampler.h"
 
 template <>
 InputParameters
-validParams<SamplerMultiApp>()
+validParams<SamplerTransientMultiApp>()
 {
   InputParameters params = validParams<TransientMultiApp>();
-  params.addClassDescription("Creates a sub-application for each row of each Sampler matrix.");
-  params.addParam<SamplerName>("sampler", "The Sampler object to utilize for creating MultiApps.");
+  params += validParams<SamplerMultiAppInterface>();
   params.suppressParameter<std::vector<Point>>("positions");
   params.suppressParameter<bool>("output_in_position");
   params.suppressParameter<std::vector<FileName>>("positions_file");
@@ -25,10 +25,10 @@ validParams<SamplerMultiApp>()
   return params;
 }
 
-SamplerMultiApp::SamplerMultiApp(const InputParameters & parameters)
+SamplerTransientMultiApp::SamplerTransientMultiApp(const InputParameters & parameters)
   : TransientMultiApp(parameters),
     SamplerInterface(this),
-    _sampler(SamplerInterface::getSampler("sampler"))
+    SamplerMultiAppInterface(SamplerInterface::getSampler("sampler"))
 {
   init(_sampler.getTotalNumberOfRows());
 }
