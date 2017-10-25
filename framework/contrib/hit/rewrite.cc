@@ -46,10 +46,22 @@ main(int argc, char ** argv)
     std::string val = material->paramOptional<std::string>("type", "");
     if (val == "DerivativeParsedMaterial")
     {
-      std::string selected = material->render();
-      std::cout << selected << "\n";
+      // get the f_name parameter
+      std::string val = material->paramOptional<std::string>("f_name", "F");
+
+      // make a new material
+      auto newmaterial = new Section(material->fullpath() + "_copy");
+      std::cout << material->fullpath() + "_copy" << '\n';
+
+      // insert the new material
+      hit::explode(newmaterial);
+      std::cout << newmaterial->render() << "\n";
+
+      hit::merge(newmaterial, root);
     }
   }
+
+  std::cout << root->render() << "\n";
 
   return 0;
 }
