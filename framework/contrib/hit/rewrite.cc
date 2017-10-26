@@ -50,14 +50,13 @@ main(int argc, char ** argv)
       std::string val = material->paramOptional<std::string>("f_name", "F");
 
       // make a new material
-      auto newmaterial = new Section(material->fullpath() + "_copy");
-      std::cout << material->fullpath() + "_copy" << '\n';
+      auto newmaterial = new Section(material->path() + "_copy");
 
-      // insert the new material
-      hit::explode(newmaterial);
-      std::cout << newmaterial->render() << "\n";
+      // add a parameter
+      newmaterial->addChild(new Field("f_name", Field::Kind::String, val + "_copy"));
 
-      hit::merge(newmaterial, root);
+      // insert the material
+      material_block->addChild(newmaterial);
     }
   }
 
