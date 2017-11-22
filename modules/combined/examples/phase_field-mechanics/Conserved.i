@@ -10,14 +10,15 @@
   dim = 2
   nx = 40
   ny = 40
-  nz = 0
   xmin = 0
   xmax = 50
   ymin = 0
   ymax = 50
-  zmin = 0
-  zmax = 0
   elem_type = QUAD4
+[]
+
+[GlobalParams]
+  displacements = 'disp_x disp_y'
 []
 
 [Variables]
@@ -38,21 +39,17 @@
     order = FIRST
     family = LAGRANGE
   [../]
-  [./disp_x]
-    order = FIRST
-    family = LAGRANGE
-  [../]
-  [./disp_y]
-    order = FIRST
-    family = LAGRANGE
+[]
+
+[Modules/TensorMechanics/Master]
+  [./all]
+    add_variables = true
+    eigenstrain_names = eigenstrain
+    generate_output = 'stress_xx stress_yy'
   [../]
 []
 
 [Kernels]
-  [./TensorMechanics]
-    displacements = 'disp_x disp_y'
-  [../]
-
   [./c_res]
     type = SplitCHParsed
     variable = c
@@ -72,42 +69,11 @@
   [../]
 []
 
-#
-# The AuxVariables and AuxKernels below are added to visualize the xx and yy stress tensor components
-#
-[AuxVariables]
-  [./sigma11_aux]
-    order = CONSTANT
-    family = MONOMIAL
-  [../]
-  [./sigma22_aux]
-    order = CONSTANT
-    family = MONOMIAL
-  [../]
-[]
-[AuxKernels]
-  [./matl_sigma11]
-    type = RankTwoAux
-    rank_two_tensor = stress
-    index_i = 0
-    index_j = 0
-    variable = sigma11_aux
-  [../]
-  [./matl_sigma22]
-    type = RankTwoAux
-    rank_two_tensor = stress
-    index_i = 1
-    index_j = 1
-    variable = sigma22_aux
-  [../]
-[]
-
 [Materials]
   [./pfmobility]
     type = GenericConstantMaterial
     prop_names  = 'M kappa_c'
     prop_values = '1 5'
-    block = 0
     #kappa = 0.1
     #mob = 1e-3
   [../]
@@ -115,7 +81,6 @@
   # simple chemical free energy with a miscibility gap
   [./chemical_free_energy]
     type = DerivativeParsedMaterial
-    block = 0
     f_name = Fc
     args = 'c'
     constant_names       = 'barr_height  cv_eq'
@@ -128,7 +93,6 @@
   # undersized solute (voidlike)
   [./elasticity_tensor]
     type = ComputeElasticityTensor
-    block = 0
     # lambda, mu values
     C_ijkl = '7 7'
     # Stiffness tensor is created from lambda=7, mu=7 using symmetric_isotropic fill method
@@ -139,11 +103,9 @@
   [../]
   [./stress]
     type = ComputeLinearElasticStress
-    block = 0
   [../]
   [./var_dependence]
     type = DerivativeParsedMaterial
-    block = 0
     # eigenstrain coefficient
     # -0.1 will result in an undersized precipitate
     #  0.1 will result in an oversized precipitate
@@ -155,23 +117,15 @@
   [../]
   [./eigenstrain]
     type = ComputeVariableEigenstrain
-    block = 0
     eigen_base = '1 1 1 0 0 0'
     prefactor = var_dep
     #outputs = exodus
     args = 'c'
     eigenstrain_name = eigenstrain
   [../]
-  [./strain]
-    type = ComputeSmallStrain
-    block = 0
-    displacements = 'disp_x disp_y'
-    eigenstrain_names = eigenstrain
-  [../]
   [./elastic_free_energy]
     type = ElasticEnergyMaterial
     f_name = Fe
-    block = 0
     args = 'c'
     derivative_order = 2
   [../]
@@ -179,7 +133,6 @@
   # Sum up chemical and elastic contributions
   [./free_energy]
     type = DerivativeSumMaterial
-    block = 0
     f_name = F
     sum_materials = 'Fc Fe'
     args = 'c'
