@@ -5,62 +5,111 @@
 #include <fstream>
 #include <map>
 #include <set>
+#include <list>
 
 #include "parse.h"
 
 using namespace hit;
 
+using DeleteList = std::list<Node *>;
+using MatchedParams = std::map<std::string, std::string>;
+
+Node *
+loadAndParse(const std::string & fname)
+{
+  std::ifstream f(fname);
+  std::string input((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+  return parse(fname, input);
+}
+
+bool
+matchSection(Node * section, Node * input, DeleteList & delete_list, MatchedParams & matched_params)
+{
+  // first check if subsections match
+  for (auto subsection : section->children(NodeType::Section))
+  {
+    bool submatch = matchSection(subsection, input, delete_list, matched_params);
+    if (!submatch)
+      return false;
+
+    // subsection matches, if it has parameters it will be deleted
+    delete_list.push_back(subsection);
+  }
+
+  return true;
+}
+
 int
 main(int argc, char ** argv)
 {
-  if (argc < 2)
+  if (argc < 3)
   {
-    std::cerr << "must specify a filename\n";
+    std::cerr << "Usage: rewrite inputfile.i rules1.i [rules2.i ...]\n";
     return 1;
   }
 
-  std::string fname(argv[1]);
-  std::ifstream f(fname);
-  std::string input((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+  // load the input file that is to be rewritten
+  auto input = loadAndParse(argv[1]);
 
-  // parse file
-  hit::Node * root = nullptr;
-  try
+  // load first rule file
+  auto rules_root = loadAndParse(argv[2]);
+
+  // load additional rule files
+  for (unsigned int i = 3; i < argc; ++i)
   {
-    root = hit::parse(fname, input);
+    auto more_rules = loadAndParse(argv[i]);
+    merge(more_rules, rules_root);
+    delete more_rules;
   }
-  catch (std::exception & err)
+
+  // find ReplacementRules block
+  auto rules = rules_root->find("ReplacementRules");
+  if (!rules)
   {
-    std::cerr << err.what() << "\n";
+    std::cerr << "No [ReplacementRules] block found in the rule files\n";
     return 1;
   }
 
-  // find materials block
-  auto material_block = root->find("Materials");
-  if (!material_block)
-    return 0;
-
-  auto materials = material_block->children(NodeType::Section);
-  for (auto material : materials)
+  // loop over all rules
+  for (auto rule : rules->children(NodeType::Section))
   {
-    std::string val = material->paramOptional<std::string>("type", "");
-    if (val == "DerivativeParsedMaterial")
+    // Match
+    auto match = rule->find("Match");
+    if (!match)
     {
-      // get the f_name parameter
-      std::string val = material->paramOptional<std::string>("f_name", "F");
+      std::cerr << "No [./Match] block found in rule '" << rule->path() << "'\n";
+      return 1;
+    }
 
-      // make a new material
-      auto newmaterial = new Section(material->path() + "_copy");
+    // Replace
+    auto replace = rule->find("Replace");
+    if (!replace)
+    {
+      std::cerr << "No [./Replace] block found in rule '" << rule->path() << "'\n";
+      return 1;
+    }
 
-      // add a parameter
-      newmaterial->addChild(new Field("f_name", Field::Kind::String, val + "_copy"));
+    // Try to apply the rule until it doesn't match anymore
+    while (true)
+    {
+      // list of nodes to delete
+      DeleteList delete_list;
 
-      // insert the material
-      material_block->addChild(newmaterial);
+      // matched parameters
+      MatchedParams matched_params;
+
+      // output current rule name
+      std::cout << rule->path() << "\n";
+
+      // try to match rule (advance to next rule if no match is found)
+      if (!matchSection(match, input, delete_list, matched_params))
+        break;
+
+      // delete what can be deleted
+
+      // insert
     }
   }
-
-  std::cout << root->render() << "\n";
 
   return 0;
 }
