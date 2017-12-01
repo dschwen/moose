@@ -14,12 +14,66 @@ using namespace hit;
 using DeleteList = std::list<Node *>;
 using MatchedParams = std::map<std::string, std::string>;
 
+/**
+ * 1. Section names may contain up to one placeholder.
+ *    valid section match paths are
+ *      - 'fixed_section_name'
+ *      - '<entirely_variable_name>'
+ *      - 'prefixed_<variable_name>'
+ *      - '<variable_name>_postfixes'
+ *      - 'both_sides_<variable_name>_bracketed'
+ *
+ * 2. A variable is set as soon as the first section match is fount at the
+ *    level the variable is used.
+ */
+
 Node *
 loadAndParse(const std::string & fname)
 {
   std::ifstream f(fname);
   std::string input((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
   return parse(fname, input);
+}
+
+struct PlaceHolderPattern
+{
+  std::string pre, post, symbol;
+};
+
+bool
+parsePlaceholder(PlaceHolderPattern & pattern, const std::string & path)
+{
+  // find both '<' and '>'
+  auto open_pos = path.find('<');
+  auto close_pos = path.find('>');
+
+  if ((open_pos == std::string::npos) != (close_pos == std::string::npos) || close_pos < open_pos)
+    throw std::invalid_argument("malformed placeholder in path segment");
+
+  if (open_pos == std::string::npos)
+    return false;
+
+  pattern.pre = path.substr(0, open_pos);
+  pattern.post = path.substr(close_pos + 1);
+  pattern.symbol = path.substr(open_pos + 1, close_pos - open_pos - 1);
+  return true;
+}
+
+bool
+matchPlaceholder(const PlaceHolderPattern & pattern, const std::string & path, std::string & match)
+{
+  auto pre_len = pattern.pre.length();
+  auto post_len = pattern.post.length();
+  auto path_len = path.length();
+
+  if ((pre_len + post_len) <= path_len && path.substr(0, pre_len) == pattern.pre &&
+      path.substr(path_len - post_len, post_len) == pattern.post)
+  {
+    match = path.substr(pre_len, path_len - pre_len - post_len);
+    return true;
+  }
+  else
+    return false;
 }
 
 bool
@@ -31,6 +85,9 @@ matchSection(Node * section, Node * input, DeleteList & delete_list, MatchedPara
   // first check if subsections match
   for (auto subsection : section->children(NodeType::Section))
   {
+    // parse the pattern input section
+    std::string pre, post, symbol;
+
     // if the subsection path in the match rule does not contain a placeholder
     // we can use find to pick it out of the input directly
     if (true)
@@ -86,6 +143,29 @@ matchSection(Node * section, Node * input, DeleteList & delete_list, MatchedPara
 int
 main(int argc, char ** argv)
 {
+  // {
+  //   PlaceHolderPattern pattern;
+  //   std::cout << parsePlaceholder(pattern, "testomat") << '\t';
+  //   std::cout << '\'' << pattern.pre << "'\t'" << pattern.symbol << "'\t'" << pattern.post <<
+  //   "'\n";
+  // }
+  //
+  // {
+  //   PlaceHolderPattern pattern;
+  //   std::cout << parsePlaceholder(pattern, "mutha<blank>") << '\t';
+  //   std::cout << '\'' << pattern.pre << "'\t'" << pattern.symbol << "'\t'" << pattern.post <<
+  //   "'\n";
+  // }
+  //
+  // {
+  //   PlaceHolderPattern pattern;
+  //   std::cout << parsePlaceholder(pattern, "mutha_<blank>_fucking") << '\t';
+  //   std::cout << '\'' << pattern.pre << "'\t'" << pattern.symbol << "'\t'" << pattern.post <<
+  //   "'\n";
+  // }
+  //
+  // return 0;
+
   if (argc < 3)
   {
     std::cerr << "Usage: rewrite inputfile.i rules1.i [rules2.i ...]\n";
