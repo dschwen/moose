@@ -86,12 +86,47 @@ matchSection(Node * section, Node * input, DeleteList & delete_list, MatchedPara
   for (auto subsection : section->children(NodeType::Section))
   {
     // parse the pattern input section
-    std::string pre, post, symbol;
+    PlaceHolderPattern pattern;
 
     // if the subsection path in the match rule does not contain a placeholder
     // we can use find to pick it out of the input directly
-    if (true)
+    if (parsePlaceholder(pattern, subsection->path()))
     {
+      // section name contains a placeholder.
+      // loop over all childeren in the input and accept first candidate for
+      // which the structure matches
+      bool match_found = false;
+      for (auto input_section : input->children(NodeType::Section))
+      {
+        // check if the mane of the subsection matches the pattern
+        std::string path_match;
+        if (matchPlaceholder(pattern, input_section->path(), path_match))
+        {
+          // check if the matched placeholder content is consistent with previous matches
+          auto previous_match = new_matches.find(pattern.symbol);
+          if (previous_match == new_matches.end() || *previous_match != path_match)
+            continue;
+
+          // record pattern match
+          new_matches.insert(std::make_pair(pattern.symbol, path_match));
+        }
+        else
+          continue;
+
+        // check if the contents of the subsection match
+        if (matchSection(subsection, input_section, new_deletes, new_matches))
+        {
+          match_found = true;
+          new_deletes.push_back(input_section);
+          break;
+        }
+      }
+      if (!match_found)
+        return false;
+    }
+    else
+    {
+      // section name does not contain a placeholder
       // find subsection by name in input
       auto input_section = input->find(subsection->path());
       if (!input_section)
@@ -103,23 +138,6 @@ matchSection(Node * section, Node * input, DeleteList & delete_list, MatchedPara
 
       // subsection matches, if it has parameters it will be deleted
       new_deletes.push_back(input_section);
-    }
-    else
-    {
-      // loop over all childeren in the input and accept first candidate for
-      // which the structure matches
-      bool match_found = false;
-      for (auto input_section : input->children(NodeType::Section))
-      {
-        if (matchSection(subsection, input_section, new_deletes, new_matches))
-        {
-          match_found = true;
-          new_deletes.push_back(input_section);
-          continue;
-        }
-      }
-      if (!match_found)
-        return false;
     }
   }
 
@@ -154,14 +172,23 @@ main(int argc, char ** argv)
   //   PlaceHolderPattern pattern;
   //   std::cout << parsePlaceholder(pattern, "mutha<blank>") << '\t';
   //   std::cout << '\'' << pattern.pre << "'\t'" << pattern.symbol << "'\t'" << pattern.post <<
-  //   "'\n";
+  //   "'\n"; std::string match; std::cout << matchPlaceholder(pattern, "muthafuka", match) << "\t'"
+  //   << match << "'\n";
   // }
   //
   // {
   //   PlaceHolderPattern pattern;
   //   std::cout << parsePlaceholder(pattern, "mutha_<blank>_fucking") << '\t';
   //   std::cout << '\'' << pattern.pre << "'\t'" << pattern.symbol << "'\t'" << pattern.post <<
-  //   "'\n";
+  //   "'\n"; std::string match; std::cout << matchPlaceholder(pattern, "mutha_bleeping_fucking",
+  //   match) << "\t'" << match
+  //             << "'\n";
+  //   std::string match2;
+  //   std::cout << matchPlaceholder(pattern, "mutha_bleeping_fraking", match2) << "\t'" << match2
+  //             << "'\n";
+  //   std::string match3;
+  //   std::cout << matchPlaceholder(pattern, "momma_bleeping_fucking", match3) << "\t'" << match3
+  //             << "'\n";
   // }
   //
   // return 0;
