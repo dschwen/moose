@@ -25,17 +25,61 @@ loadAndParse(const std::string & fname)
 bool
 matchSection(Node * section, Node * input, DeleteList & delete_list, MatchedParams & matched_params)
 {
+  DeleteList new_deletes(delete_list);
+  MatchedParams new_matches(matched_params);
+
   // first check if subsections match
   for (auto subsection : section->children(NodeType::Section))
   {
-    bool submatch = matchSection(subsection, input, delete_list, matched_params);
-    if (!submatch)
-      return false;
+    // if the subsection path in the match rule does not contain a placeholder
+    // we can use find to pick it out of the input directly
+    if (true)
+    {
+      // find subsection by name in input
+      auto input_section = input->find(subsection->path());
+      if (!input_section)
+        return false;
 
-    // subsection matches, if it has parameters it will be deleted
-    delete_list.push_back(subsection);
+      // check if the structure matches
+      if (!matchSection(subsection, input_section, new_deletes, new_matches))
+        return false;
+
+      // subsection matches, if it has parameters it will be deleted
+      new_deletes.push_back(input_section);
+    }
+    else
+    {
+      // loop over all childeren in the input and accept first candidate for
+      // which the structure matches
+      bool match_found = false;
+      for (auto input_section : input->children(NodeType::Section))
+      {
+        if (matchSection(subsection, input_section, new_deletes, new_matches))
+        {
+          match_found = true;
+          new_deletes.push_back(input_section);
+          continue;
+        }
+      }
+      if (!match_found)
+        return false;
+    }
   }
 
+  // now check if parameters in the current section match
+  for (auto field : section->children(NodeType::Field))
+  {
+    // find the field
+    auto input_field = input->find(field->path());
+    if (!input_field)
+      return false;
+
+    new_deletes.push_back(input_field);
+  }
+
+  // this section matched, commit all
+  delete_list = new_deletes;
+  matched_params = new_matches;
   return true;
 }
 
@@ -107,7 +151,7 @@ main(int argc, char ** argv)
 
       // delete what can be deleted
 
-      // insert
+      // insert replacement
     }
   }
 
