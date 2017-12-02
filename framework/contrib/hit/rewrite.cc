@@ -76,6 +76,22 @@ matchPlaceholder(const PlaceHolderPattern & pattern, const std::string & path, s
     return false;
 }
 
+std::string
+substitutePattern(const std::string & source, const MatchedParams & matched_params)
+{
+  PlaceHolderPattern pattern;
+  if (parsePlaceholder(pattern, source))
+  {
+    auto previous_match = matched_params.find(pattern.symbol);
+    if (previous_match == matched_params.end())
+      throw std::invalid_argument("unknown placeholder in string");
+
+    return pattern.pre + previous_match->second + pattern.post;
+  }
+  else
+    return source;
+}
+
 bool
 matchSection(Node * section, Node * input, DeleteList & delete_list, MatchedParams & matched_params)
 {
@@ -98,25 +114,27 @@ matchSection(Node * section, Node * input, DeleteList & delete_list, MatchedPara
       bool match_found = false;
       for (auto input_section : input->children(NodeType::Section))
       {
-        // check if the mane of the subsection matches the pattern
+        // check if the name of the subsection matches the pattern
         std::string path_match;
         if (matchPlaceholder(pattern, input_section->path(), path_match))
         {
           // check if the matched placeholder content is consistent with previous matches
           auto previous_match = new_matches.find(pattern.symbol);
-          if (previous_match == new_matches.end() || *previous_match != path_match)
+          if (previous_match != new_matches.end() && previous_match->second != path_match)
             continue;
-
-          // record pattern match
-          new_matches.insert(std::make_pair(pattern.symbol, path_match));
         }
         else
           continue;
 
+        // preliminarily record pattern match (in case the section doesn't match!)
+        MatchedParams new_matches2(new_matches);
+        new_matches2.insert(std::make_pair(pattern.symbol, path_match));
+
         // check if the contents of the subsection match
-        if (matchSection(subsection, input_section, new_deletes, new_matches))
+        if (matchSection(subsection, input_section, new_deletes, new_matches2))
         {
           match_found = true;
+          new_matches = new_matches2;
           new_deletes.push_back(input_section);
           break;
         }
@@ -161,38 +179,6 @@ matchSection(Node * section, Node * input, DeleteList & delete_list, MatchedPara
 int
 main(int argc, char ** argv)
 {
-  // {
-  //   PlaceHolderPattern pattern;
-  //   std::cout << parsePlaceholder(pattern, "testomat") << '\t';
-  //   std::cout << '\'' << pattern.pre << "'\t'" << pattern.symbol << "'\t'" << pattern.post <<
-  //   "'\n";
-  // }
-  //
-  // {
-  //   PlaceHolderPattern pattern;
-  //   std::cout << parsePlaceholder(pattern, "mutha<blank>") << '\t';
-  //   std::cout << '\'' << pattern.pre << "'\t'" << pattern.symbol << "'\t'" << pattern.post <<
-  //   "'\n"; std::string match; std::cout << matchPlaceholder(pattern, "muthafuka", match) << "\t'"
-  //   << match << "'\n";
-  // }
-  //
-  // {
-  //   PlaceHolderPattern pattern;
-  //   std::cout << parsePlaceholder(pattern, "mutha_<blank>_fucking") << '\t';
-  //   std::cout << '\'' << pattern.pre << "'\t'" << pattern.symbol << "'\t'" << pattern.post <<
-  //   "'\n"; std::string match; std::cout << matchPlaceholder(pattern, "mutha_bleeping_fucking",
-  //   match) << "\t'" << match
-  //             << "'\n";
-  //   std::string match2;
-  //   std::cout << matchPlaceholder(pattern, "mutha_bleeping_fraking", match2) << "\t'" << match2
-  //             << "'\n";
-  //   std::string match3;
-  //   std::cout << matchPlaceholder(pattern, "momma_bleeping_fucking", match3) << "\t'" << match3
-  //             << "'\n";
-  // }
-  //
-  // return 0;
-
   if (argc < 3)
   {
     std::cerr << "Usage: rewrite inputfile.i rules1.i [rules2.i ...]\n";
@@ -250,17 +236,35 @@ main(int argc, char ** argv)
       MatchedParams matched_params;
 
       // output current rule name
-      std::cout << rule->path() << "\n";
+      // std::cout << "==== " << rule->path() << " ====\n";
 
       // try to match rule (advance to next rule if no match is found)
       if (!matchSection(match, input, delete_list, matched_params))
         break;
 
       // delete what can be deleted
+      for (auto del : delete_list)
+      {
+        if (del->type() == NodeType::Field)
+          delete del;
+        else if (del->type() == NodeType::Section && del->children(NodeType::All).empty())
+          delete del;
+      }
 
-      // insert replacement
+      // synthesize replacement tree
+      for (auto replace_section : replace->children(NodeType::Section))
+      {
+        auto replacement = replace_section->clone();
+        std::cout << replacement->render() << '\n';
+
+        // insert replacement
+        // hit::explode(replacement);
+        // hit::merge(replacement, input);
+      }
     }
   }
+
+  // std::cout << input->render() << '\n';
 
   return 0;
 }
