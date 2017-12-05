@@ -32,8 +32,37 @@ loadAndParse(const std::string & fname)
 {
   std::ifstream f(fname);
   std::string input((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
-  return parse(fname, input);
+  auto * root = parse(fname, input);
+  hit::explode(root);
+  return root;
 }
+
+class ReplaceWalker : public hit::Walker
+{
+public:
+  ReplacementWalker(const MatchedParams & matched_params)
+    : Walker(), _matched_params(matched_params)
+  {
+  }
+  virtual void walk(const std::string & fullpath, const std::string & nodepath, Node * n);
+
+protected:
+  const MatchedParams & _matched_params;
+};
+
+class ReplaceFieldWalker : public ReplaceWalker
+{
+public:
+  ReplaceFieldWalker(const MatchedParams & matched_params) : ReplaceWalker(matched_params) {}
+  virtual void walk(const std::string & fullpath, const std::string & nodepath, Node * n);
+};
+
+class ReplaceSectionWalker : public ReplaceWalker
+{
+public:
+  ReplaceSectionWalker(const MatchedParams & matched_params) : ReplaceWalker(matched_params) {}
+  virtual void walk(const std::string & fullpath, const std::string & nodepath, Node * n);
+};
 
 struct PlaceHolderPattern
 {
@@ -258,13 +287,16 @@ main(int argc, char ** argv)
         std::cout << replacement->render() << '\n';
 
         // insert replacement
-        // hit::explode(replacement);
-        // hit::merge(replacement, input);
+        hit::merge(replacement, input);
       }
     }
   }
 
-  // std::cout << input->render() << '\n';
+  std::cout << input->render() << '\n';
+
+  // clean up
+  delete input;
+  delete rules_root;
 
   return 0;
 }
