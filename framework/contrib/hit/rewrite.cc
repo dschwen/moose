@@ -37,47 +37,6 @@ loadAndParse(const std::string & fname)
   return root;
 }
 
-class ReplaceWalker : public hit::Walker
-{
-public:
-  ReplaceWalker(const MatchedParams & matched_params) : Walker(), _matched_params(matched_params) {}
-
-protected:
-  const MatchedParams & _matched_params;
-};
-
-class ReplaceFieldWalker : public ReplaceWalker
-{
-public:
-  ReplaceFieldWalker(const MatchedParams & matched_params) : ReplaceWalker(matched_params) {}
-  virtual void walk(const std::string &, const std::string & path, Node * n);
-};
-
-void
-ReplaceFieldWalker::walk(const std::string &, const std::string & path, Node * n)
-{
-  std::cout << "FIELD  : " << path << '\n';
-  auto * fn = dynamic_cast<hit::Field *>(n);
-  if (!fn)
-    throw Error("Node '" + path + "' is not a Field");
-}
-
-class ReplaceSectionWalker : public ReplaceWalker
-{
-public:
-  ReplaceSectionWalker(const MatchedParams & matched_params) : ReplaceWalker(matched_params) {}
-  virtual void walk(const std::string &, const std::string & path, Node * n);
-};
-
-void
-ReplaceSectionWalker::walk(const std::string &, const std::string & path, Node * n)
-{
-  std::cout << "SECTION: " << path << '\n';
-  auto * sn = dynamic_cast<hit::Section *>(n);
-  if (!sn)
-    throw Error("Node '" + path + "' is not a Section");
-}
-
 struct PlaceHolderPattern
 {
   std::string pre, post, symbol;
@@ -125,9 +84,10 @@ substitutePattern(const std::string & source, const MatchedParams & matched_para
   PlaceHolderPattern pattern;
   if (parsePlaceholder(pattern, source))
   {
+    // TODO: take care of default values here!
     auto previous_match = matched_params.find(pattern.symbol);
     if (previous_match == matched_params.end())
-      throw std::invalid_argument("unknown placeholder in string");
+      throw Error("Unknown placeholder '" + pattern.symbol + "' in string");
 
     return pattern.pre + previous_match->second + pattern.post;
   }
@@ -219,6 +179,32 @@ matchSection(Node * section, Node * input, DeleteList & delete_list, MatchedPara
   return true;
 }
 
+void
+cloneAndReplace(Node * from, Node * into, const MatchedParams & matched_params)
+{
+  std::string new_name;
+
+  // copy all fields over with replacements
+  for (auto * field_as_node : from->children(NodeType::Field))
+  {
+    auto * field = dynamic_cast<hit::Field *>(field_as_node);
+    if (!field)
+      throw Error("Node is not a field.");
+
+    into->addChild(new hit::Field(substitutePattern(field->path(), matched_params),
+                                  hit::Field::Kind::None,
+                                  substitutePattern(field->val(), matched_params)));
+  }
+
+  // copy sections over (with replaced names)
+  for (auto * section : from->children(NodeType::Section))
+  {
+    auto * new_section = new hit::Section(substitutePattern(section->path(), matched_params));
+    into->addChild(new_section);
+    cloneAndReplace(section, new_section, matched_params);
+  }
+}
+
 int
 main(int argc, char ** argv)
 {
@@ -295,12 +281,8 @@ main(int argc, char ** argv)
       }
 
       // synthesize replacement tree
-      auto replacement = replace->clone();
-      ReplaceFieldWalker replace_fields(matched_params);
-      ReplaceSectionWalker replace_sections(matched_params);
-      replacement->walk(&replace_fields, NodeType::Field);
-      replacement->walk(&replace_sections, NodeType::Section);
-
+      auto replacement = new hit::Section("");
+      cloneAndReplace(replace, replacement, matched_params);
       std::cout << replacement->render() << '\n';
 
       // insert replacement
