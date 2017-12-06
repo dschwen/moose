@@ -40,11 +40,7 @@ loadAndParse(const std::string & fname)
 class ReplaceWalker : public hit::Walker
 {
 public:
-  ReplacementWalker(const MatchedParams & matched_params)
-    : Walker(), _matched_params(matched_params)
-  {
-  }
-  virtual void walk(const std::string & fullpath, const std::string & nodepath, Node * n);
+  ReplaceWalker(const MatchedParams & matched_params) : Walker(), _matched_params(matched_params) {}
 
 protected:
   const MatchedParams & _matched_params;
@@ -54,8 +50,16 @@ class ReplaceFieldWalker : public ReplaceWalker
 {
 public:
   ReplaceFieldWalker(const MatchedParams & matched_params) : ReplaceWalker(matched_params) {}
-  virtual void walk(const std::string & fullpath, const std::string & nodepath, Node * n);
+  virtual void walk(const std::string & fullpath, const std::string &, Node * n);
 };
+
+void
+ReplaceFieldWalker::walk(const std::string & fullpath, const std::string &, Node * n)
+{
+  auto * fn = dynamic_cast<hit::Field *>(n);
+  if (!fn)
+    throw Error("Node '" + fullpath + "' is not a Field");
+}
 
 class ReplaceSectionWalker : public ReplaceWalker
 {
@@ -63,6 +67,14 @@ public:
   ReplaceSectionWalker(const MatchedParams & matched_params) : ReplaceWalker(matched_params) {}
   virtual void walk(const std::string & fullpath, const std::string & nodepath, Node * n);
 };
+
+void
+ReplaceSectionWalker::walk(const std::string & fullpath, const std::string &, Node * n)
+{
+  auto * sn = dynamic_cast<hit::Section *>(n);
+  if (!sn)
+    throw Error("Node '" + fullpath + "' is not a Section");
+}
 
 struct PlaceHolderPattern
 {
