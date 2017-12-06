@@ -50,30 +50,32 @@ class ReplaceFieldWalker : public ReplaceWalker
 {
 public:
   ReplaceFieldWalker(const MatchedParams & matched_params) : ReplaceWalker(matched_params) {}
-  virtual void walk(const std::string & fullpath, const std::string &, Node * n);
+  virtual void walk(const std::string &, const std::string & path, Node * n);
 };
 
 void
-ReplaceFieldWalker::walk(const std::string & fullpath, const std::string &, Node * n)
+ReplaceFieldWalker::walk(const std::string &, const std::string & path, Node * n)
 {
+  std::cout << "FIELD  : " << path << '\n';
   auto * fn = dynamic_cast<hit::Field *>(n);
   if (!fn)
-    throw Error("Node '" + fullpath + "' is not a Field");
+    throw Error("Node '" + path + "' is not a Field");
 }
 
 class ReplaceSectionWalker : public ReplaceWalker
 {
 public:
   ReplaceSectionWalker(const MatchedParams & matched_params) : ReplaceWalker(matched_params) {}
-  virtual void walk(const std::string & fullpath, const std::string & nodepath, Node * n);
+  virtual void walk(const std::string &, const std::string & path, Node * n);
 };
 
 void
-ReplaceSectionWalker::walk(const std::string & fullpath, const std::string &, Node * n)
+ReplaceSectionWalker::walk(const std::string &, const std::string & path, Node * n)
 {
+  std::cout << "SECTION: " << path << '\n';
   auto * sn = dynamic_cast<hit::Section *>(n);
   if (!sn)
-    throw Error("Node '" + fullpath + "' is not a Section");
+    throw Error("Node '" + path + "' is not a Section");
 }
 
 struct PlaceHolderPattern
@@ -293,18 +295,20 @@ main(int argc, char ** argv)
       }
 
       // synthesize replacement tree
-      for (auto replace_section : replace->children(NodeType::Section))
-      {
-        auto replacement = replace_section->clone();
-        std::cout << replacement->render() << '\n';
+      auto replacement = replace->clone();
+      ReplaceFieldWalker replace_fields(matched_params);
+      ReplaceSectionWalker replace_sections(matched_params);
+      replacement->walk(&replace_fields, NodeType::Field);
+      replacement->walk(&replace_sections, NodeType::Section);
 
-        // insert replacement
-        hit::merge(replacement, input);
-      }
+      std::cout << replacement->render() << '\n';
+
+      // insert replacement
+      // hit::merge(replacement, input);
     }
   }
 
-  std::cout << input->render() << '\n';
+  // std::cout << input->render() << '\n';
 
   // clean up
   delete input;
