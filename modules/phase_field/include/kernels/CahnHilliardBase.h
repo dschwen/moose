@@ -10,9 +10,11 @@
 #include "CHBulk.h"
 
 /**
- * CahnHilliardBase implements the residual of the Cahn-Hilliard
- * equation in a general way that can be templated to a scalar or
- * tensor mobility.
+ * CahnHilliardBase implements the residual of the non-split Cahn-Hilliard
+ * equation in a general way that can be templated to a scalar or tensor
+ * mobility.It uses the Free Energy function and derivatives provided by a
+ * DerivativeParsedMaterial to computer the residual for the bulk part of the
+ * Allen-Cahn equation.
  */
 template <typename T>
 class CahnHilliardBase : public CHBulk<T>
@@ -113,6 +115,7 @@ CahnHilliardBase<T>::initialSetup()
    * are coupled. Derivatives with respect to both types of variables contribute
    * the residual.
    */
+  CHBulk<T>::initialSetup();
   this->template validateCoupling<Real>("f_name", _var.name());
   this->template validateDerivativeMaterialPropertyBase<Real>("f_name");
 }

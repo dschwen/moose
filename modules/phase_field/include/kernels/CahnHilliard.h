@@ -10,7 +10,7 @@
 #include "CahnHilliardBase.h"
 
 /**
- * SplitCHWRes creates the residual of the Cahn-Hilliard
+ * Residual of the non-split Cahn-Hilliard
  * equation with a scalar (isotropic) mobility.
  */
 class CahnHilliard : public CahnHilliardBase<Real>
