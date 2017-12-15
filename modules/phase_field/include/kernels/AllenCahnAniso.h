@@ -4,22 +4,22 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-#ifndef ALLENCAHN_H
-#define ALLENCAHN_H
+#ifndef ALLENCAHNANISO_H
+#define ALLENCAHNANISO_H
 
 #include "AllenCahnBase.h"
 
 /**
  * Residual of the Allen-Cahn
- * equation with a scalar (isotropic) mobility.
+ * equation with a tensor (anisotropic) mobility.
  */
-class AllenCahn : public AllenCahnBase<Real>
+class AllenCahnAniso : public AllenCahnBase<RealTensorValue>
 {
 public:
-  AllenCahn(const InputParameters & parameters);
+  AllenCahnAniso(const InputParameters & parameters);
 };
 
 template <>
-InputParameters validParams<AllenCahn>();
+InputParameters validParams<AllenCahnAniso>();
 
-#endif // ALLENCAHN_H
+#endif // ALLENCAHNANISO_H

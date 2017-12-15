@@ -4,22 +4,16 @@
 /*          All contents are licensed under LGPL V2.1           */
 /*             See LICENSE for full restrictions                */
 /****************************************************************/
-#ifndef ALLENCAHN_H
-#define ALLENCAHN_H
-
-#include "AllenCahnBase.h"
-
-/**
- * Residual of the Allen-Cahn
- * equation with a scalar (isotropic) mobility.
- */
-class AllenCahn : public AllenCahnBase<Real>
-{
-public:
-  AllenCahn(const InputParameters & parameters);
-};
+#include "AllenCahn.h"
 
 template <>
-InputParameters validParams<AllenCahn>();
+InputParameters
+validParams<AllenCahn>()
+{
+  InputParameters params = AllenCahnBase<Real>::validParams();
+  params.addClassDescription("Allen-Cahn Kernel that uses a DerivativeMaterial Free Energy and "
+                             "a scalar (isotropic) mobility");
+  return params;
+}
 
-#endif // ALLENCAHN_H
+AllenCahn::AllenCahn(const InputParameters & parameters) : AllenCahnBase<Real>(parameters) {}
