@@ -12,17 +12,14 @@
 /*            See COPYRIGHT for full restrictions               */
 /****************************************************************/
 
-#ifndef KDTREE_H
-#define KDTREE_H
-
-// Moose includes
-#include "MooseMesh.h"
-
 #include "KDTreeBase.h"
 
-class KDTree : public KDTreeBase<Point>
+namespace MooseUtils
 {
-  using KDTreeBase<Point>::KDTreeBase;
-};
 
-#endif // KDTREE_H
+const Point &
+getKDTreePoint(const Point & p)
+{
+  return p;
+}
+}
