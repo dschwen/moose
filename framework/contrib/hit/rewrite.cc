@@ -6,6 +6,7 @@
 #include <map>
 #include <set>
 #include <list>
+#include <memory>
 
 #include "parse.h"
 
@@ -27,14 +28,14 @@ using MatchedParams = std::map<std::string, std::string>;
  *    level the variable is used.
  */
 
-Node *
+std::unique_ptr<Node>
 loadAndParse(const std::string & fname)
 {
   std::ifstream f(fname);
   std::string input((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
   auto * root = parse(fname, input);
   hit::explode(root);
-  return root;
+  return std::unique_ptr<Node>(root);
 }
 
 struct PlaceHolderPattern
@@ -244,17 +245,16 @@ main(int argc, char ** argv)
   }
 
   // load the input file that is to be rewritten
-  auto * input = loadAndParse(argv[1]);
+  auto input = loadAndParse(argv[1]);
 
   // load first rule file
-  auto * rules_root = loadAndParse(argv[2]);
+  auto rules_root = loadAndParse(argv[2]);
 
   // load additional rule files
   for (unsigned int i = 3; i < argc; ++i)
   {
-    auto * more_rules = loadAndParse(argv[i]);
-    merge(more_rules, rules_root);
-    delete more_rules;
+    auto more_rules = loadAndParse(argv[i]);
+    merge(more_rules.get(), rules_root.get());
   }
 
   // find ReplacementRules block
@@ -294,7 +294,7 @@ main(int argc, char ** argv)
       MatchedParams matched_params;
 
       // try to match rule (advance to next rule if no match is found)
-      if (!matchSection(match, input, delete_list, matched_params))
+      if (!matchSection(match, input.get(), delete_list, matched_params))
         break;
 
       // delete what can be deleted
@@ -311,15 +311,11 @@ main(int argc, char ** argv)
       cloneAndReplace(replace, replacement, matched_params);
 
       // insert replacement
-      hit::merge(replacement, input);
+      merge(replacement, input.get());
     }
   }
 
   std::cout << input->render() << '\n';
-
-  // clean up
-  delete input;
-  delete rules_root;
 
   return 0;
 }
