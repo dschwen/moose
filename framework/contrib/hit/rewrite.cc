@@ -6,6 +6,7 @@
 #include <map>
 #include <set>
 #include <list>
+#include <stack>
 
 #include "parse.h"
 
@@ -13,6 +14,16 @@ using namespace hit;
 
 using DeleteList = std::list<Node *>;
 using MatchedParams = std::map<std::string, std::string>;
+using Position = std::pair<Node *, Node *>;
+
+struct State
+{
+  DeleteList delete_list;
+  MatchedParams matched_params;
+  Node * subsection_pointer;
+  Node * parameter_pointer;
+  Position position;
+};
 
 /**
  * 1. Section names may contain up to one placeholder.
@@ -287,15 +298,30 @@ main(int argc, char ** argv)
     // Try to apply the rule until it doesn't match anymore
     while (true)
     {
-      // list of nodes to delete
-      DeleteList delete_list;
+      // state queue for backtracking
+      std::queue<State> queue;
 
-      // matched parameters
-      MatchedParams matched_params;
+      // put initial state on the queue
+      queue.push({{}, {}, nullptr, nullptr, {match, input}});
 
       // try to match rule (advance to next rule if no match is found)
-      if (!matchSection(match, input, delete_list, matched_params))
-        break;
+      // if (!matchSection(match, input, delete_list, matched_params))
+      //   break;
+
+      while (!queue.empty())
+      {
+        State & top = queue.front();
+
+        DeleteList new_deletes(delete_list);
+        MatchedParams new_matches(matched_params);
+
+        // first check if subsections match
+        for (auto * subsection : top.section->children(NodeType::Section))
+        {
+          // parse the pattern input section
+          PlaceHolderPattern pattern;
+        }
+      }
 
       // delete what can be deleted
       for (auto * del : delete_list)
