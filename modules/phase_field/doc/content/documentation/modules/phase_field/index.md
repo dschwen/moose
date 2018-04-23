@@ -46,10 +46,10 @@ MOOSE provides capabilities that enable the easy development of multiphase field
 
 ### Grain Growth
 
-- Grain Growth Model: Background on the phase field model implemented in MOOSE
+- [Grain Growth Model](Polycrystal/GrainGrowthModel.md): Background on the phase field model implemented in MOOSE
 - [Grain Tracker Algorithm](/GrainTracker.md)
-- Grain Boundary Anisotropy
-- Elastic Driving Force For Grain Growth
+- [Grain Boundary Anisotropy](Polycrystal/GrainBoundaryAnisotropy.md)
+- [Elastic Driving Force For Grain Growth](Polycrystal/ElasticDrivingForce.md)
 
 ## Initial Conditions
 
