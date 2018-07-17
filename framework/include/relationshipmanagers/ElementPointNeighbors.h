@@ -30,7 +30,7 @@ InputParameters validParams<ElementPointNeighbors>();
  * every processor's partition. It is useful when non-local element resources are needed when using
  * DistributedMesh.
  */
-class ElementPointNeighbors : public GeometricRelationshipManager
+class ElementPointNeighbors : public AlgebraicRelationshipManager
 {
 public:
   ElementPointNeighbors(const InputParameters & parameters);

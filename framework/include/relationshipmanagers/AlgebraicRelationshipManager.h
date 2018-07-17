@@ -40,7 +40,7 @@ protected:
   void attachAlgebraicFunctorHelper(GhostingFunctor & gf) const;
 
   /// Problem pointer
-  FEProblem * _problem;
+  FEProblemBase * _problem;
 };
 
 #endif /* ALGEBRAICRELATIONSHIPMANAGER_H */

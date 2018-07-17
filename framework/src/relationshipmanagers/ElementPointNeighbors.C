@@ -18,13 +18,13 @@ template <>
 InputParameters
 validParams<ElementPointNeighbors>()
 {
-  InputParameters params = validParams<GeometricRelationshipManager>();
+  InputParameters params = validParams<AlgebraicRelationshipManager>();
 
   return params;
 }
 
 ElementPointNeighbors::ElementPointNeighbors(const InputParameters & parameters)
-  : GeometricRelationshipManager(parameters)
+  : AlgebraicRelationshipManager(parameters)
 {
 }
 
@@ -35,7 +35,7 @@ void ElementPointNeighbors::attachRelationshipManagersInternal(
   {
     _point_coupling = libmesh_make_unique<GhostPointNeighbors>(_mesh);
 
-    attachGeometricFunctorHelper(*_point_coupling);
+    attachAlgebraicFunctorHelper(*_point_coupling);
   }
 }
 

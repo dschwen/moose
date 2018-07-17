@@ -25,8 +25,11 @@ validParams<AlgebraicRelationshipManager>()
 }
 
 AlgebraicRelationshipManager::AlgebraicRelationshipManager(const InputParameters & parameters)
-  : GeometricRelationshipManager(parameters), LazyCoupleable(this), _problem(nullptr)
+  : GeometricRelationshipManager(parameters),
+    LazyCoupleable(this),
+    _problem(parameters.getCheckedPointerParam<FEProblemBase *>("_fe_problem_base"))
 {
+  _console << parameters;
 }
 
 void
