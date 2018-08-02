@@ -67,7 +67,7 @@ DiscreteNucleationMap::execute()
     // reserve space for each quadrature point in the element
     _elem_map.assign(_qrule->n_points(), 0);
 
-    // store a random number for each quadrature point
+    // loop over each quadrature point
     unsigned int active_nuclei = 0;
     for (unsigned int qp = 0; qp < _qrule->n_points(); ++qp)
     {
@@ -100,10 +100,9 @@ DiscreteNucleationMap::execute()
       _elem_map[qp] = value;
     }
 
-    // if the map is not empty insert it
+    // if at least one nucleus overlaps the element insert data into the map
     if (active_nuclei > 0)
-      _nucleus_map.insert(
-          std::pair<dof_id_type, std::vector<Real>>(_current_elem->id(), _elem_map));
+      _nucleus_map.emplace(_current_elem->id(), _elem_map);
   }
 }
 

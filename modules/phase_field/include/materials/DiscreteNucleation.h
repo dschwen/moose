@@ -27,7 +27,7 @@ class DiscreteNucleation : public DerivativeFunctionMaterialBase
 public:
   DiscreteNucleation(const InputParameters & params);
 
-  virtual void computeProperties();
+  void computeProperties() override;
 
 protected:
   unsigned int _nvar;
