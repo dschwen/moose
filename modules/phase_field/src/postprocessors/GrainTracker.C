@@ -382,11 +382,10 @@ GrainTracker::assignGrains()
    */
   if (_is_master)
   {
-    mooseAssert(!_feature_sets.empty(), "Feature sets empty!");
-
     // Find the largest grain ID, this requires sorting if the ID is not already set
     sortAndLabel();
-    _max_curr_grain_id = _feature_sets[_feature_sets.size() - 1]._id;
+    if (!_feature_sets.empty())
+      _max_curr_grain_id = _feature_sets[_feature_sets.size() - 1]._id;
 
     for (auto & grain : _feature_sets)
       grain._status = Status::MARKED; // Mark the grain
