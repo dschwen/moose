@@ -38,5 +38,11 @@ DiscreteNucleationSource::precalculateResidual()
 Real
 DiscreteNucleationSource::computeQpResidual()
 {
-  return -(*_nucleus)[_qp] * _test[_i][_qp] / _dt;
+  return (_u[_qp] - (*_nucleus)[_qp]) * _test[_i][_qp];
+}
+
+Real
+DiscreteNucleationSource::computeQpJacobian()
+{
+  return _phi[_j][_qp] * _test[_i][_qp];
 }

@@ -29,6 +29,7 @@ public:
 
   void precalculateResidual() override;
   Real computeQpResidual() override;
+  Real computeQpJacobian() override;
 
 protected:
   /// UserObject providing a map of currently active nuclei

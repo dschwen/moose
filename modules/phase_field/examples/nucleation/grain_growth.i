@@ -40,10 +40,6 @@
     op_num = 7 # Number of grains to put Grain-Growth equations on (ignore the top reserved OP)
     # Custom action creating all necessary kernels for grain growth.  All input parameters are up in GlobalParams
   [../]
-  [./dt]
-    type = TimeDerivative
-    variable = gr7
-  [../]
   [./nucleation]
     type = DiscreteNucleationSource
     variable = gr7
