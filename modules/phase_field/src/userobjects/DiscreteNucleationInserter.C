@@ -21,8 +21,14 @@ validParams<DiscreteNucleationInserter>()
   InputParameters params = validParams<ElementUserObject>();
   params.addClassDescription("Manages the list of currently active nucleation sites and adds new "
                              "sites according to a given probability function.");
-  params.addRequiredParam<MaterialPropertyName>(
-      "probability", "Probability density for inserting a discrete nucleus");
+
+  // we're in the process of renaming probability -> nucleation_rate
+  params.addDeprecatedParam<MaterialPropertyName>(
+      "probability",
+      "Nucleation rate per unit volume",
+      "This parameter has been renamed 'nucleation_rate'");
+  params.addParam<MaterialPropertyName>("nucleation_rate", "Nucleation rate per unit volume");
+
   params.addRequiredParam<Real>("hold_time", "Time to keep each nucleus active");
   params.addParam<Point>("test", "Insert a fixed nucleus at a point in the simulation cell");
   params.set<ExecFlagEnum>("execute_on") = EXEC_TIMESTEP_END;
@@ -31,7 +37,8 @@ validParams<DiscreteNucleationInserter>()
 
 DiscreteNucleationInserter::DiscreteNucleationInserter(const InputParameters & parameters)
   : ElementUserObject(parameters),
-    _probability(getMaterialProperty<Real>("probability")),
+    _nucleation_rate(isParamValid("probability") ? getMaterialProperty<Real>("probability")
+                                                 : getMaterialProperty<Real>("nucleation_rate")),
     _hold_time(getParam<Real>("hold_time")),
     _changes_made(0),
     _global_nucleus_list(declareRestartableData("global_nucleus_list", NucleusList(0))),
@@ -92,7 +99,9 @@ DiscreteNucleationInserter::execute()
   // check each qp for potential nucleation
   // TODO: we might as well place the nuclei at random positions within the element...
   for (unsigned int qp = 0; qp < _qrule->n_points(); ++qp)
-    if (getRandomReal() < _probability[qp] * _JxW[qp] * _coord[qp] * _fe_problem.dt())
+    // linearization of the inverse of the zero event probability. Valid if the probability of 2 or
+    // more events happening is negligible
+    if (getRandomReal() < _nucleation_rate[qp] * _JxW[qp] * _coord[qp] * _fe_problem.dt())
     {
       _local_nucleus_list.push_back(
           NucleusLocation(_fe_problem.dt() + _fe_problem.time() + _hold_time, _q_point[qp]));

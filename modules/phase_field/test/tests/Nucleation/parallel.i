@@ -55,7 +55,7 @@
   [./inserter]
     type = DiscreteNucleationInserter
     hold_time = 1
-    probability = 0.01
+    nucleation_rate = 0.01
   [../]
   [./map]
     type = DiscreteNucleationMap

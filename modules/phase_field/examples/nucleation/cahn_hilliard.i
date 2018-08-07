@@ -55,11 +55,11 @@
     derivative_order = 2
     outputs = exodus
   [../]
-  [./probability]
+  [./nucleation_rate]
     # This is a made up toy nucleation rate it should be replaced by
     # classical nucleation theory in a real simulation.
     type = ParsedMaterial
-    f_name = P
+    f_name = J
     args = c
     function = c*1e-7
     outputs = exodus
@@ -92,7 +92,7 @@
     # that happend during the timestep (if it converged) to the list of nuclei
     type = DiscreteNucleationInserter
     hold_time = 100
-    probability = P
+    nucleation_rate = J
   [../]
   [./map]
     # The map UO runs at the beginning of a timestep and generates a per-element/qp

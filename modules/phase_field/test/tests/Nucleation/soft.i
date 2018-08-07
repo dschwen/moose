@@ -44,7 +44,7 @@
   [./inserter]
     type = DiscreteNucleationInserter
     hold_time = 1
-    probability = 0
+    nucleation_rate = 0
     test = '0 0 0'
     execute_on = 'TIMESTEP_END'
   [../]

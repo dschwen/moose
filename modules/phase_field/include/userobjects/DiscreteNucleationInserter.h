@@ -44,7 +44,7 @@ public:
 
 protected:
   /// Nucleation rate density (should be a material property implementing nucleation theory)
-  const MaterialProperty<Real> & _probability;
+  const MaterialProperty<Real> & _nucleation_rate;
 
   /// Duration of time each nucleus is kept active after insertion
   Real _hold_time;
