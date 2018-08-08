@@ -37,6 +37,11 @@ protected:
 
   /// nucleus data for the current element
   const std::vector<Real> * _nucleus;
+
+  ///@{ Bounds for the returned values
+  const Real _v0;
+  const Real _v1;
+  ///@}
 };
 
 #endif // DISCRETENUCLEATIONSOURCE_H

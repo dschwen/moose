@@ -1,14 +1,24 @@
 
 # DiscreteNucleationSource
 
-!syntax description /Materials/DiscreteNucleationSource
+!syntax description /Kernels/DiscreteNucleationSource
 
-The nucleation kernel contributes a source term that adds a...
+It implements the weak for term
 
-The `DiscreteNucleationSource` kernel is part of the [Discrete Nucleation system](Nucleation/DiscreteNucleationSource.md).
+\begin{equation}
+(M(r) \cdot (v_1 - v_0) + v_0 - u, \psi),
+\end{equation}
 
-!syntax parameters /Materials/DiscreteNucleationSource
+where $u$ ist the variable the kernel is acting on, $M$ is the
+[DiscreteNucleationMap](/DiscreteNucleationMap.md)] data, and $\psi$ is a  test
+function. The map values $M(r)$ range from 0..1 and are remaped using the
+$v_0$ (`no_nucleus_value`) and $v_1$ (`nucleus_value`) parameters.
 
-!syntax inputs /Materials/DiscreteNucleationSource
+The `DiscreteNucleationSource` kernel is part of the [Discrete Nucleation system](Nucleation/DiscreteNucleation.md).
+Its companion AuxKernel is [DiscreteNucleationAux](/DiscreteNucleationAux.md).
 
-!syntax children /Materials/DiscreteNucleationSource
+!syntax parameters /Kernels/DiscreteNucleationSource
+
+!syntax inputs /Kernels/DiscreteNucleationSource
+
+!syntax children /Kernels/DiscreteNucleationSource

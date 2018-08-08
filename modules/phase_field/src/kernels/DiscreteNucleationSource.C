@@ -18,13 +18,19 @@ validParams<DiscreteNucleationSource>()
 {
   InputParameters params = validParams<Kernel>();
   params.addClassDescription(
-      "Source term for the nucleating grains or phases in non-conserved order parameter fields");
+      "Term for inserting grain nuclei or phases in non-conserved order parameter fields");
   params.addRequiredParam<UserObjectName>("map", "DiscreteNucleationMap user object");
+  params.addParam<Real>("no_nucleus_value", 0.0, "Variable value indicating no nucleus is present");
+  params.addParam<Real>(
+      "nucleus_value", 1.0, "Variable value indicating the presence of a nucleus");
   return params;
 }
 
 DiscreteNucleationSource::DiscreteNucleationSource(const InputParameters & params)
-  : Kernel(params), _map(getUserObject<DiscreteNucleationMap>("map"))
+  : Kernel(params),
+    _map(getUserObject<DiscreteNucleationMap>("map")),
+    _v0(getParam<Real>("no_nucleus_value")),
+    _v1(getParam<Real>("nucleus_value"))
 {
 }
 
@@ -38,11 +44,11 @@ DiscreteNucleationSource::precalculateResidual()
 Real
 DiscreteNucleationSource::computeQpResidual()
 {
-  return (_u[_qp] - (*_nucleus)[_qp]) * _test[_i][_qp];
+  return ((*_nucleus)[_qp] * (_v1 - _v0) + _v0 - _u[_qp]) * _test[_i][_qp];
 }
 
 Real
 DiscreteNucleationSource::computeQpJacobian()
 {
-  return _phi[_j][_qp] * _test[_i][_qp];
+  return -_phi[_j][_qp] * _test[_i][_qp];
 }
