@@ -101,14 +101,9 @@ void
 StressDivergenceBeam::computeResidual()
 {
   prepareVectorTag(_assembly, _var.number());
-
+  precalculateResidual();
   mooseAssert(_local_re.size() == 2,
               "StressDivergenceBeam: Beam element must have two nodes only.");
-
-  _global_force_res.resize(_test.size());
-  _global_moment_res.resize(_test.size());
-
-  computeGlobalResidual(&_force, &_moment, &_total_rotation, _global_force_res, _global_moment_res);
 
   // add contributions from stiffness proportional damping (non-zero _zeta) or HHT time integration
   // (non-zero _alpha)
@@ -128,8 +123,8 @@ StressDivergenceBeam::computeResidual()
   if (_has_save_in)
   {
     Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
-    for (_i = 0; _i < _save_in.size(); ++_i)
-      _save_in[_i]->sys().solution().add_vector(_local_re, _save_in[_i]->dofIndices());
+    for (const auto & var : _save_in)
+      var->sys().solution().add_vector(_local_re, var->dofIndices());
   }
 }
 
@@ -137,6 +132,9 @@ void
 StressDivergenceBeam::computeJacobian()
 {
   prepareMatrixTag(_assembly, _var.number(), _var.number());
+
+  precalculateJacobian();
+  _local_ke.zero();
 
   for (unsigned int i = 0; i < _test.size(); ++i)
   {
@@ -168,8 +166,8 @@ StressDivergenceBeam::computeJacobian()
       diag(i) = _local_ke(i, i);
 
     Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
-    for (unsigned int i = 0; i < _diag_save_in.size(); ++i)
-      _diag_save_in[i]->sys().solution().add_vector(diag, _diag_save_in[i]->dofIndices());
+    for (const auto & var : _diag_save_in)
+      var->sys().solution().add_vector(diag, var->dofIndices());
   }
 }
 
@@ -180,6 +178,12 @@ StressDivergenceBeam::computeOffDiagJacobian(const unsigned int jvar_num)
     computeJacobian();
   else
   {
+    prepareMatrixTag(_assembly, _var.number(), jvar_num);
+    if (_local_ke.m() != _test.size() || _local_ke.n() != jvar.phiSize())
+      return;
+    _local_ke.zero();
+
+    precalculateOffDiagJacobian(jvar_num);
     unsigned int coupled_component = 0;
     bool disp_coupled = false;
     bool rot_coupled = false;
@@ -203,8 +207,6 @@ StressDivergenceBeam::computeOffDiagJacobian(const unsigned int jvar_num)
         break;
       }
     }
-
-    prepareMatrixTag(_assembly, _var.number(), jvar_num);
 
     if (disp_coupled || rot_coupled)
     {

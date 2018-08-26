@@ -61,6 +61,7 @@ void
 StressDivergenceTensorsTruss::computeResidual()
 {
   prepareVectorTag(_assembly, _var.number());
+  precalculateResidual();
 
   mooseAssert(_local_re.size() == 2, "Truss element has and only has two nodes.");
 
@@ -77,8 +78,8 @@ StressDivergenceTensorsTruss::computeResidual()
   if (_has_save_in)
   {
     Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
-    for (unsigned int i = 0; i < _save_in.size(); ++i)
-      _save_in[i]->sys().solution().add_vector(_local_re, _save_in[i]->dofIndices());
+    for (const auto & var : _save_in)
+      var->sys().solution().add_vector(_local_re, var->dofIndices());
   }
 }
 
@@ -96,6 +97,9 @@ StressDivergenceTensorsTruss::computeJacobian()
 {
   prepareMatrixTag(_assembly, _var.number(), _var.number());
 
+  precalculateJacobian();
+  _local_ke.zero();
+
   for (unsigned int i = 0; i < _test.size(); ++i)
     for (unsigned int j = 0; j < _phi.size(); ++j)
       _local_ke(i, j) += (i == j ? 1 : -1) * computeStiffness(_component, _component);
@@ -106,12 +110,12 @@ StressDivergenceTensorsTruss::computeJacobian()
   {
     unsigned int rows = _local_ke.m();
     DenseVector<Number> diag(rows);
-    for (unsigned int i = 0; i < rows; ++i)
+    for (unsigned int i = 0; i < rows; i++)
       diag(i) = _local_ke(i, i);
 
     Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
-    for (unsigned int i = 0; i < _diag_save_in.size(); ++i)
-      _diag_save_in[i]->sys().solution().add_vector(diag, _diag_save_in[i]->dofIndices());
+    for (const auto & var : _diag_save_in)
+      var->sys().solution().add_vector(diag, var->dofIndices());
   }
 }
 
@@ -128,6 +132,12 @@ StressDivergenceTensorsTruss::computeOffDiagJacobian(const unsigned int jvar_num
     // on the displaced mesh
     auto phi_size = jvar.dofIndices().size();
 
+    prepareMatrixTag(_assembly, _var.number(), jvar_num);
+    if (_local_ke.m() != _test.size() || _local_ke.n() != phi_size)
+      return;
+    _local_ke.zero();
+
+    precalculateOffDiagJacobian(jvar_num);
     unsigned int coupled_component = 0;
     bool disp_coupled = false;
 
