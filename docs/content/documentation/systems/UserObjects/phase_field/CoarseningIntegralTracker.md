@@ -1,4 +1,5 @@
 # CoarseningIntegralTracker
+
 !description /UserObjects/CoarseningIntegralTracker
 
 This user object computes the integral of a given variable over each element at

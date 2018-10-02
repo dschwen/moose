@@ -1,4 +1,5 @@
 # CoarseningIntegralCompensation
+
 !description /Kernels/CoarseningIntegralCompensation
 
 As coarsening drops nodes in regions with high curvature the integrals over variables
