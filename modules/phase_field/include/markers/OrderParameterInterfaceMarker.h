@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef ORDERPARAMETERINTERFACEMARKER_H
 #define ORDERPARAMETERINTERFACEMARKER_H
@@ -13,15 +15,13 @@
 
 class OrderParameterInterfaceMarker;
 
-template<>
+template <>
 InputParameters validParams<OrderParameterInterfaceMarker>();
 
 /**
  * Refine/corsen based on the difference between min and max nodal values.
  */
-class OrderParameterInterfaceMarker :
-  public Marker,
-  public Coupleable
+class OrderParameterInterfaceMarker : public Marker, public Coupleable
 {
 public:
   OrderParameterInterfaceMarker(const InputParameters & parameters);
@@ -30,7 +30,7 @@ protected:
   virtual MarkerValue computeElementMarker() override;
 
   /// The quadrature rule for the system
-  QBase * & _qrule;
+  QBase *& _qrule;
 
   /// number of tracked interface variables
   const unsigned int _n_vars;
