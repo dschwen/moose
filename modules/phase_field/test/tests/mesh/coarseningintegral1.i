@@ -25,12 +25,14 @@
 []
 
 [Variables]
+  # This variable is conserverd when coarsening the mesh
   [./u]
     [./InitialCondition]
       type = FunctionIC
       function = 'x^2+y^2'
     [../]
   [../]
+  # This variable is not conserverd when coarsening the mesh
   [./v]
     [./InitialCondition]
       type = FunctionIC
