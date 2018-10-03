@@ -15,7 +15,9 @@ factory = Factory()
 warehouse = Warehouse()
 parser = Parser(factory, warehouse)
 
-factory.loadPlugins(['.'], 'plugins', "IS_PLUGIN")
+pathname = os.path.dirname(os.path.realpath(sys.argv[0]))
+pathname = os.path.abspath(pathname)
+factory.loadPlugins([pathname], 'plugins', "IS_PLUGIN")
 
 root_params = HitNode(hitnode=hit.parse('',''))
 parser.parse(filename, root_params)

@@ -9,7 +9,7 @@
 
 from PlotOutput import PlotOutput
 from FactorySystem import InputParameters
-import os, sys, shutil
+import matplotlib.pyplot as plt
 
 class PDFPlot(PlotOutput):
     IS_PLUGIN = True
@@ -28,6 +28,11 @@ class PDFPlot(PlotOutput):
 
     # Called to launch the job
     def execute(self):
-        print "Making beautiful plot in ", self.specs['file']
+        plt.figure(figsize=(6.0, 4.0))
+
         for source in self.specs['sources'].split():
-            print self.getDataSource(source).getData()
+            data = self.getDataSource(source).getData()
+            plt.plot(data[0], data[1], label=source)
+
+        plt.legend()
+        plt.savefig(self.specs['file'], bbox_inches='tight', pad_inches=0)
