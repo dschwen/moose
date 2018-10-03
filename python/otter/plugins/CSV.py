@@ -9,7 +9,8 @@
 
 from DataSource import DataSource
 from FactorySystem import InputParameters
-import os, sys, shutil
+# import os, sys, shutil
+import mooseutils
 
 class CSV(DataSource):
     IS_PLUGIN = True
@@ -26,8 +27,10 @@ class CSV(DataSource):
     def __init__(self, name, params):
         super(CSV, self).__init__(name, params)
         self.specs = params
-        # Read data from file  params['file']
+        # Read data from file
+        data = mooseutils.PostprocessorReader(params['file'])
+        self._data = (data[params['x_data']].tolist(), data[params['y_data']].tolist())
 
     # Called to launch the job
     def getData(self):
-        return ([1,5],[2,3])
+        return self._data
