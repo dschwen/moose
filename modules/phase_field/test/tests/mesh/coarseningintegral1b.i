@@ -29,14 +29,14 @@
   [./u]
     [./InitialCondition]
       type = FunctionIC
-      function = 'x^2+y^2'
+      function = 'x^4+y^2'
     [../]
   [../]
   # This variable is not conserverd when coarsening the mesh
   [./v]
     [./InitialCondition]
       type = FunctionIC
-      function = 'x^2+y^2'
+      function = 'x^4+y^2'
     [../]
   [../]
 []
@@ -46,24 +46,15 @@
     type = TimeDerivative
     variable = u
   [../]
-  [./diff_u]
-    type = MatDiffusion
-    variable = u
-    D_name = 0
-  [../]
   [./src_u]
     type = CoarseningIntegralCompensation
     variable = u
     tracker = comp
   [../]
+
   [./dt_v]
     type = TimeDerivative
     variable = v
-  [../]
-  [./diff_v]
-    type = MatDiffusion
-    variable = v
-    D_name = 0
   [../]
 []
 
@@ -72,7 +63,7 @@
     [./all]
       type = BoxMarker
       bottom_left = '-1 -1 0'
-      top_right = '0 1 0'
+      top_right = '0.5 1 0'
       inside = COARSEN
       outside =  DONT_MARK
     [../]
@@ -89,6 +80,28 @@
   [./V]
     type = ElementIntegralVariablePostprocessor
     variable = v
+    execute_on = 'initial timestep_end'
+  [../]
+  [./U0]
+    type = ElementIntegralVariablePostprocessor
+    variable = u
+    execute_on = initial
+  [../]
+  [./V0]
+    type = ElementIntegralVariablePostprocessor
+    variable = v
+    execute_on = initial
+  [../]
+  [./dU]
+    type = DifferencePostprocessor
+    value1 = U
+    value2 = U0
+    execute_on = 'initial timestep_end'
+  [../]
+  [./dV]
+    type = DifferencePostprocessor
+    value1 = V
+    value2 = V0
     execute_on = 'initial timestep_end'
   [../]
 []
@@ -110,4 +123,5 @@
 [Outputs]
   csv = true
   exodus = true
+  hide = 'U V U0 V0'
 []

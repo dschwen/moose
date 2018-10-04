@@ -61,6 +61,7 @@ CoarseningIntegralTracker::execute()
     sum += _JxW[qp] * _coord[qp] * _v[qp];
 
   // put integral contribution into the multimap, indexed by parent id
+  // ATTENTION: This does not span multiple coarsening levels per timestep yet!!
   _pre_adaptivity_integral.insert(std::make_pair(parent->id(), sum));
 }
 
@@ -81,7 +82,7 @@ CoarseningIntegralTracker::meshChanged()
       child_sum += it->second;
 
     // compute coarsened parent integral
-    _fe_problem.prepare(parent, 0);
+    _fe_problem.prepare(parent, _tid);
     if (_current_elem_volume <= 0.0)
       mooseError("negative volume");
     _v_var->computeElemValues();
@@ -91,10 +92,11 @@ CoarseningIntegralTracker::meshChanged()
       parent_sum += _JxW[qp] * _coord[qp] * _v[qp];
 
     // store corrective term
-    _corrective_source.insert(
-        std::make_pair(parent, (child_sum - parent_sum) / _current_elem_volume));
+    _corrective_source.emplace(parent, (child_sum - parent_sum) / _current_elem_volume);
     // _corrective_source.insert(std::make_pair(parent, child_sum));
   }
+
+  std::cout << '\n' << std::endl;
 
   _pre_adaptivity_ran = false;
 }

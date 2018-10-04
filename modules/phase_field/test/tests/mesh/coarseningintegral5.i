@@ -128,6 +128,17 @@
     variable = c
     execute_on = 'initial timestep_end'
   [../]
+  [./C0]
+    type = ElementIntegralVariablePostprocessor
+    variable = c
+    execute_on = initial
+  [../]
+  [./dC]
+    type = DifferencePostprocessor
+    value1 = C
+    value2 = C0
+    execute_on = 'initial timestep_end'
+  [../]
 []
 
 [UserObjects]
@@ -158,4 +169,5 @@
 [Outputs]
   exodus = true
   csv = true
+  hide = 'C C0'
 []
