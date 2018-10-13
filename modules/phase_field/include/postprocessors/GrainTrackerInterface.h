@@ -80,6 +80,33 @@ public:
    * This method returns all of the new ids generated in an invocation of the GrainTracker.
    */
   virtual std::vector<unsigned int> getNewGrainIDs() const;
+
+  /**
+   * Return a refecence to a vector of new grain IDs created during the current time step
+   */
+  const std::vector<unsigned int> getNewGrainsAdded() { return _new_grains_added; }
+
+  /**
+   * Return a refecence to a vector of vectors of grain IDs listing all split grains,
+   * where the first element is the ID of an already existing grain and the following elements
+   * are IDs of new grains split off of the first grain.
+   */
+  const std::vector<unsigned int> getSplitGrains() { return _split_grains; }
+
+  /**
+   * Return a refecence to a vector grain IDs deleted during the current time step
+   */
+  const std::vector<unsigned int> getNewGrainsAdded() { return _new_grains_added; }
+
+protected:
+  /// New grains added in the current time step
+  std::vector<unsigned int> _new_grains_added;
+
+  /// Grains split in the current time step
+  std::vector<std::vector<unsigned int>> _split_grains;
+
+  /// Grains deleted in the current time step
+  std::vector<unsigned int> _deletes_grains;
 };
 
 #endif
