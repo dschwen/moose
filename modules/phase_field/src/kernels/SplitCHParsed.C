@@ -44,7 +44,7 @@ SplitCHParsed::initialSetup()
 {
   /**
    * We are only interested if the necessary non-linear variables are coupled,
-   * as those are thge ones used in constructing the Jacobian. The AuxVariables
+   * as those are the ones used in constructing the Jacobian. The AuxVariables
    * do not have Jacobian entries.
    */
   validateNonlinearCoupling<Real>("f_name", _var.name());
