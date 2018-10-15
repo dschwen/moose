@@ -38,7 +38,9 @@ ComputeGlobalStrain::ComputeGlobalStrain(const InputParameters & parameters)
   : Material(parameters),
     _base_name(isParamValid("base_name") ? getParam<std::string>("base_name") + "_" : ""),
     _scalar_global_strain(coupledScalarValue("scalar_global_strain")),
+    _scalar_global_strain_old(coupledScalarValueOld("scalar_global_strain")),
     _global_strain(declareProperty<RankTwoTensor>(_base_name + "global_strain")),
+    _global_strain_old(declareProperty<RankTwoTensor>(_base_name + "global_strain_old")),
     _pst(getUserObject<GlobalStrainUserObjectInterface>("global_strain_uo")),
     _periodic_dir(_pst.getPeriodicDirections()),
     _dim(_mesh.dimension()),
@@ -49,20 +51,37 @@ ComputeGlobalStrain::ComputeGlobalStrain(const InputParameters & parameters)
 void
 ComputeGlobalStrain::initQpStatefulProperties()
 {
-  _global_strain[_qp].zero();
+  mooseError("ComputeGlobalStrain material ",
+             name(),
+             " should not forced to be stateful. Instead use the ",
+             _base_name + "global_strain_old",
+             " property that "
+             "accesses the old state of the global strain scalar variable!");
 }
 
 void
 ComputeGlobalStrain::computeProperties()
 {
+  // convenience references to the tensors at quadrature point zero
   RankTwoTensor & strain = _global_strain[0];
-  strain.fillFromScalarVariable(_scalar_global_strain);
+  RankTwoTensor & strain_old = _global_strain_old[0];
 
+  strain.fillFromScalarVariable(_scalar_global_strain);
+  strain_old.fillFromScalarVariable(_scalar_global_strain_old);
+
+  // zero out strain in non-periodic directions
   for (unsigned int dir = 0; dir < _dim; ++dir)
     if (!_periodic_dir(dir))
       for (unsigned int var = 0; var < _ndisp; ++var)
+      {
         strain(dir, var) = 0.0;
+        strain_old(dir, var) = 0.0;
+      }
 
-  for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
+  // copy updated quadrature point zero value to the remaining quadrature points
+  for (_qp = 1; _qp < _qrule->n_points(); ++_qp)
+  {
     _global_strain[_qp] = strain;
+    _global_strain_old[_qp] = strain_old;
+  }
 }

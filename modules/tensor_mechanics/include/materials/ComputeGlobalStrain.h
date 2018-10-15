@@ -32,10 +32,18 @@ protected:
   virtual void initQpStatefulProperties();
   virtual void computeProperties();
 
-  ///Base name prepended to material property name
+  /// Base name prepended to material property name
   std::string _base_name;
+
+  ///@{ Scalar variables holding the global strain and the previous time step value
   const VariableValue & _scalar_global_strain;
+  const VariableValue & _scalar_global_strain_old;
+  ///@}
+
+  ///@{ Tensor material property for the current and last time step global strain
   MaterialProperty<RankTwoTensor> & _global_strain;
+  MaterialProperty<RankTwoTensor> & _global_strain_old;
+  ///@}
 
   const GlobalStrainUserObjectInterface & _pst;
   const VectorValue<bool> & _periodic_dir;
