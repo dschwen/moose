@@ -31,6 +31,10 @@ ComputeIncrementalSmallStrain::ComputeIncrementalSmallStrain(const InputParamete
 void
 ComputeIncrementalSmallStrain::computeProperties()
 {
+  // compute global strain increment (assume all QPs have the same _global_ value)
+  if (_global_strain)
+    _global_strain_increment = (*_global_strain)[0] - (*_global_strain_old)[0];
+
   Real volumetric_strain = 0.0;
   for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
   {
@@ -87,4 +91,7 @@ ComputeIncrementalSmallStrain::computeTotalStrainIncrement(RankTwoTensor & total
   A -= Fbar; // A = grad_disp - grad_disp_old
 
   total_strain_increment = 0.5 * (A + A.transpose());
+
+  if (_global_strain)
+    total_strain_increment += _global_strain_increment;
 }

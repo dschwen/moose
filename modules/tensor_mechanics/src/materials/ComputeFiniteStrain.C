@@ -39,6 +39,8 @@ ComputeFiniteStrain::ComputeFiniteStrain(const InputParameters & parameters)
     _Fhat(_fe_problem.getMaxQps()),
     _decomposition_method(getParam<MooseEnum>("decomposition_method").getEnum<DecompMethod>())
 {
+  if (_global_strain)
+    paramError("global_strain", "Global strain is not supported in this model");
 }
 
 void
@@ -175,8 +177,9 @@ ComputeFiniteStrain::computeQpIncrements(RankTwoTensor & total_strain_increment,
         C2 = 0.125 + q * 0.03125 * (Utility::pow<2>(p) - 12.0 * (p - 1.0)) / Utility::pow<2>(p) +
              Utility::pow<2>(q) * (p - 2.0) * (Utility::pow<2>(p) - 10.0 * p + 32.0) /
                  Utility::pow<3>(p) +
-             Utility::pow<3>(q) * (1104.0 - 992.0 * p + 376.0 * Utility::pow<2>(p) -
-                                   72.0 * Utility::pow<3>(p) + 5.0 * Utility::pow<4>(p)) /
+             Utility::pow<3>(q) *
+                 (1104.0 - 992.0 * p + 376.0 * Utility::pow<2>(p) - 72.0 * Utility::pow<3>(p) +
+                  5.0 * Utility::pow<4>(p)) /
                  (512.0 * Utility::pow<4>(p));
       const Real C3 =
           0.5 * std::sqrt((p * q * (3.0 - q) + Utility::pow<3>(p) + Utility::pow<2>(q)) /

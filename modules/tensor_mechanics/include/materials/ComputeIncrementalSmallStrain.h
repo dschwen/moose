@@ -32,6 +32,9 @@ protected:
   /// Computes the current and old deformation gradients and passes back the
   /// total strain increment tensor
   virtual void computeTotalStrainIncrement(RankTwoTensor & total_strain_increment);
+
+  /// Store the global strain increment for the current element
+  RankTwoTensor _global_strain_increment;
 };
 
 #endif // COMPUTEINCREMENTALSMALLSTRAIN_H

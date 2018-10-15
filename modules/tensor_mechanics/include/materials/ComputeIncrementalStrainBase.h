@@ -44,6 +44,8 @@ protected:
   const MaterialProperty<RankTwoTensor> & _total_strain_old;
 
   std::vector<const MaterialProperty<RankTwoTensor> *> _eigenstrains_old;
+
+  const MaterialProperty<RankTwoTensor> * _global_strain_old;
 };
 
 #endif // COMPUTEINCREMENTALSTRAINBASE_H

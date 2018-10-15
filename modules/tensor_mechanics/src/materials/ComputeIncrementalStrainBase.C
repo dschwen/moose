@@ -27,10 +27,19 @@ ComputeIncrementalStrainBase::ComputeIncrementalStrainBase(const InputParameters
     _deformation_gradient(declareProperty<RankTwoTensor>(_base_name + "deformation_gradient")),
     _mechanical_strain_old(getMaterialPropertyOld<RankTwoTensor>(_base_name + "mechanical_strain")),
     _total_strain_old(getMaterialPropertyOld<RankTwoTensor>(_base_name + "total_strain")),
-    _eigenstrains_old(_eigenstrain_names.size())
+    _eigenstrains_old(_eigenstrain_names.size()),
+    _global_strain_old(isParamValid("global_strain")
+                           ? &getMaterialProperty<RankTwoTensor>(_base_name + "global_strain_old")
+                           : nullptr)
+
 {
   for (unsigned int i = 0; i < _eigenstrains_old.size(); ++i)
     _eigenstrains_old[i] = &getMaterialPropertyOld<RankTwoTensor>(_eigenstrain_names[i]);
+
+  // both should be null or both should be not-null
+  if (!_global_strain != !_global_strain_old)
+    paramError("global_strain",
+               "Inconsistent internal state of current and old global strain properties");
 }
 
 void
