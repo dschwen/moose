@@ -279,6 +279,9 @@ protected:
   };
   std::map<std::string, int> _props_to_flags;
 
+  /// Returns true if any of the Material's properties are stateful
+  bool hasStatefulProperty();
+
 private:
   /// Small helper function to call store{Subdomain,Boundary}MatPropName
   void registerPropName(std::string prop_name, bool is_get, Prop_State state);
@@ -286,6 +289,7 @@ private:
   /// Check and throw an error if the execution has progerssed past the construction stage
   void checkExecutionStage();
 
+  /// this is only affected by declarePropertyOld{er}, not when a "get" triggers statefulness!
   bool _has_stateful_property;
 
   bool _overrides_init_stateful_props = true;

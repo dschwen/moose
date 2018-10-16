@@ -283,3 +283,13 @@ Material::checkExecutionStage()
     mooseError("Material properties must be retrieved during material object construction to "
                "ensure correct dependency resolution.");
 }
+
+bool
+Material::hasStatefulProperty()
+{
+  const auto & mps = _material_data->getMaterialPropertyStorage();
+  for (auto & prop : _supplied_props)
+    if (mps.isStatefulProp(prop))
+      return true;
+  return false;
+}

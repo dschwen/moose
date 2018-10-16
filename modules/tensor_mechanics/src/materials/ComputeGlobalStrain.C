@@ -49,14 +49,15 @@ ComputeGlobalStrain::ComputeGlobalStrain(const InputParameters & parameters)
 }
 
 void
-ComputeGlobalStrain::initQpStatefulProperties()
+ComputeGlobalStrain::initialSetup()
 {
-  mooseError("ComputeGlobalStrain material ",
-             name(),
-             " should not forced to be stateful. Instead use the ",
-             _base_name + "global_strain_old",
-             " property that "
-             "accesses the old state of the global strain scalar variable!");
+  if (hasStatefulProperty())
+    mooseError("ComputeGlobalStrain material ",
+               name(),
+               " should not forced to be stateful. Instead use the ",
+               _base_name + "global_strain_old",
+               " property that "
+               "accesses the old state of the global strain scalar variable!");
 }
 
 void
