@@ -31,7 +31,6 @@
       radii = '10.0 10.0'
       3D_spheres = false
       variable = c
-      block = 0
     [../]
   [../]
   [./w]
@@ -72,13 +71,11 @@
 [Materials]
   [./pfmobility]
     type = GenericConstantMaterial
-    block = 0
     prop_names = 'M    kappa_c  kappa_eta'
     prop_values = '5.0  2.0      0.1'
   [../]
   [./free_energy]
     type = DerivativeParsedMaterial
-    block = 0
     f_name = F
     args = c
     constant_names = 'barr_height  cv_eq'
@@ -104,7 +101,6 @@
     var_name_base = eta
     op_num = 2
     v = 'eta0 eta1'
-    block = 0
   [../]
 []
 

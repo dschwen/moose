@@ -7,13 +7,10 @@
 
 [Variables]
   [./ux]
-    block = 0
   [../]
   [./uy]
-    block = 0
   [../]
   [./uz]
-    block = 0
   [../]
 []
 
@@ -28,17 +25,14 @@
   [./stress_zz]
     order = CONSTANT
     family = MONOMIAL
-    block = 0
   [../]
   [./peeq]
     order = CONSTANT
     family = MONOMIAL
-    block = 0
   [../]
   [./fp_zz]
     order = CONSTANT
     family = MONOMIAL
-    block = 0
   [../]
 []
 
@@ -50,7 +44,6 @@
     index_j = 2
     index_i = 2
     execute_on = timestep_end
-    block = 0
   [../]
   [./fp_zz]
     type = RankTwoAux
@@ -59,14 +52,12 @@
     index_j = 2
     index_i = 2
     execute_on = timestep_end
-    block = 0
   [../]
   [./peeq]
     type = MaterialRealAux
     variable = peeq
     property = ep_eqv
     execute_on = timestep_end
-    block = 0
   [../]
 []
 
@@ -124,12 +115,10 @@
 [Materials]
   [./strain]
     type = ComputeFiniteStrain
-    block = 0
     displacements = 'ux uy uz'
   [../]
   [./viscop]
     type = FiniteStrainHyperElasticViscoPlastic
-    block = 0
     resid_abs_tol = 1e-18
     resid_rel_tol = 1e-8
     maxiters = 50
@@ -141,7 +130,6 @@
   [../]
   [./elasticity_tensor]
     type = ComputeElasticityTensor
-    block = 0
     C_ijkl = '2.8e5 1.2e5 1.2e5 2.8e5 1.2e5 2.8e5 0.8e5 0.8e5 0.8e5'
     fill_method = symmetric9
   [../]
@@ -175,7 +163,6 @@
 [Executioner]
   type = Transient
   dt = 0.02
-  #Preconditioned JFNK (default)
   solve_type = 'PJFNK'
   petsc_options_iname = -pc_hypre_type
   petsc_options_value = boomerang

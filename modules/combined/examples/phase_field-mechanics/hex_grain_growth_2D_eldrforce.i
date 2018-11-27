@@ -210,7 +210,6 @@
 [Materials]
   [./Copper]
     type = GBEvolution
-    block = 0
     T = 500 # K
     wGB = 15 # nm
     GBmob0 = 2.5e-6 # m^4/(Js) from Schoenfelder 1997
@@ -219,17 +218,14 @@
   [../]
   [./ElasticityTensor]
     type = ComputePolycrystalElasticityTensor
-    block = 0
     grain_tracker = grain_tracker
   [../]
   [./strain]
     type = ComputeSmallStrain
-    block = 0
     displacements = 'disp_x disp_y'
   [../]
   [./stress]
     type = ComputeLinearElasticStress
-    block = 0
   [../]
 []
 

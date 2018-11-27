@@ -179,7 +179,6 @@
     variable = eta1
     invalue = 1
     type = SpecifiedSmoothCircleIC
-    block = 0
   [../]
   [./multip]
     x_positions = '5.5 15.5 24.0 32.5 7.0 15.5 24.0 32.5'
@@ -192,7 +191,6 @@
     variable = c
     invalue = 0.999
     type = SpecifiedSmoothCircleIC
-    block = 0
   [../]
   [./ic_eta0]
     x_positions = '5.5 15.5'
@@ -205,7 +203,6 @@
     variable = eta0
     invalue = 1.0
     type = SpecifiedSmoothCircleIC
-    block = 0
   [../]
   [./ic_eta2]
     x_positions = '24.0 7.0'
@@ -218,7 +215,6 @@
     variable = eta2
     invalue = 1.0
     type = SpecifiedSmoothCircleIC
-    block = 0
   [../]
   [./ic_eta3]
     x_positions = '15.5 32.5'
@@ -231,7 +227,6 @@
     variable = eta3
     invalue = 1.0
     type = SpecifiedSmoothCircleIC
-    block = 0
   [../]
 []
 

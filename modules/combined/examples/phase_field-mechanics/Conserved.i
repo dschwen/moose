@@ -107,7 +107,6 @@
     type = GenericConstantMaterial
     prop_names  = 'M kappa_c'
     prop_values = '1 5'
-    block = 0
     #kappa = 0.1
     #mob = 1e-3
   [../]
@@ -115,8 +114,7 @@
   # simple chemical free energy with a miscibility gap
   [./chemical_free_energy]
     type = DerivativeParsedMaterial
-    block = 0
-    f_name = Fc
+        f_name = Fc
     args = 'c'
     constant_names       = 'barr_height  cv_eq'
     constant_expressions = '0.1          1.0e-2'
@@ -128,8 +126,7 @@
   # undersized solute (voidlike)
   [./elasticity_tensor]
     type = ComputeElasticityTensor
-    block = 0
-    # lambda, mu values
+        # lambda, mu values
     C_ijkl = '7 7'
     # Stiffness tensor is created from lambda=7, mu=7 using symmetric_isotropic fill method
     fill_method = symmetric_isotropic
@@ -139,12 +136,10 @@
   [../]
   [./stress]
     type = ComputeLinearElasticStress
-    block = 0
-  [../]
+      [../]
   [./var_dependence]
     type = DerivativeParsedMaterial
-    block = 0
-    # eigenstrain coefficient
+        # eigenstrain coefficient
     # -0.1 will result in an undersized precipitate
     #  0.1 will result in an oversized precipitate
     function = 0.1*c
@@ -155,8 +150,7 @@
   [../]
   [./eigenstrain]
     type = ComputeVariableEigenstrain
-    block = 0
-    eigen_base = '1 1 1 0 0 0'
+        eigen_base = '1 1 1 0 0 0'
     prefactor = var_dep
     #outputs = exodus
     args = 'c'
@@ -164,14 +158,12 @@
   [../]
   [./strain]
     type = ComputeSmallStrain
-    block = 0
     displacements = 'disp_x disp_y'
     eigenstrain_names = eigenstrain
   [../]
   [./elastic_free_energy]
     type = ElasticEnergyMaterial
     f_name = Fe
-    block = 0
     args = 'c'
     derivative_order = 2
   [../]
@@ -179,7 +171,6 @@
   # Sum up chemical and elastic contributions
   [./free_energy]
     type = DerivativeSumMaterial
-    block = 0
     f_name = F
     sum_materials = 'Fc Fe'
     args = 'c'

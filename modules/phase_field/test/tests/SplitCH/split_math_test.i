@@ -11,7 +11,6 @@
 []
 
 [Variables]
-
   [./c]
     order = FIRST
     family = LAGRANGE
@@ -27,10 +26,7 @@
   [./w]
     order = FIRST
     family = LAGRANGE
-
   [../]
-
-
 []
 
 [Preconditioning]
@@ -50,7 +46,6 @@ active = 'SMP'
 []
 
 [Kernels]
-
   [./cres]
     type = SplitCHMath
     variable = c
@@ -69,7 +64,6 @@ active = 'SMP'
     variable = w
     v = c
   [../]
-
 []
 
 [BCs]
@@ -89,27 +83,19 @@ active = 'SMP'
 []
 
 [Materials]
-
   [./constant]
     type = GenericConstantMaterial
     prop_names  = 'M kappa_c'
     prop_values = '1.0 2.0'
-    block = 0
   [../]
 []
 
 [Executioner]
-   type = Transient
-   scheme = 'BDF2'
-   #petsc_options = '-snes_mf'
+  type = Transient
+  scheme = 'BDF2'
 
-  #Preconditioned JFNK (default)
-  solve_type = 'PJFNK'
-
-
-
-   petsc_options_iname = '-pc_type'
-   petsc_options_value = 'lu'
+  petsc_options_iname = '-pc_type'
+  petsc_options_value = 'lu'
 
   l_max_its = 30
   l_tol = 1.0e-3

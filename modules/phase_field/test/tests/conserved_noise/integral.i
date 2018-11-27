@@ -93,8 +93,6 @@
 [Executioner]
   type = Transient
   scheme = 'BDF2'
-
-  #Preconditioned JFNK (default)
   solve_type = 'PJFNK'
 
   l_max_its = 30

@@ -10,8 +10,6 @@
 # node 2 from the selection of the direction vector and the rotation axis origin.
 
 [GlobalParams]
-  order = FIRST
-  family = LAGRANGE
   displacements = 'disp_x disp_y disp_z'
 []
 
@@ -33,7 +31,7 @@
 []
 
 [GlobalParams]
-  volumetric_locking_correction=true
+  volumetric_locking_correction = true
 []
 
 [AuxVariables]
@@ -126,24 +124,19 @@
 [Materials]
   [./elasticity_tensor]
     type = ComputeIsotropicElasticityTensor
-    block = 0
     youngs_modulus = 207000
     poissons_ratio = 0.3
   [../]
   [./small_strain]
     type = ComputeFiniteStrain
-    block = 0
   [../]
   [./elastic_stress]
     type = ComputeFiniteStrainElasticStress
-    block = 0
   [../]
 []
 
 [Executioner]
   type = Transient
-
-  #Preconditioned JFNK (default)
   solve_type = 'PJFNK'
 
   petsc_options = '-snes_ksp_ew'

@@ -5,8 +5,6 @@
 # to model a crack in the center of the cylinder face under type III loading.
 
 [GlobalParams]
-  order = FIRST
-  family = LAGRANGE
   displacements = 'disp_x disp_y disp_z'
 []
 
@@ -136,9 +134,7 @@
 []
 
 [Executioner]
-
   type = Transient
-  #Preconditioned JFNK (default)
   solve_type = 'PJFNK'
 
   petsc_options = '-snes_ksp_ew'

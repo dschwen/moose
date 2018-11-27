@@ -177,7 +177,6 @@
   derivative_order = 2
   enable_jit = true
   displacements = 'u_x u_y u_z'
-  block = 0
 []
 
 [Kernels]
@@ -189,7 +188,6 @@
     type = CoupledTimeDerivative
     variable = w
     v = c
-    block = 0
   [../]
   [./c_res]
     type = SplitCHParsed
@@ -197,13 +195,11 @@
     f_name = F
     kappa_name = kappa_c
     w = w
-    block = 0
   [../]
   [./w_res]
     type = SplitCHWRes
     variable = w
     mob_name = M
-    block = 0
   [../]
 []
 
@@ -337,7 +333,6 @@
   # free energy (chemical + elastic)
   [./free_energy]
     type = DerivativeSumMaterial
-    block = 0
     f_name = F
     sum_materials = 'Fc Fe'
     args = 'c'

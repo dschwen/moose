@@ -64,7 +64,6 @@
 [] # Functions
 
 [Variables]
-
   [./disp_x]
     order = FIRST
     family = LAGRANGE
@@ -79,11 +78,9 @@
     order = FIRST
     family = LAGRANGE
   [../]
-
 [] # Variables
 
 [AuxVariables]
-
   [./stress_xx]
     order = CONSTANT
     family = MONOMIAL
@@ -148,7 +145,6 @@
     order = CONSTANT
     family = MONOMIAL
   [../]
-
 [] # AuxVariables
 
 [Kernels]
@@ -157,7 +153,6 @@
 []
 
 [AuxKernels]
-
   [./stress_xx]
     type = RankTwoAux
     rank_two_tensor = stress
@@ -259,12 +254,9 @@
     scalar_type = direction
     direction = '1 1 1'
   [../]
-
-
 [] # AuxKernels
 
 [BCs]
-
   [./node1_x]
     type = DirichletBC
     variable = disp_x
@@ -416,12 +408,9 @@
     boundary = 8
     value = 0.0
   [../]
-
-
 [] # BCs
 
 [Materials]
-
   [./elasticity_tensor]
     type = ComputeIsotropicElasticityTensor
     youngs_modulus = 1e6
@@ -435,14 +424,10 @@
   [./stress]
     type = ComputeFiniteStrainElasticStress
   [../]
-
 [] # Materials
 
 [Executioner]
-
   type = Transient
-
-  #Preconditioned JFNK (default)
   solve_type = 'PJFNK'
 
   nl_abs_tol = 1e-10

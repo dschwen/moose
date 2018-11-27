@@ -20,11 +20,8 @@
   nz = 2
 []
 
-
 [GlobalParams]
   displacements = 'disp_x disp_y disp_z'
-  order = FIRST
-  family = LAGRANGE
 []
 
 [Variables]
@@ -124,22 +121,18 @@
 [Materials]
   [./elasticity_tensor]
     type = ComputeIsotropicElasticityTensor
-    block = 0
     youngs_modulus = 2.1e5
     poissons_ratio = 0.3
   [../]
   [./small_strain]
     type = ComputeIncrementalSmallStrain
-    block = 0
     eigenstrain_names = 'eigenstrain1 eigenstrain2'
   [../]
   [./small_stress]
     type = ComputeFiniteStrainElasticStress
-    block = 0
   [../]
   [./thermal_expansion_strain1]
     type = ComputeThermalExpansionEigenstrain
-    block = 0
     stress_free_temperature = 298
     thermal_expansion_coeff = 1.0e-5
     temperature = temp
@@ -147,7 +140,6 @@
   [../]
   [./thermal_expansion_strain2]
     type = ComputeThermalExpansionEigenstrain
-    block = 0
     stress_free_temperature = 298
     thermal_expansion_coeff = 0.3e-5
     temperature = temp
@@ -157,8 +149,6 @@
 
 [Executioner]
   type = Transient
-
-  #Preconditioned JFNK (default)
   solve_type = 'PJFNK'
 
   petsc_options = '-snes_ksp_ew'
@@ -190,21 +180,17 @@
   [./strain_xx]
     type = ElementAverageValue
     variable = strain_xx
-    block = 0
   [../]
   [./strain_yy]
     type = ElementAverageValue
     variable = strain_yy
-    block = 0
   [../]
   [./strain_zz]
     type = ElementAverageValue
     variable = strain_zz
-    block = 0
   [../]
   [./temperature]
     type = AverageNodalVariableValue
     variable = temp
-    block = 0
   [../]
 []

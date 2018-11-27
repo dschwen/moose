@@ -152,11 +152,7 @@
 [Executioner]
   type = Transient
   dt = 0.01
-
-  #Preconditioned JFNK (default)
   solve_type = 'PJFNK'
-
-
 
   petsc_options_iname = -pc_hypre_type
   petsc_options_value = boomerang

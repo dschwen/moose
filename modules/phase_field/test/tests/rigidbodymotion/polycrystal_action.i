@@ -208,7 +208,6 @@
     radii = '14.0 14.0'
     3D_spheres = false
     variable = c
-    block = 0
   [../]
 []
 

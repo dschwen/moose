@@ -11,7 +11,6 @@
 
 [GlobalParams]
   int_width = 3.0
-  block = 0
 []
 
 [Variables]

@@ -106,29 +106,25 @@
 []
 
 [Executioner]
-
-   type = Transient
-  # Two sets of linesearch options are for petsc 3.1 and 3.3 respectively
-  #Preconditioned JFNK (default)
+  type = Transient
   solve_type = 'PJFNK'
+  line_search = 'none'
 
-#  petsc_options = '-snes_ksp_ew'
+  # petsc_options = '-snes_ksp_ew'
   petsc_options_iname = '-ksp_gmres_restart -pc_type -pc_hypre_type -pc_hypre_boomeramg_max_iter'
   petsc_options_value = '201                hypre    boomeramg      4'
 
-  line_search = 'none'
+  l_max_its = 50
+  nl_max_its = 20
+  nl_abs_tol = 1e-5
+  nl_rel_tol = 1e-11
+  l_tol = 1e-2
 
-   l_max_its = 50
-   nl_max_its = 20
-   nl_abs_tol = 1e-5
-   nl_rel_tol = 1e-11
-   l_tol = 1e-2
+  start_time = 0.0
+  dt = 1
 
-   start_time = 0.0
-   dt = 1
-
-   end_time = 1
-   num_steps = 1
+  end_time = 1
+  num_steps = 1
 []
 
 [Postprocessors]

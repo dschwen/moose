@@ -74,8 +74,6 @@
 [Executioner]
   type = Transient
   dt = 0.05
-
-  #Preconditioned JFNK (default)
   solve_type = 'PJFNK'
 
   petsc_options_iname = -pc_hypre_type

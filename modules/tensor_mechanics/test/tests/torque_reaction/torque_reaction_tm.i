@@ -12,8 +12,6 @@
 # coordinates.  The expected sum of the torque reaction is just over 37.
 
 [GlobalParams]
-  order = FIRST
-  family = LAGRANGE
   displacements = 'disp_x disp_y'
 []
 
@@ -95,24 +93,19 @@
 [Materials]
   [./elasticity_tensor]
     type = ComputeIsotropicElasticityTensor
-    block = 0
     youngs_modulus = 207000
     poissons_ratio = 0.3
   [../]
   [./small_strain]
     type = ComputeSmallStrain
-    block = 0
   [../]
   [./elastic_stress]
     type = ComputeLinearElasticStress
-    block = 0
   [../]
 []
 
 [Executioner]
   type = Transient
-
-  #Preconditioned JFNK (default)
   solve_type = 'PJFNK'
 
   petsc_options = '-snes_ksp_ew'

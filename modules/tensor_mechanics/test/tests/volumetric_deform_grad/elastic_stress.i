@@ -25,7 +25,6 @@
   [./stress_zz]
     order = CONSTANT
     family = MONOMIAL
-    block = 0
   [../]
 []
 
@@ -37,7 +36,6 @@
     index_j = 2
     index_i = 2
     execute_on = timestep_end
-    block = 0
   [../]
 []
 
@@ -71,7 +69,6 @@
 [Materials]
   [./strain]
     type = ComputeFiniteStrain
-    block = 0
     displacements = 'disp_x disp_y disp_z'
   [../]
   [./elastic_stress]
@@ -80,11 +77,9 @@
     elasticity_tensor_name = elasticity_tensor
     stress_name = stress
     jacobian_name = Jacobian_mult
-    block = 0
   [../]
   [./elasticity_tensor]
     type = ComputeElasticityTensor
-    block = 0
     C_ijkl = '2.8e5 1.2e5 1.2e5 2.8e5 1.2e5 2.8e5 0.8e5 0.8e5 0.8e5'
     fill_method = symmetric9
   [../]
@@ -108,7 +103,6 @@
 [Executioner]
   type = Transient
   dt = 0.02
-  #Preconditioned JFNK (default)
   solve_type = 'PJFNK'
   petsc_options_iname = '-pc_type -pc_hypre_type -ksp_gmres_restart'
   petsc_options_value = 'hypre boomeramg 101'

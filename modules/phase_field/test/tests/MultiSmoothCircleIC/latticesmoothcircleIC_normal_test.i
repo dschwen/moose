@@ -11,7 +11,6 @@
   zmin = 0
   zmax = 100
   elem_type = HEX8
-
 []
 
 [Variables]
@@ -37,8 +36,6 @@
 []
 
 [Kernels]
-active = 'ie_c diff'
-
   [./ie_c]
     type = TimeDerivative
     variable = c
@@ -51,13 +48,7 @@ active = 'ie_c diff'
   [../]
 []
 
-[BCs]
-
-[]
-
 [Materials]
-active = 'Dv'
-
   [./Dv]
     type = GenericConstantMaterial
     prop_names = D_v
@@ -66,8 +57,6 @@ active = 'Dv'
 []
 
 [Postprocessors]
-  active = 'bubbles'
-
   [./bubbles]
     type = FeatureFloodCount
     variable = c
@@ -79,12 +68,7 @@ active = 'Dv'
 [Executioner]
   type = Transient
   scheme = 'bdf2'
-
-  #Preconditioned JFNK (default)
   solve_type = 'PJFNK'
-
-
-
 
   petsc_options_iname = '-pc_type -pc_hypre_type -ksp_gmres_restart -mat_mffd_type'
   petsc_options_value = 'hypre boomeramg 101 ds'

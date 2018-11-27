@@ -72,7 +72,6 @@
 [Materials]
   [./consts]
     type = GenericConstantMaterial
-    block = 0
     prop_names  = 'L'
     prop_values = '1'
   [../]
@@ -81,7 +80,6 @@
   [./stiffness_a]
     type = ComputeElasticityTensor
     base_name = phasea
-    block = 0
     # lambda, mu values
     C_ijkl = '7 7'
     # Stiffness tensor is created from lambda=7, mu=7 for symmetric_isotropic fill method
@@ -90,20 +88,17 @@
   [../]
   [./strain_a]
     type = ComputeSmallStrain
-    block = 0
     displacements = 'disp_x disp_y'
     base_name = phasea
   [../]
   [./stress_a]
     type = ComputeLinearElasticStress
-    block = 0
     base_name = phasea
   [../]
   [./elastic_free_energy_a]
     type = ElasticEnergyMaterial
     base_name = phasea
     f_name = Fea
-    block = 0
     args = ''
   [../]
 
@@ -111,7 +106,6 @@
   [./stiffness_b]
     type = ComputeElasticityTensor
     base_name = phaseb
-    block = 0
     # Stiffness tensor lambda, mu values
     # Note that the two phases could have different stiffnesses.
     # Try reducing the precipitate stiffness (to '1 1') rather than making it oversized
@@ -120,7 +114,6 @@
   [../]
   [./strain_b]
     type = ComputeSmallStrain
-    block = 0
     displacements = 'disp_x disp_y'
     base_name = phaseb
     eigenstrain_names = eigenstrain
@@ -133,33 +126,28 @@
   [../]
   [./stress_b]
     type = ComputeLinearElasticStress
-    block = 0
     base_name = phaseb
   [../]
   [./elastic_free_energy_b]
     type = ElasticEnergyMaterial
     base_name = phaseb
     f_name = Feb
-    block = 0
     args = ''
   [../]
 
   # Generate the global free energy from the phase free energies
   [./switching]
     type = SwitchingFunctionMaterial
-    block = 0
     eta = eta
     h_order = SIMPLE
   [../]
   [./barrier]
     type = BarrierFunctionMaterial
-    block = 0
     eta = eta
     g_order = SIMPLE
   [../]
   [./free_energy]
     type = DerivativeTwoPhaseMaterial
-    block = 0
     f_name = F
     fa_name = Fea
     fb_name = Feb
@@ -172,7 +160,6 @@
   # Generate the global stress from the phase stresses
   [./global_stress]
     type = TwoPhaseStressMaterial
-    block = 0
     base_A = phasea
     base_B = phaseb
   [../]

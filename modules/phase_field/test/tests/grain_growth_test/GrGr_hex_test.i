@@ -92,8 +92,6 @@
   # petsc_options_value = 'lu'
   type = Transient
   scheme = 'bdf2'
-
-  #Preconditioned JFNK (default)
   solve_type = 'PJFNK'
 
 

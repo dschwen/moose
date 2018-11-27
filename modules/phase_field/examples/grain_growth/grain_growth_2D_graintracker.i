@@ -153,8 +153,6 @@
 [Executioner]
   type = Transient # Type of executioner, here it is transient with an adaptive time step
   scheme = bdf2 # Type of time integration (2nd order backward euler), defaults to 1st order backward euler
-
-  #Preconditioned JFNK (default)
   solve_type = 'PJFNK'
 
   # Uses newton iteration to solve the problem.

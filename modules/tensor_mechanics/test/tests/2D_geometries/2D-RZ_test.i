@@ -101,7 +101,7 @@
 []
 
 [Debug]
-    show_var_residual_norms = true
+  show_var_residual_norms = true
 []
 
 [Executioner]
@@ -111,8 +111,6 @@
   petsc_options_value = '  201               hypre    boomeramg      10'
 
   line_search = 'none'
-
-  #Preconditioned JFNK (default)
   solve_type = 'PJFNK'
 
   nl_rel_tol = 5e-9

@@ -122,7 +122,6 @@
 [Materials]
   [./bulk]
     type = GBEvolution
-    block = 0
     T = 2273
     wGB = 10.0
     GBenergy = 1.58

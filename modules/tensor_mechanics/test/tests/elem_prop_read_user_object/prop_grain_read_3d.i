@@ -10,13 +10,10 @@
 
 [Variables]
   [./disp_x]
-    block = 0
   [../]
   [./disp_y]
-    block = 0
   [../]
   [./disp_z]
-    block = 0
   [../]
 []
 
@@ -24,12 +21,10 @@
   [./stress_yy]
     order = CONSTANT
     family = MONOMIAL
-    block = 0
   [../]
   [./e_yy]
     order = CONSTANT
     family = MONOMIAL
-    block = 0
   [../]
 []
 
@@ -58,7 +53,6 @@
     index_j = 1
     index_i = 1
     execute_on = timestep_end
-    block = 0
   [../]
   [./e_yy]
     type = RankTwoAux
@@ -67,7 +61,6 @@
     index_j = 1
     index_i = 1
     execute_on = timestep_end
-    block = 0
   [../]
 []
 
@@ -101,19 +94,16 @@
 [Materials]
   [./elasticity_tensor_with_Euler]
     type = ComputeElasticityTensorCP
-    block = 0
     C_ijkl = '1.684e5 1.214e5 1.214e5 1.684e5 1.214e5 1.684e5 0.754e5 0.754e5 0.754e5'
     fill_method = symmetric9
     read_prop_user_object = prop_read
   [../]
   [./strain]
     type = ComputeFiniteStrain
-    block = 0
     displacements = 'disp_x disp_y disp_z'
   [../]
   [./stress]
     type = ComputeFiniteStrainElasticStress
-    block = 0
   [../]
 []
 
@@ -140,8 +130,6 @@
 [Executioner]
   type = Transient
   dt = 0.05
-
-  #Preconditioned JFNK (default)
   solve_type = 'PJFNK'
 
   petsc_options_iname = -pc_hypre_type

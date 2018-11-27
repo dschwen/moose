@@ -207,7 +207,6 @@
 []
 
 [Executioner]
-
   type = Transient
 
   dt=0.1
@@ -215,7 +214,6 @@
   dtmax=1
   end_time=1.0
 
-  #Preconditioned JFNK (default)
   solve_type = 'PJFNK'
 
   nl_rel_tol = 1e-10
