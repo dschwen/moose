@@ -84,6 +84,20 @@ RankThreeTensor::zero()
     _vals[i] = 0;
 }
 
+RankThreeTensor::RankThreeTensor(const RankTwoTensor & a,
+                                 const RankTwoTensor & b,
+                                 const RankTwoTensor & c)
+{
+  mooseAssert(N == 3, "RankThreeTensor is currently only tested for 3 dimensions.");
+
+  for (unsigned int i = 0, ii = 0; i < N2; ++i, ii += N)
+  {
+    _vals[ii + 0] = a._coords[i];
+    _vals[ii + 1] = b._coords[i];
+    _vals[ii + 2] = c._coords[i];
+  }
+}
+
 RankThreeTensor &
 RankThreeTensor::operator=(const RankThreeTensor & a)
 {
@@ -105,6 +119,26 @@ RealVectorValue RankThreeTensor::operator*(const RankTwoTensor & a) const
       for (unsigned int k = 0; k < N; ++k)
         sum += _vals[i1 + j1 + k] * a._coords[j1 + k];
     result(i) = sum;
+  }
+
+  return result;
+}
+
+RankTwoTensor RankThreeTensor::operator*(const RealVectorValue & a) const
+{
+  RankTwoTensor result;
+
+  for (unsigned int i = 0; i < N; ++i)
+  {
+    unsigned int i1 = i * N2;
+    for (unsigned int j = 0; j < N; ++j)
+    {
+      Real sum = 0;
+      unsigned int j1 = j * N;
+      for (unsigned int k = 0; k < N; ++k)
+        sum += _vals[i1 + j1 + k] * a(k);
+      result(i, j) = sum;
+    }
   }
 
   return result;

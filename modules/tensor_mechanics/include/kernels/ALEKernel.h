@@ -13,6 +13,8 @@
 #include "Kernel.h"
 #include "Assembly.h"
 #include "DerivativeMaterialInterface.h"
+#include "RankTwoTensor.h"
+#include "RankThreeTensor.h"
 
 class ALEKernel;
 
@@ -29,16 +31,34 @@ public:
   using Kernel::computeOffDiagJacobian;
 
 protected:
+  // virtual void precalculateJacobian() override;
+
+  const VariableGradient & coupledGradientUndisplaced(const std::string & var_name,
+                                                      unsigned int comp = 0);
+
   /// undisplaced problem
   Assembly & _assembly_undisplaced;
 
   /// Reference to this Kernel's undisplaced MooseVariable object
   MooseVariable & _var_undisplaced;
 
-  ///@{ Shape and test functions on the undisplaced mesh
+  /// variable numbers for the displacements
+  unsigned int _ndisp;
+  std::vector<unsigned int> _disp_var;
+  bool _jvar_is_disp;
+
+  ///@{ Shape and test functions, displacement gradient, and QP weights on the undisplaced mesh
   const VariablePhiGradient & _grad_phi_undisplaced;
   const VariableTestGradient & _grad_test_undisplaced;
+  std::vector<const VariableGradient *> _grad_disp_undisplaced;
+  const MooseArray<Real> & _JxW_undisplaced;
+  const MooseArray<Real> & _coord_undisplaced;
   ///@}
+
+  /// single element tensors
+  std::vector<std::vector<RankTwoTensor>> _one_ij;
+  RankTwoTensor _matrix_F, _inv_F;
+  RankThreeTensor _dInvFdGradDisp;
 };
 
 #endif // ALEKERNEL_H

@@ -17,7 +17,8 @@ InputParameters
 validParams<ALEKernel>()
 {
   InputParameters params = validParams<Kernel>();
-  params.addClassDescription("Sets up derivetives with respect to initial configuration");
+  params.addClassDescription("Sets up derivatives with respect to initial configuration");
+  params.addCoupledVar("displacements", "mesh displacement variables for ");
   return params;
 }
 
@@ -26,9 +27,33 @@ ALEKernel::ALEKernel(const InputParameters & parameters)
     _assembly_undisplaced(_fe_problem.assembly(_tid)),
     _var_undisplaced(
         _fe_problem.getStandardVariable(_tid, parameters.get<NonlinearVariableName>("variable"))),
+    _ndisp(coupledComponents("displacements")),
+    _disp_var(_ndisp, libMesh::invalid_uint),
     _grad_phi_undisplaced(_assembly_undisplaced.gradPhi()),
-    _grad_test_undisplaced(_var_undisplaced.gradPhi())
+    _grad_test_undisplaced(_var_undisplaced.gradPhi()),
+    _grad_disp_undisplaced(3),
+    _JxW_undisplaced(_assembly_undisplaced.JxW()),
+    _coord_undisplaced(_assembly_undisplaced.coordTransformation()),
+    _one_ij(3)
 {
+  // fetch coupled gradients
+  for (unsigned int i = 0; i < _ndisp; ++i)
+  {
+    _disp_var[i] = coupled("displacements", i);
+    _grad_disp_undisplaced[i] = &coupledGradientUndisplaced("displacements", i);
+  }
+
+  // set unused dimensions to zero
+  for (unsigned int i = _ndisp; i < 3; ++i)
+    _grad_disp_undisplaced[i] = &_grad_zero;
+
+  // set up the single one element tensors
+  for (unsigned int i = 0; i < 3; ++i)
+  {
+    _one_ij[i].resize(3);
+    for (unsigned int j = 0; j < 3; ++j)
+      _one_ij[i][j](i, j) = 1.0;
+  }
 }
 
 void
@@ -39,8 +64,103 @@ ALEKernel::computeJacobian()
 }
 
 void
+precalculateJacobian()
+{
+}
+
+void
 ALEKernel::computeOffDiagJacobian(MooseVariableFEBase & jvar)
 {
   _fe_problem.prepareShapes(jvar.number(), _tid);
-  Kernel::computeOffDiagJacobian(jvar);
+
+  auto jvar_num = jvar.number();
+  if (jvar_num == _var.number())
+    computeJacobian();
+  else
+  {
+    // check if this is the off diagonal jacobian w.r.t. a displacement
+    unsigned int disp_var = libMesh::invalid_uint;
+    for (unsigned int i = 0; i < _ndisp; ++i)
+      if (jvar_num == _disp_var[i])
+        disp_var = i;
+    _jvar_is_disp = (disp_var != libMesh::invalid_uint);
+
+    prepareMatrixTag(_assembly, _var.number(), jvar_num);
+
+    if (_local_ke.m() != _test.size() || _local_ke.n() != jvar.phiSize())
+      return;
+
+    precalculateOffDiagJacobian(jvar_num);
+
+    Real detF;
+    RealVectorValue dDetFdGradDisp;
+
+    for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
+    {
+      // compute inverse and determinant of gradient tensor F if needed
+      if (_jvar_is_disp)
+      {
+        // preparation
+        for (unsigned int i = 0; i < 3; ++i)
+          _matrix_F.fillColumn(i, (*_grad_disp_undisplaced[i])[_qp]);
+        _matrix_F.addIa(1.0);
+        detF = _matrix_F.det();
+        _inv_F = _matrix_F.inverse();
+
+        // compute rank three tensor derivative of _inv_F w.r.t. grad_disp
+        // _dInvFdGradDisp is used in the derived Kernel's computeOffDiagJacobian
+        std::array<RankTwoTensor, 3> dinvF;
+        for (unsigned int i = 0; i < 3; ++i)
+          dinvF[i] = -_inv_F * _one_ij[i][disp_var] * _inv_F;
+        _dInvFdGradDisp = RankThreeTensor(dinvF[0], dinvF[1], dinvF[2]);
+
+        // compute derivative of detF w.r.t. grad_disp
+        // This is used internally in this function to compute the JxW derivative
+        for (unsigned int i = 0; i < 3; ++i)
+          dDetFdGradDisp(i) = detF * (_inv_F * _one_ij[i][disp_var]).tr();
+        // TODO coord is a function of the displacements in RZ and RSPHERICAL!
+        dDetFdGradDisp *= _JxW_undisplaced[_qp] * _coord_undisplaced[_qp];
+      }
+
+      for (_i = 0; _i < _test.size(); _i++)
+      {
+        // if jvar is a displacement we need to fetch the residual now (it is a function of test)
+        Real res;
+        if (_jvar_is_disp)
+          res = computeQpResidual();
+
+        // iterate over phis
+        for (_j = 0; _j < jvar.phiSize(); _j++)
+        {
+          _local_ke(_i, _j) += _JxW[_qp] * _coord[_qp] * computeQpOffDiagJacobian(jvar_num);
+          if (_jvar_is_disp)
+            _local_ke(_i, _j) += dDetFdGradDisp * _grad_phi[_j][_qp] * res;
+        }
+      }
+    }
+    accumulateTaggedLocalMatrix();
+  }
+}
+
+const VariableGradient &
+ALEKernel::coupledGradientUndisplaced(const std::string & var_name, unsigned int comp)
+{
+  Coupleable::checkVar(var_name);
+  if (!isCoupled(var_name)) // Return default 0
+    return _default_gradient;
+
+  coupledCallback(var_name, false);
+  if (_c_nodal)
+    mooseError(_c_name, ": Nodal variables do not have gradients");
+
+  auto param = getParam<std::vector<VariableName>>(var_name);
+  if (comp >= param.size())
+    mooseError("component out of range");
+
+  MooseVariable * var = &_fe_problem.getStandardVariable(_tid, param[comp]);
+
+  if (!_coupleable_neighbor)
+    return (_c_is_implicit) ? var->gradSln() : var->gradSlnOld();
+  else
+    return (_c_is_implicit) ? var->gradSlnNeighbor() : var->gradSlnOldNeighbor();
 }

@@ -65,6 +65,9 @@ public:
   /// Fill from vector
   RankThreeTensor(const std::vector<Real> &, FillMethod);
 
+  /// Fill from three rank two tensors (as used for derivatives of r2t w.r.t. a vector)
+  RankThreeTensor(const RankTwoTensor &, const RankTwoTensor &, const RankTwoTensor &);
+
   /// Gets the value for the index specified.  Takes index = 0,1,2
   inline Real & operator()(unsigned int i, unsigned int j, unsigned int k)
   {
@@ -91,6 +94,9 @@ public:
 
   /// b_i = r_ijk * a_jk
   RealVectorValue operator*(const RankTwoTensor & a) const;
+
+  /// b_ij = r_ijk * a_k
+  RankTwoTensor operator*(const RealVectorValue & a) const;
 
   /// r_ijk*a
   RankThreeTensor operator*(const Real a) const;

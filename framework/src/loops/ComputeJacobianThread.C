@@ -33,6 +33,7 @@ ComputeJacobianThread::ComputeJacobianThread(FEProblemBase & fe_problem,
     _kernels(_nl.getKernelWarehouse()),
     _tags(tags)
 {
+  mooseWarning("fe_problem = ", &fe_problem);
 }
 
 // Splitting Constructor
