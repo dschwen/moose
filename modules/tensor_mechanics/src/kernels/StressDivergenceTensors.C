@@ -68,6 +68,7 @@ StressDivergenceTensors::StressDivergenceTensors(const InputParameters & paramet
     _component(getParam<unsigned int>("component")),
     _ndisp(coupledComponents("displacements")),
     _disp_var(_ndisp),
+    _grad_disp(_ndisp),
     _temp_coupled(isCoupled("temperature")),
     _temp_var(_temp_coupled ? coupled("temperature") : 0),
     _deigenstrain_dT(_temp_coupled ? &getMaterialPropertyDerivative<RankTwoTensor>(
@@ -82,7 +83,10 @@ StressDivergenceTensors::StressDivergenceTensors(const InputParameters & paramet
     _volumetric_locking_correction(getParam<bool>("volumetric_locking_correction"))
 {
   for (unsigned int i = 0; i < _ndisp; ++i)
+  {
     _disp_var[i] = coupled("displacements", i);
+    _grad_disp[i] = &coupledGradient("displacements", i);
+  }
 
   // Checking for consistency between mesh size and length of the provided displacements vector
   if (_out_of_plane_direction != 2 && _ndisp != 3)
@@ -141,11 +145,28 @@ StressDivergenceTensors::computeResidual()
 Real
 StressDivergenceTensors::computeQpResidual()
 {
-  Real residual = _stress[_qp].row(_component) * _grad_test[_i][_qp];
+  RankTwoTensor F((*_grad_disp[0])[_qp],
+                  (*_grad_disp[1])[_qp],
+                  (*_grad_disp[2])[_qp]); // Deformation gradient
+
+  F.addIa(1.0);
+  Real detF = F.det();
+  RankTwoTensor FinvT(F.inverse().transpose());
+
+  // 1st Piola-Kirchoff Stress (P):
+  RankTwoTensor P = detF * _stress[_qp] * FinvT;
+
+  // Real residual = _stress[_qp].row(_component) * _grad_test[_i][_qp];
+  // // volumetric locking correction
+  // if (_volumetric_locking_correction)
+  //   residual += _stress[_qp].trace() / 3.0 *
+  //               (_avg_grad_test[_i][_component] - _grad_test[_i][_qp](_component));
+
+  Real residual = P.row(_component) * _grad_test[_i][_qp];
   // volumetric locking correction
   if (_volumetric_locking_correction)
-    residual += _stress[_qp].trace() / 3.0 *
-                (_avg_grad_test[_i][_component] - _grad_test[_i][_qp](_component));
+    residual +=
+        P.trace() / 3.0 * (_avg_grad_test[_i][_component] - _grad_test[_i][_qp](_component));
 
   return residual;
 }

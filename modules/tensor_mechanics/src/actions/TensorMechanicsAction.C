@@ -469,7 +469,7 @@ TensorMechanicsAction::getKernelParameters(std::string type)
                          {"displacements", "use_displaced_mesh", "save_in", "diag_save_in"});
 
   params.set<std::vector<VariableName>>("displacements") = _coupled_displacements;
-  params.set<bool>("use_displaced_mesh") = _use_displaced_mesh;
+  params.set<bool>("use_displaced_mesh") = false; //_use_displaced_mesh;
 
   return params;
 }

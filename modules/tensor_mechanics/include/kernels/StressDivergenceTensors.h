@@ -65,6 +65,7 @@ protected:
   /// Coupled displacement variables
   unsigned int _ndisp;
   std::vector<unsigned int> _disp_var;
+  std::vector<const VariableGradient *> _grad_disp;
 
   const bool _temp_coupled;
   const unsigned int _temp_var;
