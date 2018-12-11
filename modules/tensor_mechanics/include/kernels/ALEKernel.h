@@ -56,9 +56,8 @@ protected:
   ///@}
 
   /// single element tensors
-  std::vector<std::vector<RankTwoTensor>> _one_ij;
-  RankTwoTensor _matrix_F, _inv_F;
-  RankThreeTensor _dInvFdGradDisp;
+  RankTwoTensor _matrix_F, _invF;
+  RankTwoTensor _phiF, _phiInvF;
 };
 
 #endif // ALEKERNEL_H

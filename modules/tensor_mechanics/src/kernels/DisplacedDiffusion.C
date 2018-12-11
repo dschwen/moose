@@ -45,10 +45,8 @@ DisplacedDiffusion::computeQpOffDiagJacobian(unsigned int /*jvar*/)
   // off-diagonal Jacobian w.r.t. displacement variable
   if (_jvar_is_disp)
   {
-    // return _dInvFdGradDisp * (_matrix_F * _grad_u[_qp]) * _grad_phi_undisplaced[_j][_qp] *
-    return _dInvFdGradDisp * _grad_u[_qp] * _grad_phi_undisplaced[_j][_qp] * _grad_test[_i][_qp] +
-           _dInvFdGradDisp * _grad_test_undisplaced[_i][_qp] * _grad_phi_undisplaced[_j][_qp] *
-               _grad_u[_qp];
+    return _phiInvF * _grad_u[_qp] * _grad_test[_i][_qp] +
+           _phiInvF * _grad_test_undisplaced[_i][_qp] * _grad_u[_qp];
   }
 
   return 0.0;

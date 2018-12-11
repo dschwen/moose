@@ -33,8 +33,7 @@ ALEKernel::ALEKernel(const InputParameters & parameters)
     _grad_test_undisplaced(_var_undisplaced.gradPhi()),
     _grad_disp_undisplaced(3),
     _JxW_undisplaced(_assembly_undisplaced.JxW()),
-    _coord_undisplaced(_assembly_undisplaced.coordTransformation()),
-    _one_ij(3)
+    _coord_undisplaced(_assembly_undisplaced.coordTransformation())
 {
   // fetch coupled gradients
   for (unsigned int i = 0; i < _ndisp; ++i)
@@ -46,14 +45,6 @@ ALEKernel::ALEKernel(const InputParameters & parameters)
   // set unused dimensions to zero
   for (unsigned int i = _ndisp; i < 3; ++i)
     _grad_disp_undisplaced[i] = &_grad_zero;
-
-  // set up the single one element tensors
-  for (unsigned int i = 0; i < 3; ++i)
-  {
-    _one_ij[i].resize(3);
-    for (unsigned int j = 0; j < 3; ++j)
-      _one_ij[i][j](i, j) = 1.0;
-  }
 }
 
 void
@@ -93,7 +84,6 @@ ALEKernel::computeOffDiagJacobian(MooseVariableFEBase & jvar)
     precalculateOffDiagJacobian(jvar_num);
 
     Real detF;
-    RealVectorValue dDetFdGradDisp;
 
     for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
     {
@@ -105,21 +95,7 @@ ALEKernel::computeOffDiagJacobian(MooseVariableFEBase & jvar)
           _matrix_F.fillColumn(i, (*_grad_disp_undisplaced[i])[_qp]);
         _matrix_F.addIa(1.0);
         detF = _matrix_F.det();
-        _inv_F = _matrix_F.inverse();
-
-        // compute rank three tensor derivative of _inv_F w.r.t. grad_disp
-        // _dInvFdGradDisp is used in the derived Kernel's computeOffDiagJacobian
-        std::array<RankTwoTensor, 3> dinvF;
-        for (unsigned int i = 0; i < 3; ++i)
-          dinvF[i] = -_inv_F * _one_ij[i][disp_var] * _inv_F;
-        _dInvFdGradDisp = RankThreeTensor(dinvF[0], dinvF[1], dinvF[2]);
-
-        // compute derivative of detF w.r.t. grad_disp
-        // This is used internally in this function to compute the JxW derivative
-        for (unsigned int i = 0; i < 3; ++i)
-          dDetFdGradDisp(i) = detF * (_inv_F * _one_ij[i][disp_var]).tr();
-        // TODO coord is a function of the displacements in RZ and RSPHERICAL!
-        dDetFdGradDisp *= _JxW_undisplaced[_qp] * _coord_undisplaced[_qp];
+        _invF = _matrix_F.inverse();
       }
 
       for (_i = 0; _i < _test.size(); _i++)
@@ -132,9 +108,20 @@ ALEKernel::computeOffDiagJacobian(MooseVariableFEBase & jvar)
         // iterate over phis
         for (_j = 0; _j < jvar.phiSize(); _j++)
         {
+          if (_jvar_is_disp)
+          {
+            _phiF.fillColumn(disp_var, _grad_phi_undisplaced[_j][_qp]);
+            _phiF = _invF * _phiF;
+            _phiInvF = -_phiF * _invF;
+          }
+
           _local_ke(_i, _j) += _JxW[_qp] * _coord[_qp] * computeQpOffDiagJacobian(jvar_num);
           if (_jvar_is_disp)
-            _local_ke(_i, _j) += dDetFdGradDisp * _grad_phi[_j][_qp] * res;
+          {
+            // TODO coord is a function of the displacements in RZ and RSPHERICAL!
+            std::cout << _phiF.tr() << '\n';
+            _local_ke(_i, _j) += _phiF.tr() * _JxW[_qp] * _coord[_qp] * res;
+          }
         }
       }
     }
