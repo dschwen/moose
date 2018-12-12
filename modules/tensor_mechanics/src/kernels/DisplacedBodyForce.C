@@ -33,8 +33,8 @@ DisplacedBodyForce::DisplacedBodyForce(const InputParameters & parameters)
     _function(getFunction("function")),
     _postprocessor(getPostprocessorValue("postprocessor"))
 {
-  if (!getParam<bool>("use_displaced_mesh"))
-    paramError("use_displaced_mesh", "This kernel is only valid on the displaced mesh");
+  // if (!getParam<bool>("use_displaced_mesh"))
+  //   paramError("use_displaced_mesh", "This kernel is only valid on the displaced mesh");
 }
 
 Real

@@ -1,24 +1,35 @@
 [Mesh]
   type = GeneratedMesh
-  dim = 2
-  nx = 4
-  ny = 4
+  dim = 3
+  nx = 3
+  ny = 3
+  nz = 3
   xmax = 2
   ymax = 2
-  displacements = 'disp_x disp_y'
+  zmax = 2
+  displacements = 'disp_x disp_y disp_z'
 []
 
 [Variables]
   [./disp_x]
     [./InitialCondition]
       type = FunctionIC
-      function = 'x^2 + y'
+      # function = '0'
+      function = '0.1 * (cos(x) + y)'
     [../]
   [../]
   [./disp_y]
     [./InitialCondition]
       type = FunctionIC
-      function = 'x + sin(y)'
+      # function = '0'
+      function = '0.1 * (x + sin(y))'
+    [../]
+  [../]
+  [./disp_z]
+    [./InitialCondition]
+      type = FunctionIC
+      function = '0'
+      # function = 'sin(z+x)'
     [../]
   [../]
   [./u]
@@ -46,11 +57,19 @@
     type = TimeDerivative
     variable = disp_y
   [../]
+  [./disp_z]
+    type = Diffusion
+    variable = disp_z
+  [../]
+  [./dt_disp_z]
+    type = TimeDerivative
+    variable = disp_z
+  [../]
   [./u]
     type = DisplacedBodyForce
     variable = u
     function = 1
-    displacements = 'disp_x disp_y'
+    displacements = 'disp_x disp_y disp_z'
     use_displaced_mesh = true
   [../]
   # [./u]
@@ -68,7 +87,7 @@
   [./dt_u]
     type = TimeDerivative
     variable = u
-    use_displaced_mesh = true
+    # use_displaced_mesh = true
   [../]
 []
 

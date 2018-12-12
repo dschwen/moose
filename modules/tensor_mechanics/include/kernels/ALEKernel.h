@@ -50,8 +50,10 @@ protected:
   ///@{ Shape and test functions, displacement gradient, and QP weights on the undisplaced mesh
   const VariablePhiGradient & _grad_phi_undisplaced;
   const VariableTestGradient & _grad_test_undisplaced;
+  const VariableTestValue & _test_undisplaced; // DEBUG
   std::vector<const VariableGradient *> _grad_disp_undisplaced;
-  const MooseArray<Real> & _JxW_undisplaced;
+  std::vector<const VariableGradient *> _grad_disp; // DEBUG
+  const MooseArray<Real> & _JxW_undisplaced;        // DEBUG
   const MooseArray<Real> & _coord_undisplaced;
   ///@}
 

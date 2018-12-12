@@ -2,29 +2,22 @@
   type = GeneratedMesh
   dim = 2
   displacements = 'disp_x disp_y'
-  nx = 2
-  ny = 2
-  xmax = 1
 []
 
 [Variables]
   [./disp_x]
     [./InitialCondition]
       type = FunctionIC
-      function = 'x^2 + y'
+      function = '0'#^2 + y'
     [../]
   [../]
   [./disp_y]
     [./InitialCondition]
       type = FunctionIC
-      function = 'x + sin(y)'
+      function = '0'#x + sin(y)'
     [../]
   [../]
   [./u]
-    [./InitialCondition]
-      type = FunctionIC
-      function = x^3+y
-    [../]
   [../]
 []
 
@@ -38,11 +31,24 @@
     variable = disp_y
   [../]
   [./u]
-    type = DisplacedDiffusion
+    type = DisplacedBodyForce
     variable = u
+    function = 1
     displacements = 'disp_x disp_y'
     use_displaced_mesh = true
   [../]
+  # [./u]
+  #   type = BodyForce
+  #   variable = u
+  #   function = 1
+  #   use_displaced_mesh = true
+  # [../]
+  # [./u]
+  #   type = DisplacedDiffusion
+  #   variable = u
+  #   displacements = 'disp_x disp_y'
+  #   use_displaced_mesh = true
+  # [../]
   # [./u]
   #   type = Diffusion
   #   variable = u
@@ -59,4 +65,5 @@
 
 [Executioner]
   type = Steady
+
 []

@@ -169,6 +169,7 @@ def analyze(dofdata, Mfd, Mhc, Mdiff) :
             if i != j and diagonal_only :
                 continue
 
+            # print(hc[i][j], fd[i][j])
             if norm[i][j] > rel_tol * fd[i][j] and norm[i][j] > abs_tol:
                 if not printed :
                     print("\nKernel for variable '%s':" % nlvars[i])
@@ -199,12 +200,18 @@ def analyze(dofdata, Mfd, Mhc, Mdiff) :
         print("No errors detected. :-)")
 
 
-# output parsed (but not processed) jacobian matric data in gnuplot's nonuniform matrix format
+# output parsed (but not processed) jacobian matrix data in gnuplot's matrix format
+#
+# set autoscale fix; set xtics 1 out; set ytics 1 out
+# plot 'jacobian_hand_coded.dat' matrix with image t ''
+# plot 'jacobian_finite_differenced.dat' matrix with image t ''
+# plot 'jacobians_diffed.dat' matrix with image t ''
+#
 def saveMatrixToFile(M, dofs, filename) :
     file = open(filename, "w")
     for i in range(dofs) :
         for j in range(dofs) :
-            file.write("%d %d %f\n" % (i, j, M[i][j]))
+            file.write("%f " % M[i][j])
         file.write("\n")
 
 
