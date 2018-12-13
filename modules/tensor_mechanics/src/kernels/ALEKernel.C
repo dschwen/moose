@@ -69,9 +69,10 @@ ALEKernel::computeOffDiagJacobian(MooseVariableFEBase & jvar)
     for (unsigned int i = 0; i < _ndisp; ++i)
       if (jvar_num == _disp_var[i])
       {
-        disp_var = i;
-        _jvar_is_disp = true;
-        _phiF.zero();
+        disp_var = i;           // 0=x, 1=y, 2=z displacement
+        _jvar_is_disp = true;   // this off-diagonal Jacobian is w.r.t. displacements
+        _phiF.zero();           // zero out dF/dxj matrix
+        precalculateResidual(); // for the dJxW/dxj derivative we need a residual value
         break;
       }
 
@@ -85,7 +86,7 @@ ALEKernel::computeOffDiagJacobian(MooseVariableFEBase & jvar)
     // Real detF;
     for (_qp = 0; _qp < _qrule->n_points(); ++_qp)
     {
-      // compute inverse and determinant of gradient tensor F if needed
+      // compute inverse of gradient tensor F if needed
       if (_jvar_is_disp)
       {
         // preparation
@@ -93,6 +94,7 @@ ALEKernel::computeOffDiagJacobian(MooseVariableFEBase & jvar)
           _matrix_F.fillColumn(i, (*_grad_disp_undisplaced[i])[_qp]);
         _matrix_F.addIa(1.0);
         _invF = _matrix_F.inverse();
+        mooseAssert(_coord[_qp] == 1, "Only the XYZ coordinate system is supported.");
       }
 
       for (_i = 0; _i < _test.size(); ++_i)

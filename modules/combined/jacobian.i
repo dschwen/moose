@@ -5,6 +5,8 @@
 []
 
 [Variables]
+  [./u]
+  [../]
   [./disp_x]
     [./InitialCondition]
       type = FunctionIC
@@ -16,8 +18,6 @@
       type = FunctionIC
       function = '0'#x + sin(y)'
     [../]
-  [../]
-  [./u]
   [../]
 []
 
