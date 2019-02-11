@@ -1,14 +1,22 @@
-# ADComputeAxisymmetricRZSmallStrain<RESIDUAL>
+# ADComputeAxisymmetricRZSmallStrain
 
-!syntax description /ADMaterials/ADComputeAxisymmetricRZSmallStrain<RESIDUAL>
+!syntax description /Materials/ADComputeAxisymmetricRZSmallStrain<RESIDUAL>
 
-ADComputeAxisymmetricRZSmallStrain is the automatic differentiation version of
-[ComputeAxisymmetricRZSmallStrain](/ComputeAxisymmetricRZSmallStrain.md).
+## Description
 
-!syntax parameters /ADMaterials/ADComputeAxisymmetricRZSmallStrain<RESIDUAL>
+The material `ADComputeAxisymmetricRZSmallStrain` calculates the small total
+strain for Axisymmetric systems.
 
-!syntax inputs /ADMaterials/ADComputeAxisymmetricRZSmallStrain<RESIDUAL>
+!include modules/tensor_mechanics/common/supplementalADAxisymmetricRZStrain.md
 
-!syntax children /ADMaterials/ADComputeAxisymmetricRZSmallStrain<RESIDUAL>
+Only minimal changes are required to adapt a plane strain problem to an
+axisymmetric problem. The axisymmetric specific
+`ADComputeAxisymmetricRZSmallStrain` code overwrites the method used to
+calculate the total strain component $\epsilon_{\theta \theta}$ before
+calculating the total strain measure with the small strain assumptions.
 
-!bibtex bibliography
+!syntax parameters /Materials/ADComputeAxisymmetricRZSmallStrain<RESIDUAL>
+
+!syntax inputs /Materials/ADComputeAxisymmetricRZSmallStrain<RESIDUAL>
+
+!syntax children /Materials/ADComputeAxisymmetricRZSmallStrain<RESIDUAL>
