@@ -16,6 +16,7 @@
 #include "metaphysicl/dualnumber.h"
 
 #define usingTemplKernelMembers(type)                                                              \
+  usingMooseObjectMembers;                                                                         \
   usingCoupleableMembers;                                                                          \
   using ADKernelTempl<type, compute_stage>::_test;                                                 \
   using ADKernelTempl<type, compute_stage>::_qp;                                                   \
@@ -48,8 +49,6 @@
   using ADKernelTempl<type, compute_stage>::accumulateTaggedLocalResidual;                         \
   using ADKernelTempl<type, compute_stage>::accumulateTaggedLocalMatrix;                           \
   using ADKernelTempl<type, compute_stage>::variable;                                              \
-  using ADKernelTempl<type, compute_stage>::paramError;                                            \
-  using ADKernelTempl<type, compute_stage>::isParamValid;                                          \
   using ADKernelTempl<type, compute_stage>::getFunction
 
 #define usingKernelMembers usingTemplKernelMembers(Real)
