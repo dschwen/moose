@@ -214,16 +214,4 @@
     cli_args = 'Outputs/exodus=false -mat_fd_type ds'
     requirement = 'The Jacobian for the AD small strain elasticity problem in spherical coordinates shall be perfect'
   [../]
-
-
-  #  [./rz_small_elastic-noad-jac]
-  #    type = 'PetscJacobianTester'
-  #    input = 'rz_small_elastic-noad.i'
-  #    run_sim = 'True'
-  #    prereq = 'rz_small_elastic'
-  #    difference_tol = 1e0 # We have Young's modulus of 1e10 so finite differencing produces a large number
-  #    cli_args = '-mat_fd_type ds'
-  #    requirement = 'The Jacobian for the AD finite strain elasticity problem shall be perfect'
-  #  [../]
-
 []
