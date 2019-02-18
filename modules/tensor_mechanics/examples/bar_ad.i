@@ -145,7 +145,7 @@
   solve_type = NEWTON
   nl_abs_tol = 1e-12
   end_time = 1500
-  dtmin = 0.01
+  dtmin = 1
 
   petsc_options_iname = '-pc_type'
   petsc_options_value = 'lu'
