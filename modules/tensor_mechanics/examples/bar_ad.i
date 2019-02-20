@@ -54,8 +54,12 @@
 
 [AuxVariables]
   [./mp]
+    family = MONOMIAL
+    order = CONSTANT
   [../]
   [./vm]
+    family = MONOMIAL
+    order = CONSTANT
   [../]
 []
 
@@ -147,8 +151,8 @@
   end_time = 1500
   dtmin = 1
 
-  # petsc_options_iname = '-pc_type'
-  # petsc_options_value = 'lu'
+  petsc_options_iname = '-pc_type'
+  petsc_options_value = 'lu'
 
   [./TimeStepper]
     type = IterationAdaptiveDT
@@ -166,6 +170,6 @@
 [Outputs]
   exodus = true
   csv = true
-  print_linear_residuals = false
+  print_linear_residuals = true
   perf_graph = true
 []

@@ -53,8 +53,12 @@
 
 [AuxVariables]
   [./mp]
+    family = MONOMIAL
+    order = CONSTANT
   [../]
   [./vm]
+    family = MONOMIAL
+    order = CONSTANT
   [../]
 []
 
@@ -162,6 +166,6 @@
 [Outputs]
   exodus = true
   csv = true
-  print_linear_residuals = false
+  print_linear_residuals = true
   perf_graph = true
 []
