@@ -3,8 +3,8 @@
   dim = 2
   xmax = 10
   ymax = 1
-  nx = 150
-  ny = 15
+  nx = 40
+  ny = 4
 []
 
 [GlobalParams]
