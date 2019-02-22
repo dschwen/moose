@@ -164,6 +164,8 @@ SetupMeshAction::setupMesh(MooseMesh * mesh)
 void
 SetupMeshAction::act()
 {
+  _console << "SetupMeshAction::act()\n";
+
   // Create the mesh object and tell it to build itself
   if (_current_task == "setup_mesh")
   {

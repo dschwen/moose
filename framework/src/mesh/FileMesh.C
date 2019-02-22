@@ -128,8 +128,12 @@ FileMesh::buildMesh()
 void
 FileMesh::read(const std::string & file_name)
 {
+  _console << "FileMesh::read(\"" << file_name << "\")\n";
+
   if (dynamic_cast<DistributedMesh *>(&getMesh()) && !_is_nemesis)
     getMesh().read(file_name, /*mesh_data=*/NULL, /*skip_renumber=*/false);
   else
     getMesh().read(file_name, /*mesh_data=*/NULL, /*skip_renumber=*/true);
+
+  _console << "FileMesh::read done\n";
 }
