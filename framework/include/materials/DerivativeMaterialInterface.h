@@ -29,7 +29,7 @@ class MaterialProperty;
  * Interface class ("Veneer") to provide generator methods for derivative
  * material property names
  */
-template <class T>
+template <class T, ComputeStage compute_stage = ComputeStage::RESIDUAL>
 class DerivativeMaterialInterface : public T, public DerivativeMaterialPropertyNameInterface
 {
 public:
@@ -152,8 +152,9 @@ private:
   FEProblemBase & _dmi_fe_problem;
 };
 
-template <class T>
-DerivativeMaterialInterface<T>::DerivativeMaterialInterface(const InputParameters & parameters)
+template <class T, ComputeStage compute_stage>
+DerivativeMaterialInterface<T, compute_stage>::DerivativeMaterialInterface(
+    const InputParameters & parameters)
   : T(parameters),
     _dmi_fe_problem(*parameters.getCheckedPointerParam<FEProblemBase *>("_fe_problem_base"))
 {
@@ -169,10 +170,10 @@ DerivativeMaterialInterface<Material>::haveMaterialProperty(const std::string & 
       (this->template hasBlockMaterialProperty<U>(prop_name)));
 }
 
-template <class T>
+template <class T, ComputeStage compute_stage>
 template <typename U>
 bool
-DerivativeMaterialInterface<T>::haveMaterialProperty(const std::string & prop_name)
+DerivativeMaterialInterface<T, compute_stage>::haveMaterialProperty(const std::string & prop_name)
 {
   // Call the correct method to test for material property declarations
   BlockRestrictable * blk = dynamic_cast<BlockRestrictable *>(this);
@@ -183,10 +184,10 @@ DerivativeMaterialInterface<T>::haveMaterialProperty(const std::string & prop_na
           (this->template hasMaterialProperty<U>(prop_name)));
 }
 
-template <class T>
+template <class T, ComputeStage compute_stage>
 template <typename U>
 const MaterialProperty<U> &
-DerivativeMaterialInterface<T>::getDefaultMaterialProperty(const std::string & name)
+DerivativeMaterialInterface<T, compute_stage>::getDefaultMaterialProperty(const std::string & name)
 {
   // get the base property name
   std::string prop_name = this->deducePropertyName(name);
@@ -201,10 +202,11 @@ DerivativeMaterialInterface<T>::getDefaultMaterialProperty(const std::string & n
   return getDefaultMaterialPropertyByName<U>(prop_name);
 }
 
-template <class T>
+template <class T, ComputeStage compute_stage>
 template <typename U>
 const MaterialProperty<U> &
-DerivativeMaterialInterface<T>::getDefaultMaterialPropertyByName(const std::string & prop_name)
+DerivativeMaterialInterface<T, compute_stage>::getDefaultMaterialPropertyByName(
+    const std::string & prop_name)
 {
   // if found return the requested property
   if (haveMaterialProperty<U>(prop_name))
@@ -213,22 +215,22 @@ DerivativeMaterialInterface<T>::getDefaultMaterialPropertyByName(const std::stri
   return this->template getZeroMaterialProperty<U>(prop_name);
 }
 
-template <class T>
+template <class T, ComputeStage compute_stage>
 template <typename U>
 MaterialProperty<U> &
-DerivativeMaterialInterface<T>::declarePropertyDerivative(const std::string & base,
-                                                          const std::vector<VariableName> & c)
+DerivativeMaterialInterface<T, compute_stage>::declarePropertyDerivative(
+    const std::string & base, const std::vector<VariableName> & c)
 {
   return this->template declareProperty<U>(propertyName(base, c));
 }
 
-template <class T>
+template <class T, ComputeStage compute_stage>
 template <typename U>
 MaterialProperty<U> &
-DerivativeMaterialInterface<T>::declarePropertyDerivative(const std::string & base,
-                                                          const VariableName & c1,
-                                                          const VariableName & c2,
-                                                          const VariableName & c3)
+DerivativeMaterialInterface<T, compute_stage>::declarePropertyDerivative(const std::string & base,
+                                                                         const VariableName & c1,
+                                                                         const VariableName & c2,
+                                                                         const VariableName & c3)
 {
   if (c3 != "")
     return this->template declareProperty<U>(propertyNameThird(base, c1, c2, c3));
@@ -237,11 +239,11 @@ DerivativeMaterialInterface<T>::declarePropertyDerivative(const std::string & ba
   return this->template declareProperty<U>(propertyNameFirst(base, c1));
 }
 
-template <class T>
+template <class T, ComputeStage compute_stage>
 template <typename U>
 const MaterialProperty<U> &
-DerivativeMaterialInterface<T>::getMaterialPropertyDerivative(const std::string & base,
-                                                              const std::vector<VariableName> & c)
+DerivativeMaterialInterface<T, compute_stage>::getMaterialPropertyDerivative(
+    const std::string & base, const std::vector<VariableName> & c)
 {
   // get the base property name
   std::string prop_name = this->deducePropertyName(base);
@@ -256,13 +258,14 @@ DerivativeMaterialInterface<T>::getMaterialPropertyDerivative(const std::string 
   return getDefaultMaterialPropertyByName<U>(propertyName(prop_name, c));
 }
 
-template <class T>
+template <class T, ComputeStage compute_stage>
 template <typename U>
 const MaterialProperty<U> &
-DerivativeMaterialInterface<T>::getMaterialPropertyDerivative(const std::string & base,
-                                                              const VariableName & c1,
-                                                              const VariableName & c2,
-                                                              const VariableName & c3)
+DerivativeMaterialInterface<T, compute_stage>::getMaterialPropertyDerivative(
+    const std::string & base,
+    const VariableName & c1,
+    const VariableName & c2,
+    const VariableName & c3)
 {
   // get the base property name
   std::string prop_name = this->deducePropertyName(base);
@@ -281,19 +284,19 @@ DerivativeMaterialInterface<T>::getMaterialPropertyDerivative(const std::string 
   return getDefaultMaterialPropertyByName<U>(propertyNameFirst(prop_name, c1));
 }
 
-template <class T>
+template <class T, ComputeStage compute_stage>
 template <typename U>
 const MaterialProperty<U> &
-DerivativeMaterialInterface<T>::getMaterialPropertyDerivativeByName(
+DerivativeMaterialInterface<T, compute_stage>::getMaterialPropertyDerivativeByName(
     const MaterialPropertyName & base, const std::vector<VariableName> & c)
 {
   return getDefaultMaterialPropertyByName<U>(propertyName(base, c));
 }
 
-template <class T>
+template <class T, ComputeStage compute_stage>
 template <typename U>
 const MaterialProperty<U> &
-DerivativeMaterialInterface<T>::getMaterialPropertyDerivativeByName(
+DerivativeMaterialInterface<T, compute_stage>::getMaterialPropertyDerivativeByName(
     const MaterialPropertyName & base,
     const VariableName & c1,
     const VariableName & c2,
@@ -306,13 +309,14 @@ DerivativeMaterialInterface<T>::getMaterialPropertyDerivativeByName(
   return getDefaultMaterialPropertyByName<U>(propertyNameFirst(base, c1));
 }
 
-template <class T>
+template <class T, ComputeStage compute_stage>
 template <typename U>
 void
-DerivativeMaterialInterface<T>::validateCouplingHelper(const MaterialPropertyName & base,
-                                                       const std::vector<VariableName> & c,
-                                                       const System & system,
-                                                       std::vector<VariableName> & missing)
+DerivativeMaterialInterface<T, compute_stage>::validateCouplingHelper(
+    const MaterialPropertyName & base,
+    const std::vector<VariableName> & c,
+    const System & system,
+    std::vector<VariableName> & missing)
 {
   unsigned int ncoupled = this->_coupled_moose_vars.size();
 
@@ -346,12 +350,12 @@ DerivativeMaterialInterface<T>::validateCouplingHelper(const MaterialPropertyNam
   }
 }
 
-template <class T>
+template <class T, ComputeStage compute_stage>
 template <typename U>
 void
-DerivativeMaterialInterface<T>::validateCoupling(const MaterialPropertyName & base,
-                                                 const std::vector<VariableName> & c,
-                                                 bool validate_aux)
+DerivativeMaterialInterface<T, compute_stage>::validateCoupling(const MaterialPropertyName & base,
+                                                                const std::vector<VariableName> & c,
+                                                                bool validate_aux)
 {
   // get the base property name
   std::string prop_name = this->deducePropertyName(base);
@@ -379,11 +383,11 @@ DerivativeMaterialInterface<T>::validateCoupling(const MaterialPropertyName & ba
   }
 }
 
-template <class T>
+template <class T, ComputeStage compute_stage>
 std::vector<VariableName>
-DerivativeMaterialInterface<T>::buildVariableVector(const VariableName & c1,
-                                                    const VariableName & c2,
-                                                    const VariableName & c3)
+DerivativeMaterialInterface<T, compute_stage>::buildVariableVector(const VariableName & c1,
+                                                                   const VariableName & c2,
+                                                                   const VariableName & c3)
 {
   std::vector<VariableName> c;
   if (c1 != "")
@@ -399,32 +403,34 @@ DerivativeMaterialInterface<T>::buildVariableVector(const VariableName & c1,
   return c;
 }
 
-template <class T>
+template <class T, ComputeStage compute_stage>
 template <typename U>
 void
-DerivativeMaterialInterface<T>::validateCoupling(const MaterialPropertyName & base,
-                                                 const VariableName & c1,
-                                                 const VariableName & c2,
-                                                 const VariableName & c3)
+DerivativeMaterialInterface<T, compute_stage>::validateCoupling(const MaterialPropertyName & base,
+                                                                const VariableName & c1,
+                                                                const VariableName & c2,
+                                                                const VariableName & c3)
 {
   validateCoupling<U>(base, buildVariableVector(c1, c2, c3), true);
 }
 
-template <class T>
+template <class T, ComputeStage compute_stage>
 template <typename U>
 void
-DerivativeMaterialInterface<T>::validateNonlinearCoupling(const MaterialPropertyName & base,
-                                                          const VariableName & c1,
-                                                          const VariableName & c2,
-                                                          const VariableName & c3)
+DerivativeMaterialInterface<T, compute_stage>::validateNonlinearCoupling(
+    const MaterialPropertyName & base,
+    const VariableName & c1,
+    const VariableName & c2,
+    const VariableName & c3)
 {
   validateCoupling<U>(base, buildVariableVector(c1, c2, c3), false);
 }
 
-template <class T>
+template <class T, ComputeStage compute_stage>
 template <typename U>
 void
-DerivativeMaterialInterface<T>::validateDerivativeMaterialPropertyBase(const std::string & base)
+DerivativeMaterialInterface<T, compute_stage>::validateDerivativeMaterialPropertyBase(
+    const std::string & base)
 {
   // resolve the input parameter name base to the actual material property name
   const MaterialPropertyName prop_name = this->template getParam<MaterialPropertyName>(base);
@@ -440,9 +446,9 @@ DerivativeMaterialInterface<T>::validateDerivativeMaterialPropertyBase(const std
                  "' only needs its derivatives, but this may indicate a typo in the input file.");
 }
 
-template <class T>
+template <class T, ComputeStage compute_stage>
 inline bool
-DerivativeMaterialInterface<T>::isNotObjectVariable(const VariableName & name)
+DerivativeMaterialInterface<T, compute_stage>::isNotObjectVariable(const VariableName & name)
 {
   // try to cast this to a Kernel pointer
   KernelBase * kernel_ptr = dynamic_cast<KernelBase *>(this);
