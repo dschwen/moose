@@ -8,8 +8,8 @@
   dim = 2
   xmax = 960
   ymax = 960
-  nx = 25
-  ny = 25
+  nx = 23
+  ny = 23
   uniform_refine = 2
 []
 
@@ -207,9 +207,9 @@
     refine_fraction = 0.8
     coarsen_fraction = 0.2
     max_h_level = 4
+    interval = 3
   [../]
-
-  dtmax = 6
+  dtmax = 5.5
 []
 
 [Outputs]
@@ -220,10 +220,11 @@
   [./exodus]
     type = Exodus
     interval = 10
-    execute_on = 'INITIAL TIMESTEP_END FINAL'
+    execute_on = 'FINAL'
   [../]
   [./log]
     type = Console
     output_file = true
+    execute_on = 'FINAL'
   [../]
 []
