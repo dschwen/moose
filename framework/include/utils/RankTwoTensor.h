@@ -395,6 +395,15 @@ public:
   void symmetricEigenvaluesEigenvectors(std::vector<T> & eigvals,
                                         RankTwoTensorTempl<T> & eigvecs) const;
 
+  /// applies similarity transformation to reduce to a tridiagonal rank two tensor
+  void
+  tridiagonalReduction(RankTwoTensorTempl<T> & V, std::vector<T> & d, std::vector<T> & e) const;
+
+  /// applies QL decomposition to find eigenvalues and eigenvectors on a tridiagonal rank two tensor
+  void tridiagonalQLDecomposition(RankTwoTensorTempl<T> & V,
+                                  std::vector<T> & d,
+                                  std::vector<T> & e) const;
+
   /**
    * computes eigenvalues, and their symmetric derivatives wrt vals,
    * assuming tens is symmetric
@@ -473,6 +482,11 @@ private:
   static constexpr unsigned int N = LIBMESH_DIM;
   static constexpr unsigned int N2 = N * N;
   static constexpr Real identityCoords[N2] = {1, 0, 0, 0, 1, 0, 0, 0, 1};
+
+  void computeEigenvector0(T eval0, TypeVector<T> & evec0) const;
+  void computeEigenvector1(T eval1, TypeVector<T> const & evec0, TypeVector<T> & evec1) const;
+  void
+  computeOrthogonalComplement(TypeVector<T> const & W, TypeVector<T> & U, TypeVector<T> & V) const;
 
   template <class T2>
   friend void dataStore(std::ostream &, RankTwoTensorTempl<T2> &, void *);
