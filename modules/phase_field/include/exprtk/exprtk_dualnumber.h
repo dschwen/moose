@@ -12,6 +12,8 @@
 #ifndef EXPRTK_DUALREAL_ADAPTOR_HPP
 #define EXPRTK_DUALREAL_ADAPTOR_HPP
 
+#include "metaphysicl/raw_type.h"
+
 namespace exprtk
 {
 namespace details
@@ -342,10 +344,10 @@ inline T
 nequal_impl(const T v0, const T v1, dualnumber_type_tag)
 {
   const T epsilon = epsilon_type<T>::value();
-  const T eps_norm =
-      (std::max(T(1),
-                std::max(abs_impl(v0, dualnumber_type_tag()), abs_impl(v1, dualnumber_type_tag()))) *
-       epsilon);
+  const T eps_norm = (std::max(T(1),
+                               std::max(abs_impl(v0, dualnumber_type_tag()),
+                                        abs_impl(v1, dualnumber_type_tag()))) *
+                      epsilon);
   return (abs_impl(v0 - v1, dualnumber_type_tag()) > eps_norm) ? 1.0 : 0.0;
 }
 
@@ -488,10 +490,10 @@ inline T
 equal_impl(const T v0, const T v1, dualnumber_type_tag)
 {
   const T epsilon = epsilon_type<T>::value();
-  const T eps_norm =
-      (std::max(T(1),
-                std::max(abs_impl(v0, dualnumber_type_tag()), abs_impl(v1, dualnumber_type_tag()))) *
-       epsilon);
+  const T eps_norm = (std::max(T(1),
+                               std::max(abs_impl(v0, dualnumber_type_tag()),
+                                        abs_impl(v1, dualnumber_type_tag()))) *
+                      epsilon);
   return (abs_impl(v0 - v1, dualnumber_type_tag()) <= eps_norm) ? 1.0 : 0.0;
 }
 
