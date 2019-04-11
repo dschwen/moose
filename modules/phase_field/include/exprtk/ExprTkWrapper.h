@@ -35,6 +35,9 @@ class ExprTkWrapper
 public:
   ExprTkWrapper();
 
+  /// delete the dynamically allocated wrapped exprtk objects
+  ~ExprTkWrapper();
+
   ///@{ templated ExprTk typedefs
   typedef exprtk::symbol_table<T> SymbolTable;
   typedef exprtk::expression<T> Expression;
@@ -42,7 +45,7 @@ public:
   ///@}
 
   /// evaluate the wrapped ExprTk expression
-  T value() { return _expression->value(); }
+  T value();
 
   /// register a variable reference
   void addVariable(const std::string & name, T & var);
@@ -51,11 +54,15 @@ public:
   bool parse(const std::string & expression_string);
 
 protected:
-  ///@{ Pointers to the wrapped exprtk objects
-  std::unique_ptr<SymbolTable> _symbol_table;
-  std::unique_ptr<Expression> _expression;
-  std::unique_ptr<Parser> _parser;
+  /**@{
+   * Pointers to the wrapped exprtk objects. std::unique_ptr does not work here
+   * unfortunately because it requires the type templates to be completely known,
+   * which is exactly what we are trying to avoid here.
+   */
+  SymbolTable * _symbol_table;
+  Expression * _expression;
+  Parser * _parser;
   ///@}
 };
 
-#endif
+#endif // EXPRTKWRAPPER_H

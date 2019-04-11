@@ -10,6 +10,12 @@
 #ifndef DERIVATIVEMATERIALPROPERTYNAMEINTERFACE_H
 #define DERIVATIVEMATERIALPROPERTYNAMEINTERFACE_H
 
+#define usingDerivativeMaterialPropertyNameInterfaceMembers                                        \
+  using DerivativeMaterialPropertyNameInterface::derivativePropertyName;                           \
+  using DerivativeMaterialPropertyNameInterface::derivativePropertyNameFirst;                      \
+  using DerivativeMaterialPropertyNameInterface::derivativePropertyNameSecond;                     \
+  using DerivativeMaterialPropertyNameInterface::derivativePropertyNameThird
+
 #include "MooseTypes.h"
 #include "MooseError.h"
 

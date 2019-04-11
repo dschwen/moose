@@ -17,12 +17,25 @@
 
 template <typename T>
 ExprTkWrapper<T>::ExprTkWrapper()
-  : _symbol_table(libmesh_make_unique<SymbolTable>()),
-    _expression(libmesh_make_unique<Expression>()),
-    _parser(libmesh_make_unique<Parser>())
+  : _symbol_table(new SymbolTable()), _expression(new Expression()), _parser(new Parser())
 {
   _symbol_table->add_constants();
   _expression->register_symbol_table(*_symbol_table);
+}
+
+template <typename T>
+ExprTkWrapper<T>::~ExprTkWrapper()
+{
+  delete _symbol_table;
+  delete _expression;
+  delete _parser;
+}
+
+template <typename T>
+T
+ExprTkWrapper<T>::value()
+{
+  return _expression->value();
 }
 
 template <typename T>
