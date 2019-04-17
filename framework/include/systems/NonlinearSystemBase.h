@@ -677,6 +677,9 @@ protected:
   /// by default we do not keep an unpredicted solution copy to roll back to in case of predictor failure
   virtual bool predictorMayFail() { return false; };
 
+  /// apply the active predictor
+  virtual void applyPredictor(NumericVector<Number> & initial_solution);
+
   /// solution vector from nonlinear solver
   const NumericVector<Number> * _current_solution;
   /// ghosted form of the residual
