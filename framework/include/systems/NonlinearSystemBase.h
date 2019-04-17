@@ -671,6 +671,9 @@ protected:
   void mortarJacobianConstraints(bool displaced);
 
 protected:
+  /// determine if the application of  apredictor improved the residual
+  virtual bool predictorImprovedResidual() { return true; }
+
   /// solution vector from nonlinear solver
   const NumericVector<Number> * _current_solution;
   /// ghosted form of the residual
