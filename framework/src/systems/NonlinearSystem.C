@@ -163,19 +163,10 @@ NonlinearSystem::applyPredictor(NumericVector<Number> & initial_solution)
     auto initial_residual_after_predictor = _transient_sys.rhs->l2_norm();
 
     // if the prediction does not improve the residual swap the unpredicted solution back in
-    if (_initial_residual_before_preset_bcs > initial_residual_after_predictor)
+    if (_initial_residual_before_preset_bcs < initial_residual_after_predictor)
     {
-      mooseInfo("Predictor successful: ",
-                _initial_residual_before_preset_bcs,
-                " > ",
-                initial_residual_after_predictor);
-    }
-    else
-    {
-      mooseInfo("Predictor failure: ",
-                _initial_residual_before_preset_bcs,
-                " <= ",
-                initial_residual_after_predictor);
+      _console << COLOR_CYAN << "Predictor failure: " << _initial_residual_before_preset_bcs
+               << " <= " << initial_residual_after_predictor << COLOR_WHITE << '\n';
       initial_solution.swap(*unpredicted_solution);
     }
   }
