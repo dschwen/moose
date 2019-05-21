@@ -1034,6 +1034,8 @@ RankTwoTensorTempl<T>::tridiagonalQLDecomposition(RankTwoTensorTempl<T> & V,
   e[N - 1] = 0.0;
 
   T f = 0.0;
+  T tst1 = 0.0;
+
   // const Real eps = std::pow(2.0, -52.0);
   const Real eps = libMesh::TOLERANCE * libMesh::TOLERANCE;
 
@@ -1041,7 +1043,7 @@ RankTwoTensorTempl<T>::tridiagonalQLDecomposition(RankTwoTensorTempl<T> & V,
   {
 
     // Find small subdiagonal element
-    const T tst1 = std::max(tst1, std::abs(d[l]) + std::abs(e[l]));
+    tst1 = std::max(tst1, std::abs(d[l]) + std::abs(e[l]));
     unsigned int m = l;
     while (m < N)
     {
@@ -1057,6 +1059,8 @@ RankTwoTensorTempl<T>::tridiagonalQLDecomposition(RankTwoTensorTempl<T> & V,
       int iter = 0;
       do
       {
+        if (iter > 1000)
+          mooseError("In RankTwoTensor, LQ factorization is not converging.");
         iter = iter + 1;
 
         // Compute implicit shift
