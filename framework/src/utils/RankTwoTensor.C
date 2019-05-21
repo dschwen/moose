@@ -953,12 +953,12 @@ RankTwoTensorTempl<T>::tridiagonalReduction(RankTwoTensorTempl<T> & V,
         e[j] = 0.0;
 
       // Apply similarity transformation to remaining columns.
-      for (int j = 0; j < i; j++)
+      for (unsigned int j = 0; j < i; j++)
       {
         f = d[j];
         V(j, i) = f;
         g = e[j] + V(j, j) * f;
-        for (int k = j + 1; k <= i - 1; k++)
+        for (unsigned int k = j + 1; k <= i - 1; k++)
         {
           g += V(k, j) * d[k];
           e[k] += V(k, j) * f;
@@ -1081,26 +1081,26 @@ RankTwoTensorTempl<T>::tridiagonalQLDecomposition(RankTwoTensorTempl<T> & V,
         T el1 = e[l + 1];
         T s = 0.0;
         T s2 = 0.0;
-        for (unsigned int i = m - 1; i >= l; i--)
+        for (unsigned int i = m; i > l; i--)
         {
           c3 = c2;
           c2 = c;
           s2 = s;
-          g = c * e[i];
+          g = c * e[i - 1];
           h = c * p;
-          r = std::sqrt(p * p + e[i] * e[i]);
-          e[i + 1] = s * r;
-          s = e[i] / r;
+          r = std::sqrt(p * p + e[i - 1] * e[i - 1]);
+          e[i] = s * r;
+          s = e[i - 1] / r;
           c = p / r;
-          p = c * d[i] - s * g;
-          d[i + 1] = h + s * (c * g + s * d[i]);
+          p = c * d[i - 1] - s * g;
+          d[i] = h + s * (c * g + s * d[i - 1]);
 
           // Accumulate transformation.
           for (unsigned int k = 0; k < N; k++)
           {
-            h = V(k, i + 1);
-            V(k, i + 1) = s * V(k, i) + c * h;
-            V(k, i) = c * V(k, i) - s * h;
+            h = V(k, i);
+            V(k, i) = s * V(k, i - 1) + c * h;
+            V(k, i - 1) = c * V(k, i - 1) - s * h;
           }
         }
         p = -s * s2 * c3 * el1 * e[l] / dl1;
