@@ -680,6 +680,9 @@ protected:
   /// apply the active predictor
   virtual void applyPredictor(NumericVector<Number> & initial_solution);
 
+  /// apply the preset boundary conditions (nodal)
+  virtual void applyPresetBCs(NumericVector<Number> & initial_solution);
+
   /// solution vector from nonlinear solver
   const NumericVector<Number> * _current_solution;
   /// ghosted form of the residual

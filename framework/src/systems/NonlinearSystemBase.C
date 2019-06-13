@@ -720,14 +720,8 @@ NonlinearSystemBase::applyPredictor(NumericVector<Number> & initial_solution)
 }
 
 void
-NonlinearSystemBase::setInitialSolution()
+NonlinearSystemBase::applyPresetBCs(NumericVector<Number> & initial_solution)
 {
-  deactiveAllMatrixTags();
-
-  NumericVector<Number> & initial_solution(solution());
-  if (_predictor.get() && _predictor->shouldApply())
-    applyPredictor(initial_solution);
-
   // do nodal BC
   ConstBndNodeRange & bnd_nodes = *_mesh.getBoundaryNodeRange();
   for (const auto & bnode : bnd_nodes)
@@ -754,6 +748,18 @@ NonlinearSystemBase::setInitialSolution()
       }
     }
   }
+}
+
+void
+NonlinearSystemBase::setInitialSolution()
+{
+  deactiveAllMatrixTags();
+
+  NumericVector<Number> & initial_solution(solution());
+  if (_predictor.get() && _predictor->shouldApply())
+    applyPredictor(initial_solution);
+
+  applyPresetBCs(initial_solution);
 
   _sys.solution->close();
   update();

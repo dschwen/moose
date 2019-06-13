@@ -145,7 +145,7 @@ NonlinearSystem::addMatrix(TagID tag)
 void
 NonlinearSystem::applyPredictor(NumericVector<Number> & initial_solution)
 {
-  if (_fe_problem.solverParams()._type != Moose::ST_LINEAR)
+  if (_predictor->backtrack() && _fe_problem.solverParams()._type != Moose::ST_LINEAR)
   {
     // retain a copy of the unpredicted solution
     auto unpredicted_solution = initial_solution.clone();
@@ -167,6 +167,7 @@ NonlinearSystem::applyPredictor(NumericVector<Number> & initial_solution)
     {
       _console << COLOR_CYAN << "Predictor failure: " << _initial_residual_before_preset_bcs
                << " <= " << initial_residual_after_predictor << COLOR_WHITE << '\n';
+
       initial_solution.swap(*unpredicted_solution);
     }
   }

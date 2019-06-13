@@ -39,6 +39,7 @@ public:
   virtual int order() { return 0; }
   virtual void timestepSetup();
   virtual bool shouldApply();
+  virtual bool backtrack() const { return _backtrack; };
   virtual void apply(NumericVector<Number> & sln) = 0;
 
   virtual NumericVector<Number> & solutionPredictor() { return _solution_predictor; }
@@ -63,5 +64,8 @@ protected:
 
   /// Old times for which the predictor should not be applied
   std::vector<Real> _skip_times_old;
+
+private:
+  const bool _backtrack;
 };
 

@@ -21,6 +21,10 @@ validParams<Predictor>()
   InputParameters params = validParams<MooseObject>();
   params.addRequiredParam<Real>("scale",
                                 "The scale factor for the predictor (can range from 0 to 1)");
+  params.addParam<bool>("backtrack",
+                        false,
+                        "Backtrack to the previous solution if applying the predictor does not "
+                        "decrease the initial residual.");
   params.addParam<std::vector<Real>>(
       "skip_times", "Skip the predictor if the current solution time is in this list of times");
   params.addParam<std::vector<Real>>(
@@ -47,7 +51,8 @@ Predictor::Predictor(const InputParameters & parameters)
     _solution_predictor(_nl.addVector("predictor", true, GHOSTED)),
     _scale(getParam<Real>("scale")),
     _skip_times(getParam<std::vector<Real>>("skip_times")),
-    _skip_times_old(getParam<std::vector<Real>>("skip_times_old"))
+    _skip_times_old(getParam<std::vector<Real>>("skip_times_old")),
+    _backtrack(getParam<bool>("backtrack"))
 {
   if (_scale < 0.0 || _scale > 1.0)
     mooseError("Input value for scale = ", _scale, " is outside of permissible range (0 to 1)");
