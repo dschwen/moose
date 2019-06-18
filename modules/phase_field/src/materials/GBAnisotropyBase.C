@@ -120,16 +120,27 @@ GBAnisotropyBase::computeQpProperties()
   Real sum_kappa = 0.0;
   Real sum_gamma = 0.0;
   Real sum_L = 0.0;
-  Real Val = 0.0;
   Real sum_val = 0.0;
   Real f_sigma = 1.0;
   Real f_mob = 1.0;
-  Real gamma_value = 0.0;
+  Real gamma_value;
 
   for (unsigned int m = 0; m < _op_num - 1; ++m)
   {
+    // TODO: if a grain tracker object is passed in we use it for the m -> mm mapping
+    const unsigned int mm = m;
+    const Real val_m = (*_vals[mm])[_qp] * (*_vals[mm])[_qp];
+    if (val_m < libMesh::TOLERANCE)
+      continue;
+
     for (unsigned int n = m + 1; n < _op_num; ++n) // m<n
     {
+      // TODO: if a grain tracker object is passed in we use it for the n -> nn mapping
+      const unsigned int nn = n;
+      const Real val_n = (*_vals[nn])[_qp] * (*_vals[nn])[_qp];
+      if (val_n < libMesh::TOLERANCE)
+        continue;
+
       gamma_value = _kappa_gamma[n][m];
 
       if (_inclination_anisotropy)
@@ -141,8 +152,8 @@ GBAnisotropyBase::computeQpProperties()
         Real sin_phi = std::sin(2.0 * phi_ave);
         Real cos_phi = std::cos(2.0 * phi_ave);
 
-        Real a = (*_grad_vals[m])[_qp](0) - (*_grad_vals[n])[_qp](0);
-        Real b = (*_grad_vals[m])[_qp](1) - (*_grad_vals[n])[_qp](1);
+        Real a = (*_grad_vals[mm])[_qp](0) - (*_grad_vals[nn])[_qp](0);
+        Real b = (*_grad_vals[mm])[_qp](1) - (*_grad_vals[nn])[_qp](1);
         Real ab = a * a + b * b + 1.0e-7; // for the sake of numerical convergence, the smaller the
                                           // more accurate, but more difficult to converge
 
@@ -158,23 +169,31 @@ GBAnisotropyBase::computeQpProperties()
         gamma_value = 1.0 / y;
       }
 
-      Val = (100000.0 * ((*_vals[m])[_qp]) * ((*_vals[m])[_qp]) + 0.01) *
-            (100000.0 * ((*_vals[n])[_qp]) * ((*_vals[n])[_qp]) + 0.01);
+      const Real val = val_m * val_n;
 
-      sum_val += Val;
-      sum_kappa += _kappa_gamma[m][n] * f_sigma * Val;
-      sum_gamma += gamma_value * Val;
+      sum_val += val;
+      sum_kappa += _kappa_gamma[m][n] * f_sigma * val;
+      sum_gamma += gamma_value * val;
+
       // Following comes from substituting Eq. (36c) from the paper into (36b)
-      sum_L += Val * _mob[m][n] * std::exp(-_Q[m][n] / (_kb * _T[_qp])) * f_mob * _mu_qp *
+      sum_L += val * _mob[m][n] * std::exp(-_Q[m][n] / (_kb * _T[_qp])) * f_mob * _mu_qp *
                _a_g2[n][m] / _sigma[m][n];
     }
   }
 
-  _kappa[_qp] = sum_kappa / sum_val;
-  _gamma[_qp] = sum_gamma / sum_val;
-  _L[_qp] = sum_L / sum_val;
-  _mu[_qp] = _mu_qp;
+  if (sum_val > 0.0)
+  {
+    // near grain bboundaries
+    _kappa[_qp] = sum_kappa / sum_val;
+    _gamma[_qp] = sum_gamma / sum_val;
+    _L[_qp] = sum_L / sum_val;
+  }
+  else
+  {
+    // inside the grains we need to use an average value
+  }
 
+  _mu[_qp] = _mu_qp;
   _molar_volume[_qp] =
       _M_V / (_length_scale * _length_scale * _length_scale); // m^3/mol converted to ls^3/mol
   _entropy_diff[_qp] = 9.5 * _JtoeV;                          // J/(K mol) converted to eV(K mol)
