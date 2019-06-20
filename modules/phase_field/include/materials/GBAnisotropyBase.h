@@ -44,11 +44,17 @@ protected:
 
   const VariableValue & _T;
 
+  const unsigned int _op_num;
+
   std::vector<std::vector<Real>> _sigma;
   std::vector<std::vector<Real>> _mob;
   std::vector<std::vector<Real>> _Q;
   std::vector<std::vector<Real>> _kappa_gamma;
   std::vector<std::vector<Real>> _a_g2;
+
+  std::vector<Real> _avg_kappa;
+  std::vector<Real> _avg_gamma;
+  std::vector<Real> _avg_mobility;
 
   MaterialProperty<Real> & _kappa;
   MaterialProperty<Real> & _gamma;
@@ -63,9 +69,6 @@ protected:
   const Real _JtoeV;
   Real _mu_qp;
 
-  const unsigned int _op_num;
-
   std::vector<const VariableValue *> _vals;
   std::vector<const VariableGradient *> _grad_vals;
 };
-

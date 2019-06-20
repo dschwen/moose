@@ -48,6 +48,15 @@ GBAnisotropyBase::GBAnisotropyBase(const InputParameters & parameters)
     _Anisotropic_GB_file_name(getParam<FileName>("Anisotropic_GB_file_name")),
     _inclination_anisotropy(getParam<bool>("inclination_anisotropy")),
     _T(coupledValue("T")),
+    _op_num(coupledComponents("v")),
+    _sigma(_op_num),
+    _mob(_op_num),
+    _Q(_op_num),
+    _kappa_gamma(_op_num),
+    _a_g2(_op_num),
+    _avg_kappa(_op_num, 0.0),
+    _avg_gamma(_op_num, 0.0),
+    _avg_mobility(_op_num, 0.0),
     _kappa(declareProperty<Real>("kappa_op")),
     _gamma(declareProperty<Real>("gamma_asymm")),
     _L(declareProperty<Real>("L")),
@@ -58,17 +67,9 @@ GBAnisotropyBase::GBAnisotropyBase(const InputParameters & parameters)
     _kb(8.617343e-5),      // Boltzmann constant in eV/K
     _JtoeV(6.24150974e18), // Joule to eV conversion
     _mu_qp(0.0),
-    _op_num(coupledComponents("v")),
     _vals(_op_num),
     _grad_vals(_op_num)
 {
-  // reshape vectors
-  _sigma.resize(_op_num);
-  _mob.resize(_op_num);
-  _Q.resize(_op_num);
-  _kappa_gamma.resize(_op_num);
-  _a_g2.resize(_op_num);
-
   for (unsigned int op = 0; op < _op_num; ++op)
   {
     // Initialize variables
@@ -124,6 +125,7 @@ GBAnisotropyBase::computeQpProperties()
   Real f_sigma = 1.0;
   Real f_mob = 1.0;
   Real gamma_value;
+  unsigned int bulk_id = libMesh::invalid_uint;
 
   for (unsigned int m = 0; m < _op_num - 1; ++m)
   {
@@ -132,6 +134,8 @@ GBAnisotropyBase::computeQpProperties()
     const Real val_m = (*_vals[mm])[_qp] * (*_vals[mm])[_qp];
     if (val_m < libMesh::TOLERANCE)
       continue;
+
+    bulk_id = mm;
 
     for (unsigned int n = m + 1; n < _op_num; ++n) // m<n
     {
@@ -188,9 +192,19 @@ GBAnisotropyBase::computeQpProperties()
     _gamma[_qp] = sum_gamma / sum_val;
     _L[_qp] = sum_L / sum_val;
   }
-  else
+  else if (bulk_id != libMesh::invalid_uint)
   {
     // inside the grains we need to use an average value
+    _kappa[_qp] = _avg_kappa[bulk_id];
+    _gamma[_qp] = _avg_gamma[bulk_id];
+    _L[_qp] = _avg_mobility[bulk_id];
+  }
+  else
+  {
+    // no OP is active here.
+    _kappa[_qp] = 0;
+    _gamma[_qp] = 0;
+    _L[_qp] = 0;
   }
 
   _mu[_qp] = _mu_qp;
