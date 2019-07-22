@@ -73,8 +73,6 @@
 - /Kernels/SingleGrainRigidBodyMotion
 - /Kernels/SoretDiffusion
 - /Kernels/SplitCHMath
-- /Kernels/SwitchingFunctionConstraintEta
-- /Kernels/SwitchingFunctionConstraintLagrange
 - /Kernels/SwitchingFunctionPenalty
 - /Kernels/CHPFCRFFSplitKernel
 - /Kernels/CHPFCRFFSplitKernel/CHPFCRFFSplitKernelAction

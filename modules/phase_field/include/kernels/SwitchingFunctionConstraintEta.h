@@ -36,12 +36,13 @@ protected:
   /// Switching function name
   VariableName _eta_name;
 
-  /// Switching function drivatives
+  ///@{ Switching function derivatives
   const MaterialProperty<Real> & _dh;
   const MaterialProperty<Real> & _d2h;
+  ///@}
 
-  /// Lagrange multiplier
+  ///@{ Lagrange multiplier
   const VariableValue & _lambda;
   unsigned int _lambda_var;
+  ///@}
 };
-
