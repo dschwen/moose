@@ -67,6 +67,12 @@ public:
   /// Return index into the _coupled_moose_vars array for a given jvar
   unsigned int mapJvarToCvar(unsigned int jvar);
 
+  /// Return index into a specific coupled variable vector for a given jvar
+  unsigned int mapJvarToCvar(unsigned int jvar, const std::vector<int> & jvar_map);
+
+  /// Make a specific map for a given parameter name representing a couple variable (vector)
+  const std::vector<int> & getParameterJvarMap(std::string parameter_name);
+
   /**
    * Set the cvar value to the mapped jvar value and return true if the mapping exists.
    * Otherwise return false.
@@ -78,8 +84,14 @@ public:
   bool mapJvarToCvar(unsigned int jvar, unsigned int & cvar);
 
 private:
+  /// number of nonlinear variables in the system
+  const std::size_t _jvar_max_size;
+
   /// look-up table to determine the _coupled_moose_vars index for the jvar parameter
   std::vector<int> _jvar_map;
+
+  /// map of local look-up tables for specific parameters
+  std::map<std::string, std::vector<int>> _jvar_local_map;
 
   friend class JvarMapKernelInterface<T>;
   friend class JvarMapIntegratedBCInterface<T>;
@@ -87,15 +99,17 @@ private:
 
 template <class T>
 JvarMapInterfaceBase<T>::JvarMapInterfaceBase(const InputParameters & parameters)
-  : T(parameters), _jvar_map(this->_fe_problem.getNonlinearSystemBase().nVariables(), -1)
+  : T(parameters),
+    _jvar_max_size(this->_fe_problem.getNonlinearSystemBase().nVariables()),
+    _jvar_map(_jvar_max_size, -1)
 {
-  // populate map;
+  // populate map
   for (auto it : Moose::enumerate(this->_coupled_moose_vars))
   {
     auto number = it.value()->number();
 
     // skip AuxVars as off-diagonal jacobian entries are not calculated for them
-    if (number < _jvar_map.size())
+    if (number < _jvar_max_size)
       _jvar_map[number] = it.index();
   }
 
@@ -107,12 +121,45 @@ template <class T>
 unsigned int
 JvarMapInterfaceBase<T>::mapJvarToCvar(unsigned int jvar)
 {
-  mooseAssert(jvar < _jvar_map.size(),
+  mooseAssert(jvar < _jvar_max_size,
               "Calling mapJvarToCvar for an invalid Moose variable number. Maybe an AuxVariable?");
   int cit = _jvar_map[jvar];
 
   mooseAssert(cit >= 0, "Calling mapJvarToCvar for a variable not coupled to this kernel.");
   return cit;
+}
+
+template <class T>
+unsigned int
+JvarMapInterfaceBase<T>::mapJvarToCvar(unsigned int jvar, const std::vector<int> & jvar_map)
+{
+  mooseAssert(jvar < _jvar_max_size,
+              "Calling mapJvarToCvar for an invalid Moose variable number. Maybe an AuxVariable?");
+  int cit = jvar_map[jvar];
+
+  mooseAssert(cit >= 0, "Calling mapJvarToCvar for a variable not coupled to this kernel.");
+  return cit;
+}
+
+template <class T>
+const std::vector<int> &
+JvarMapInterfaceBase<T>::getParameterJvarMap(std::string parameter_name)
+{
+  auto & jvar_map = _jvar_local_map[parameter_name];
+  jvar_map.assign(_jvar_max_size, -1);
+
+  // populate local map
+  const auto num = this->coupledComponents(parameter_name);
+  for (std::size_t i = 0; i < num; ++i)
+  {
+    const auto number = this->getVar(parameter_name, i)->number();
+
+    // skip AuxVars as off-diagonal jacobian entries are not calculated for them
+    if (number < _jvar_max_size)
+      jvar_map[number] = i;
+  }
+
+  return jvar_map;
 }
 
 template <class T>
