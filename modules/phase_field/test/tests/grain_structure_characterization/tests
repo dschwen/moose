@@ -1,0 +1,27 @@
+[Tests]
+  [./disc]
+    type = 'CSVDiff'
+    input = 'disc.i'
+    csvdiff = 'disc_out.csv'
+    requirement = 'A postprocessor shall be provided to compute the surface area of a single grain'
+    design = 'GrainBoundaryArea.md'
+    issues = '#8448'
+  [../]
+  [./diagonal]
+    type = 'CSVDiff'
+    input = 'diagonal.i'
+    csvdiff = 'diagonal_out.csv'
+    requirement = 'A postprocessor shall be provided to compute the total area of all grain boundaries in a polycrystalline structure'
+    design = 'GrainBoundaryArea.md'
+    issues = '#8448'
+  [../]
+
+  [./tuples]
+    type = 'Exodiff'
+    input = 'tuple.i'
+    exodiff = 'tuple_out.e'
+    requirement = 'An auxkernel shall be provided to compute the sums of k-tuple products of sets of variables'
+    design = 'TupleProductSum.md'
+    issues = '#13812'
+  [../]
+[]
