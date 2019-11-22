@@ -54,6 +54,8 @@ DerivativeParsedMaterialHelper::functionsPostParse()
   // force a value update to get the property at least once and register it for the dependencies
   for (auto & mpd : _mat_prop_descriptors)
     mpd.value();
+
+  // batch compilation
 }
 
 void

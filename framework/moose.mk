@@ -39,6 +39,11 @@ python_version 	:= $(shell python -c 'import sys;print(sys.version_info[0])')
 pyhit_srcfiles  := $(hit_DIR)/hit$(python_version).cpp $(hit_DIR)/lex.cc $(hit_DIR)/parse.cc $(hit_DIR)/braceexpr.cc
 pyhit_LIB       := $(FRAMEWORK_DIR)/../python/hit.so
 
+#
+# FParser JIT defines
+#
+ADDITIONAL_CPPFLAGS += -DADFPARSER_INCLUDES="-I$(FRAMEWORK_DIR)/build/header_symlinks -I$(LIBMESH_DIR)/include"
+
 # some systems have python2/3 but no python2/3-config command - fall back to python-config for them
 ifeq ($(python_version), 2)
 	pyconfig := python2-config
