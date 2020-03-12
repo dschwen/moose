@@ -526,6 +526,8 @@ Parser::parse(const std::string & input_filename)
   exw.registerEvaler("env", env);
   exw.registerEvaler("fparse", fparse_ev);
   exw.registerEvaler("replace", repl);
+  for (const auto & e : _custom_evalers)
+    exw.registerEvaler(e.first, *e.second);
   _root->walk(&exw);
   for (auto & var : exw.used)
     _extracted_vars.insert(var);

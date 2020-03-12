@@ -14,6 +14,7 @@
 #include "MooseTypes.h"
 #include "InputParameters.h"
 #include "Syntax.h"
+#include <libmesh/auto_ptr.h>
 
 #include "hit.h"
 
@@ -151,6 +152,10 @@ public:
    */
   std::string hitCLIFilter(std::string appname, const std::vector<std::string> & argv);
 
+  /// Add a custom brace evaler
+  template <typename T, typename... Args>
+  void addCustomEvaler(const std::string & name, Args... args);
+
 protected:
   /**
    * Helper functions for setting parameters of arbitrary types - bodies are in the .C file
@@ -268,8 +273,18 @@ protected:
   /// The current stream object used for capturing errors during extraction
   std::ostringstream * _current_error_stream;
 
+  /// custom hit brace evalers
+  std::map<std::string, std::unique_ptr<hit::Evaler>> _custom_evalers;
+
 private:
   std::string _errmsg;
   std::string _warnmsg;
   void walkRaw(std::string fullpath, std::string nodepath, hit::Node * n);
 };
+
+template <typename T, typename... Args>
+void
+Parser::addCustomEvaler(const std::string & name, Args... args)
+{
+  _custom_evalers[name] = libmesh_make_unique<T>(&args...);
+}
