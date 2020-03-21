@@ -34,13 +34,11 @@ class RetinaQVTKRenderWindowInteractor(QVTKRenderWindowInteractor):
         """
         super(RetinaQVTKRenderWindowInteractor, self).resizeEvent(event)
 
-        ratio = self.devicePixelRatio()
         w = self.width()
         h = self.height()
-        if (self.parent() is not None) and (w <= self.parent().width()):
-            self.resize(ratio*self.size())
-        self.GetRenderWindow().SetSize(ratio*w, ratio*h)
-        self.GetRenderWindow().GetInteractor().SetSize(ratio*w, ratio*h)
+        self.GetRenderWindow().SetDPI(self.devicePixelRatio() * 100)
+        self.GetRenderWindow().SetSize(w, h)
+        self.GetRenderWindow().GetInteractor().SetSize(w, h)
         self.GetRenderWindow().GetInteractor().ConfigureEvent()
         self.update()
 
