@@ -49,6 +49,7 @@ protected:
 
   std::vector<MaterialPropertyName> _eigenstrain_names;
   std::vector<const MaterialProperty<RankTwoTensor> *> _eigenstrains;
+  std::vector<std::vector<const MaterialProperty<RankTwoTensor> *>> _deigenstrains;
 
   const MaterialProperty<RankTwoTensor> * _global_strain;
 

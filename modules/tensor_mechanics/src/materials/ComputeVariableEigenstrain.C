@@ -27,26 +27,25 @@ ComputeVariableEigenstrain::ComputeVariableEigenstrain(const InputParameters & p
     _num_args(coupledComponents("args")),
     _dprefactor(_num_args),
     _d2prefactor(_num_args),
-    _delastic_strain(_num_args),
-    _d2elastic_strain(_num_args)
+    _deigenstrain(_num_args),
+    _d2eigenstrain(_num_args)
 {
-  // fetch prerequisite derivatives and build elastic_strain derivatives and cross-derivatives
+  // fetch prerequisite derivatives and build eigenstrain derivatives and cross-derivatives
   for (unsigned int i = 0; i < _num_args; ++i)
   {
     const VariableName & iname = getVar("args", i)->name();
     _dprefactor[i] = &getMaterialPropertyDerivative<Real>("prefactor", iname);
-    _delastic_strain[i] =
-        &declarePropertyDerivative<RankTwoTensor>(_base_name + "elastic_strain", iname);
+    _deigenstrain[i] = &declarePropertyDerivative<RankTwoTensor>(_eigenstrain_name, iname);
 
     _d2prefactor[i].resize(_num_args);
-    _d2elastic_strain[i].resize(_num_args);
+    _d2eigenstrain[i].resize(_num_args);
 
     for (unsigned int j = i; j < _num_args; ++j)
     {
       const VariableName & jname = getVar("args", j)->name();
       _d2prefactor[i][j] = &getMaterialPropertyDerivative<Real>("prefactor", iname, jname);
-      _d2elastic_strain[i][j] =
-          &declarePropertyDerivative<RankTwoTensor>(_base_name + "elastic_strain", iname, jname);
+      _d2eigenstrain[i][j] =
+          &declarePropertyDerivative<RankTwoTensor>(_eigenstrain_name, iname, jname);
     }
   }
 }
@@ -56,11 +55,11 @@ ComputeVariableEigenstrain::computeQpEigenstrain()
 {
   ComputeEigenstrain::computeQpEigenstrain();
 
-  // Define derivatives of the elastic strain
+  // Define derivatives of the eigen strain
   for (unsigned int i = 0; i < _num_args; ++i)
   {
-    (*_delastic_strain[i])[_qp] = -_eigen_base_tensor * (*_dprefactor[i])[_qp];
+    (*_deigenstrain[i])[_qp] = _eigen_base_tensor * (*_dprefactor[i])[_qp];
     for (unsigned int j = i; j < _num_args; ++j)
-      (*_d2elastic_strain[i][j])[_qp] = -_eigen_base_tensor * (*_d2prefactor[i][j])[_qp];
+      (*_d2eigenstrain[i][j])[_qp] = _eigen_base_tensor * (*_d2prefactor[i][j])[_qp];
   }
 }

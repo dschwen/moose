@@ -34,8 +34,8 @@ protected:
   /// second derivatives of the prefactor w.r.t. to the args
   std::vector<std::vector<const MaterialProperty<Real> *>> _d2prefactor;
 
-  /// first derivatives of the elastic strain w.r.t. to the args
-  std::vector<MaterialProperty<RankTwoTensor> *> _delastic_strain;
-  /// second derivatives of the elastic strain w.r.t. to the args
-  std::vector<std::vector<MaterialProperty<RankTwoTensor> *>> _d2elastic_strain;
+  /// first derivatives of the eigenstrain w.r.t. to the args
+  std::vector<MaterialProperty<RankTwoTensor> *> _deigenstrain;
+  /// second derivatives of the eigenstrain w.r.t. to the args
+  std::vector<std::vector<MaterialProperty<RankTwoTensor> *>> _d2eigenstrain;
 };

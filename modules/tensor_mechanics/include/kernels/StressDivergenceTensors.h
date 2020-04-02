@@ -10,6 +10,8 @@
 #pragma once
 
 #include "ALEKernel.h"
+#include "DerivativeMaterialInterface.h"
+#include "JvarMapInterface.h"
 #include "RankTwoTensor.h"
 #include "RankFourTensor.h"
 
@@ -20,7 +22,8 @@
  * RankFourTensor and RankTwoTensors instead of SymmElasticityTensors and SymmTensors.  This is done
  * to allow for more mathematical transparancy.
  */
-class StressDivergenceTensors : public ALEKernel
+class StressDivergenceTensors
+  : public DerivativeMaterialInterface<JvarMapKernelInterface<ALEKernel>>
 {
 public:
   static InputParameters validParams();
@@ -50,6 +53,7 @@ protected:
 
   /// The stress tensor that the divergence operator operates on
   const MaterialProperty<RankTwoTensor> & _stress;
+  std::vector<const MaterialProperty<RankTwoTensor> *> _dstress;
   const MaterialProperty<RankFourTensor> & _Jacobian_mult;
 
   std::vector<RankFourTensor> _finite_deform_Jacobian_mult;
@@ -65,13 +69,10 @@ protected:
   unsigned int _ndisp;
 
   /// Displacement variables IDs
-  std::vector<unsigned int> _disp_var;
+  JvarMap _disp_map;
 
   const bool _temp_coupled;
   const unsigned int _temp_var;
-
-  /// d(strain)/d(temperature), if computed by ComputeThermalExpansionEigenstrain
-  std::vector<const MaterialProperty<RankTwoTensor> *> _deigenstrain_dT;
 
   const bool _out_of_plane_strain_coupled;
   const VariableValue * _out_of_plane_strain;

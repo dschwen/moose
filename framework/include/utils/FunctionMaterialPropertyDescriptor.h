@@ -77,8 +77,8 @@ public:
    */
   bool dependsOn(const std::string & var) const;
 
-  /// builds a list of dependent variables (exactly all variabled for which depends on returns true)
-  std::vector<VariableName> getDependentVariables();
+  /// builds a list of dependent variables (exactly all variables for which depends on returns true)
+  const std::vector<VariableName> & getDependentVariables() { return _all_vars; }
 
   /// output the internal state of this descriptor for debugging purposes
   void printDebug();
@@ -87,6 +87,8 @@ public:
   void updatePropertyName();
 
 private:
+  void updateAllVariables();
+
   void parseDerivative(const std::string &);
   void parseDependentVariables(const std::string &);
 
@@ -98,6 +100,7 @@ private:
 
   std::vector<VariableName> _dependent_vars;
   std::vector<VariableName> _derivative_vars;
+  std::vector<VariableName> _all_vars;
 
   /// material property value (this is lazily updated and cached when read through value())
   mutable const MaterialProperty<Real> * _value;

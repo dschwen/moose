@@ -48,6 +48,7 @@ FunctionMaterialPropertyDescriptor::FunctionMaterialPropertyDescriptor(
     _base_name(rhs._base_name),
     _dependent_vars(rhs._dependent_vars),
     _derivative_vars(rhs._derivative_vars),
+    _all_vars(rhs._all_vars),
     _value(nullptr),
     _parent(rhs._parent),
     _property_name(rhs._property_name)
@@ -60,6 +61,7 @@ FunctionMaterialPropertyDescriptor::FunctionMaterialPropertyDescriptor(
     _base_name(rhs._base_name),
     _dependent_vars(rhs._dependent_vars),
     _derivative_vars(rhs._derivative_vars),
+    _all_vars(rhs._all_vars),
     _value(nullptr),
     _parent(parent),
     _property_name(rhs._property_name)
@@ -82,6 +84,7 @@ FunctionMaterialPropertyDescriptor::addDerivative(const VariableName & var)
   _derivative_vars.push_back(var);
   _value = nullptr;
   updatePropertyName();
+  updateAllVariables();
 }
 
 bool
@@ -91,14 +94,17 @@ FunctionMaterialPropertyDescriptor::dependsOn(const std::string & var) const
          std::find(_derivative_vars.begin(), _derivative_vars.end(), var) != _derivative_vars.end();
 }
 
-std::vector<VariableName>
-FunctionMaterialPropertyDescriptor::getDependentVariables()
+void
+FunctionMaterialPropertyDescriptor::updateAllVariables()
 {
+  // use a set to eliminate duplicates
   std::set<VariableName> all;
   all.insert(_dependent_vars.begin(), _dependent_vars.end());
   all.insert(_derivative_vars.begin(), _derivative_vars.end());
 
-  return std::vector<VariableName>(all.begin(), all.end());
+  // convert to a vector
+  _all_vars.clear();
+  _all_vars.insert(_all_vars.begin(), all.begin(), all.end());
 }
 
 void
@@ -111,7 +117,7 @@ FunctionMaterialPropertyDescriptor::parseDerivative(const std::string & expressi
   {
     // no derivative requested
     parseDependentVariables(expression);
-
+    updateAllVariables();
     return;
   }
   else if (open != std::string::npos && close != std::string::npos &&
@@ -137,7 +143,7 @@ FunctionMaterialPropertyDescriptor::parseDerivative(const std::string & expressi
         // remove function from the _derivative_vars vector
         _derivative_vars.erase(_derivative_vars.begin());
         updatePropertyName();
-
+        updateAllVariables();
         return;
       }
     }
@@ -146,6 +152,7 @@ FunctionMaterialPropertyDescriptor::parseDerivative(const std::string & expressi
       parseDependentVariables(arguments.substr(0, close2 + 1));
       MooseUtils::tokenize(arguments.substr(close2 + 2), _derivative_vars, 0, ",");
       updatePropertyName();
+      updateAllVariables();
       return;
     }
   }

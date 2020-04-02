@@ -29,6 +29,7 @@ ComputeStrainBase::validParams()
   params.addParam<MaterialPropertyName>("global_strain",
                                         "Optional material property holding a global strain "
                                         "tensor applied to the mesh as a whole");
+  params.addCoupledVar("args", "Variables the eigenstrains depend on");
   params.suppressParameter<bool>("use_displaced_mesh");
   return params;
 }
@@ -43,6 +44,7 @@ ComputeStrainBase::ComputeStrainBase(const InputParameters & parameters)
     _total_strain(declareProperty<RankTwoTensor>(_base_name + "total_strain")),
     _eigenstrain_names(getParam<std::vector<MaterialPropertyName>>("eigenstrain_names")),
     _eigenstrains(_eigenstrain_names.size()),
+    _deigenstrains(_eigenstrain_names.size()),
     _global_strain(isParamValid("global_strain")
                        ? &getMaterialProperty<RankTwoTensor>(_base_name + "global_strain")
                        : nullptr),
@@ -50,10 +52,18 @@ ComputeStrainBase::ComputeStrainBase(const InputParameters & parameters)
                                    !isBoundaryMaterial()),
     _current_elem_volume(_assembly.elemVolume())
 {
+  // we don't use all coupled variables here to avoid including the displacements
+  auto nargs = coupledComponents("args");
+
   for (unsigned int i = 0; i < _eigenstrains.size(); ++i)
   {
     _eigenstrain_names[i] = _base_name + _eigenstrain_names[i];
     _eigenstrains[i] = &getMaterialProperty<RankTwoTensor>(_eigenstrain_names[i]);
+
+    _deigenstrains[i].resize(nargs);
+    for (unsigned int j = 0; j < nargs; ++j)
+      _deigenstrains[i][j] = &getMaterialPropertyDerivative<RankTwoTensor>(
+          _eigenstrain_names[i], getVar("args", j)->name());
   }
 
   if (_ndisp == 1 && _volumetric_locking_correction)
