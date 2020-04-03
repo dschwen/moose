@@ -10,7 +10,6 @@
 #pragma once
 
 #include "ALEKernel.h"
-#include "DerivativeMaterialInterface.h"
 #include "JvarMapInterface.h"
 #include "RankTwoTensor.h"
 #include "RankFourTensor.h"
@@ -22,8 +21,7 @@
  * RankFourTensor and RankTwoTensors instead of SymmElasticityTensors and SymmTensors.  This is done
  * to allow for more mathematical transparancy.
  */
-class StressDivergenceTensors
-  : public DerivativeMaterialInterface<JvarMapKernelInterface<ALEKernel>>
+class StressDivergenceTensors : public JvarMapKernelInterface<ALEKernel>
 {
 public:
   static InputParameters validParams();

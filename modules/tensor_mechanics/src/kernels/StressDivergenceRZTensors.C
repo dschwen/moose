@@ -84,12 +84,12 @@ StressDivergenceRZTensors::computeQpJacobian()
 Real
 StressDivergenceRZTensors::computeQpOffDiagJacobian(unsigned int jvar)
 {
-  for (unsigned int i = 0; i < _ndisp; ++i)
-  {
-    if (jvar == _disp_var[i])
-      return calculateJacobian(_component, i);
-  }
+  // off-diagonal Jacobian with respect to a coupled displacement component
+  auto i = mapJvarToCvar(jvar, _disp_map);
+  if (i >= 0)
+    return calculateJacobian(_component, i);
 
+#if 0
   if (_temp_coupled && jvar == _temp_var)
   {
     RankTwoTensor total_deigenstrain_dT;
@@ -117,6 +117,7 @@ StressDivergenceRZTensors::computeQpOffDiagJacobian(unsigned int jvar)
       return jac * _phi[_j][_qp];
     }
   }
+#endif
 
   return 0.0;
 }

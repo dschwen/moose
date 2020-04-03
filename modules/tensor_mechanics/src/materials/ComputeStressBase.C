@@ -19,6 +19,7 @@ ComputeStressBase::validParams()
                                "Optional parameter that allows the user to define "
                                "multiple mechanics material systems on the same "
                                "block, i.e. for multiple phases");
+  params.addCoupledVar("args", "Variables the eigenstrains depend on");
   params.suppressParameter<bool>("use_displaced_mesh");
   return params;
 }
@@ -26,15 +27,25 @@ ComputeStressBase::validParams()
 ComputeStressBase::ComputeStressBase(const InputParameters & parameters)
   : DerivativeMaterialInterface<Material>(parameters),
     _base_name(isParamValid("base_name") ? getParam<std::string>("base_name") + "_" : ""),
+    _n_args(coupledComponents("args")),
     _mechanical_strain(getMaterialPropertyByName<RankTwoTensor>(_base_name + "mechanical_strain")),
+    _dmechanical_strain(_n_args),
     _stress(declareProperty<RankTwoTensor>(_base_name + "stress")),
+    _dstress(_n_args),
     _elastic_strain(declareProperty<RankTwoTensor>(_base_name + "elastic_strain")),
     _extra_stress(getDefaultMaterialProperty<RankTwoTensor>(_base_name + "extra_stress")),
     _Jacobian_mult(declareProperty<RankFourTensor>(_base_name + "Jacobian_mult"))
 {
-
   if (getParam<bool>("use_displaced_mesh"))
     mooseError("The stress calculator needs to run on the undisplaced mesh.");
+
+  for (std::size_t i = 0; i < _n_args; ++i)
+  {
+    auto iname = getVar("args", i)->name();
+    _dmechanical_strain[i] =
+        &getMaterialPropertyDerivative<RankTwoTensor>(_base_name + "mechanical_strain", iname);
+    _dstress[i] = &declarePropertyDerivative<RankTwoTensor>(_base_name + "stress", iname);
+  }
 }
 
 void

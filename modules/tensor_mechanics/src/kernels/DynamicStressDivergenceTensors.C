@@ -105,24 +105,11 @@ DynamicStressDivergenceTensors::computeQpJacobian()
 Real
 DynamicStressDivergenceTensors::computeQpOffDiagJacobian(unsigned int jvar)
 {
-  bool active = true;
+  if (_static_initialization && _t == _dt)
+    return StressDivergenceTensors::computeQpOffDiagJacobian(jvar);
+  else if (_dt > 0)
+    return StressDivergenceTensors::computeQpOffDiagJacobian(jvar) *
+           (1.0 + _alpha + (1.0 + _alpha) * _zeta[_qp] / _dt);
 
-  for (unsigned int i = 0; i < _ndisp; ++i)
-    if (jvar == _disp_var[i])
-      active = true;
-
-  if (active)
-  {
-    if (_static_initialization && _t == _dt)
-      return StressDivergenceTensors::computeQpOffDiagJacobian(jvar);
-    else if (_dt > 0)
-      return StressDivergenceTensors::computeQpOffDiagJacobian(jvar) *
-             (1.0 + _alpha + (1.0 + _alpha) * _zeta[_qp] / _dt);
-    else
-      return 0.0;
-  }
-  if (_temp_coupled && jvar == _temp_var)
-    return 0.0;
-
-  return 0;
+  return 0.0;
 }

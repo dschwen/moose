@@ -39,10 +39,17 @@ protected:
   /// multi-material systems
   const std::string _base_name;
 
+  /// number of dependent Variables
+  std::size_t _n_args;
+
   /// Mechanical strain material property
   const MaterialProperty<RankTwoTensor> & _mechanical_strain;
+  std::vector<const MaterialProperty<RankTwoTensor> *> _dmechanical_strain;
+
   /// Stress material property
   MaterialProperty<RankTwoTensor> & _stress;
+  std::vector<MaterialProperty<RankTwoTensor> *> _dstress;
+
   /// Elastic strain material property
   MaterialProperty<RankTwoTensor> & _elastic_strain;
 

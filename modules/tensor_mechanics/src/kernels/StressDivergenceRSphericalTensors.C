@@ -58,12 +58,13 @@ StressDivergenceRSphericalTensors::computeQpJacobian()
 Real
 StressDivergenceRSphericalTensors::computeQpOffDiagJacobian(unsigned int jvar)
 {
-  for (unsigned int i = 0; i < _ndisp; ++i)
-    if (jvar == _disp_var[i])
-      return calculateJacobian(_component, i);
+  // off-diagonal Jacobian with respect to a coupled displacement component
+  auto i = mapJvarToCvar(jvar, _disp_map);
+  if (i >= 0)
+    return calculateJacobian(_component, i);
 
-  if (_temp_coupled && jvar == _temp_var)
-    return 0.0;
+  // if (_temp_coupled && jvar == _temp_var)
+  //   return 0.0;
 
   return 0.0;
 }

@@ -59,7 +59,7 @@ StressDivergenceTensors::validParams()
 }
 
 StressDivergenceTensors::StressDivergenceTensors(const InputParameters & parameters)
-  : DerivativeMaterialInterface<JvarMapKernelInterface<ALEKernel>>(parameters),
+  : JvarMapKernelInterface<ALEKernel>(parameters),
     _base_name(isParamValid("base_name") ? getParam<std::string>("base_name") + "_" : ""),
     _use_finite_deform_jacobian(getParam<bool>("use_finite_deform_jacobian")),
     _stress(getMaterialPropertyByName<RankTwoTensor>(_base_name + "stress")),
@@ -89,7 +89,7 @@ StressDivergenceTensors::StressDivergenceTensors(const InputParameters & paramet
     mooseError("The number of displacement variables supplied must match the mesh dimension");
 
   // fetch stress derivatives w.r.t. to all coupled variables
-  for (std::size_t i = 0; i < _nargs; ++i)
+  for (std::size_t i = 0; i < _n_args; ++i)
     _dstress[i] = &getMaterialPropertyDerivative<RankTwoTensor>(_base_name + "stress", i);
 
   if (_use_finite_deform_jacobian)
@@ -275,14 +275,9 @@ StressDivergenceTensors::computeQpOffDiagJacobian(unsigned int jvar)
 {
   // off-diagonal Jacobian with respect to a coupled displacement component
   auto coupled_component = mapJvarToCvar(jvar, _disp_map);
-  if (coupled_component >= 0)
+  if (coupled_component >= 0 &&
+      !(_out_of_plane_direction != 2 && coupled_component == _out_of_plane_direction))
   {
-    if (_out_of_plane_direction != 2)
-    {
-      if (coupled_component == _out_of_plane_direction)
-        continue;
-    }
-
     if (_use_finite_deform_jacobian)
       return ElasticityTensorTools::elasticJacobian(_finite_deform_Jacobian_mult[_qp],
                                                     _component,
@@ -337,13 +332,13 @@ StressDivergenceTensors::computeQpOffDiagJacobian(unsigned int jvar)
 
   // off-diagonal Jacobian with respect to another coupled variable
   auto cvar = mapJvarToCvar(jvar);
-  Real jacobian = _dstress[cvar][_qp].row(_component) * _grad_test[_i][_qp];
+  Real jacobian = (*_dstress[cvar])[_qp].row(_component) * _grad_test[_i][_qp];
   if (_volumetric_locking_correction)
-    jacobian += _dstress[cvar][_qp].trace() / 3.0 *
+    jacobian += (*_dstress[cvar])[_qp].trace() / 3.0 *
                 (_avg_grad_test[_i][_component] - _grad_test[_i][_qp](_component));
   if (_ndisp != 3 && _out_of_plane_strain_coupled && _use_displaced_mesh)
     jacobian *= std::exp((*_out_of_plane_strain)[_qp]);
-  return jacobian;
+  return jacobian * _phi[_j][_qp];
 }
 
 void
