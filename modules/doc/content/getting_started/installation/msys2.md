@@ -139,7 +139,7 @@ Start the configure and build process with...
 ```
 mkdir build
 cd build
-../configure --with-methods='opt' --prefix=$HOME/projects/libmesh/installed --with-static=yes --with-shared=no --enable-static --disable-shared --enable-netcdf-required NETCDF_DIR=C:/msys64/mingw64
+../configure --with-methods='opt' --prefix=$HOME/projects/libmesh/installed --with-static=yes --with-shared=no --enable-static --disable-shared --enable-unique-id --disable-maintainer-mode --enable-petsc-hypre-required --enable-metaphysicl-required --enable-netcdf-required NETCDF_DIR=C:/msys64/mingw64
 make && make install
 ```
 
