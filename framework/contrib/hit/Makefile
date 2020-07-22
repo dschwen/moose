@@ -29,6 +29,9 @@ bindings: hit.so
 hit.so: parse.cc lex.cc braceexpr.cc $(HITCPP)
 	$(CXX) -std=c++11 -w -fPIC -lstdc++ -shared -L$(PYTHONPREFIX)/lib $(PYTHONCFLAGS) $(DYNAMIC_LOOKUP) $^ -o $@
 
+hit.js: js.cc parse.cc lex.cc braceexpr.cc braceexpr.h lex.h parse.h
+	emcc -Os --bind -o hit.js js.cc parse.cc braceexpr.cc lex.cc
+
 $(HITCPP): hit.pyx chit.pxd
 	cython -3 -o $@ --cplus $<
 
