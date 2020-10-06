@@ -9,14 +9,14 @@
 
 #pragma once
 
-#include "ADNodalBC.h"
+#include "ADIntegratedBC.h"
 
 /**
  * Boundary condition of a Dirichlet type
  *
  * Sets the value in the node
  */
-class InclinedDirichletBC : public ADNodalBC
+class InclinedDirichletBC : public ADIntegratedBC
 {
 public:
   static InputParameters validParams();
@@ -30,7 +30,7 @@ protected:
   const RealVectorValue & _normal;
 
   /// The other displacements and their normal vector component
-  std::vector<std::pair<const ADReal *, Real>> _disp_norm;
+  std::vector<std::pair<const ADVariableValue *, Real>> _disp_norm;
 
   /// the normal vector component associated with the current variable
   Real _my_normal;
