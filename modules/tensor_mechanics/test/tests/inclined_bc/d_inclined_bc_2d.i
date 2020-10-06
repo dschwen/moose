@@ -109,4 +109,5 @@
 
 [Outputs]
   exodus = true
+  execute_on = 'NONLINEAR TIMESTEP_END'
 []

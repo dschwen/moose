@@ -15,7 +15,7 @@ registerMooseObject("MooseApp", InclinedDirichletBC);
 InputParameters
 InclinedDirichletBC::validParams()
 {
-  InputParameters params = ADDirichletBCBase::validParams();
+  InputParameters params = ADNodalBC::validParams();
   params.addRequiredParam<RealVectorValue>("normal", "Surface normal of the boundary");
   params.declareControllable("normal");
   params.addCoupledVar("displacements", "Displacement variables");
@@ -23,7 +23,7 @@ InclinedDirichletBC::validParams()
 }
 
 InclinedDirichletBC::InclinedDirichletBC(const InputParameters & parameters)
-  : ADDirichletBCBase(parameters), _normal(getParam<RealVectorValue>("normal"))
+  : ADNodalBC(parameters), _normal(getParam<RealVectorValue>("normal"))
 {
   auto ndisp = coupledComponents("displacements");
 
@@ -33,20 +33,16 @@ InclinedDirichletBC::InclinedDirichletBC(const InputParameters & parameters)
     if (disp->number() == _var.number())
       _my_normal = _normal(i);
     else
-      _disp_norm.emplace_back(&adCoupledValue("displacements", i), _normal(i));
+      _disp_norm.emplace_back(&adCoupledNodalValue<Real>("displacements", i), _normal(i));
   }
-
-  if (_my_normal == 0.0)
-    paramError("normal",
-               "Cannot apply BC to the displacement direction that has a zero normal comonent");
 }
 
 ADReal
-InclinedDirichletBC::computeQpValue()
+InclinedDirichletBC::computeQpResidual()
 {
   ADReal sum = 0.0;
   for (auto & dn : _disp_norm)
-    sum += (*dn.first)[_qp] * dn.second;
+    sum += (*dn.first) * dn.second;
 
-  return -sum / _my_normal;
+  return _u * _my_normal + sum;
 }
