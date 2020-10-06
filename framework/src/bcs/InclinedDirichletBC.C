@@ -15,7 +15,7 @@ registerMooseObject("MooseApp", InclinedDirichletBC);
 InputParameters
 InclinedDirichletBC::validParams()
 {
-  InputParameters params = ADIntegratedBC::validParams();
+  InputParameters params = ADNodalBC::validParams();
   params.addRequiredParam<RealVectorValue>("normal", "Surface normal of the boundary");
   params.declareControllable("normal");
   params.addCoupledVar("displacements", "Displacement variables");
@@ -23,7 +23,7 @@ InclinedDirichletBC::validParams()
 }
 
 InclinedDirichletBC::InclinedDirichletBC(const InputParameters & parameters)
-  : ADIntegratedBC(parameters), _normal(getParam<RealVectorValue>("normal"))
+  : ADNodalBC(parameters), _normal(getParam<RealVectorValue>("normal"))
 {
   auto ndisp = coupledComponents("displacements");
 
@@ -33,7 +33,7 @@ InclinedDirichletBC::InclinedDirichletBC(const InputParameters & parameters)
     if (disp->number() == _var.number())
       _my_normal = _normal(i);
     else
-      _disp_norm.emplace_back(&adCoupledValue("displacements", i), _normal(i));
+      _disp_norm.emplace_back(&adCoupledNodalValue<Real>("displacements", i), _normal(i));
   }
 }
 
@@ -42,9 +42,7 @@ InclinedDirichletBC::computeQpResidual()
 {
   ADReal sum = 0.0;
   for (auto & dn : _disp_norm)
-    sum += (*dn.first)[_qp] * dn.second;
+    sum += (*dn.first) * dn.second;
 
-  // std::cout << _u[_qp] * _my_normal + sum << '\n';
-  auto res = _u[_qp] * _my_normal + sum;
-  return res * _test[_i][_qp];
+  return _u * _my_normal + sum;
 }
