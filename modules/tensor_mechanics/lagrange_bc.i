@@ -13,6 +13,12 @@
     new_boundary = outer
     block = 1
   []
+  [lowerd]
+    type = LowerDBlockFromSidesetGenerator
+    input = boundary
+    new_block_id = 2
+    sidesets = outer
+  []
 []
 
 [GlobalParams]
@@ -21,7 +27,9 @@
 
 [Variables]
   [lambda]
-    # block = 2
+    family = MONOMIAL
+    order = CONSTANT
+    block = 2
   []
 []
 
@@ -40,18 +48,11 @@
   []
 []
 
-[BCs]
-  [lambda]
-    type = LagrangeInclinedNoDisplacementMultiplier
-    variable = lambda
-    boundary = outer
-  []
-[]
-
 [Kernels]
-  [diff]
-    type = ADDiffusion
+  [lambda]
+    type = LagrangeInclinedNoDisplacement
     variable = lambda
+    block = 2
   []
 []
 

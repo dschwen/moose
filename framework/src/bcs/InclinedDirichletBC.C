@@ -44,5 +44,5 @@ InclinedDirichletBC::computeQpResidual()
   for (auto & dn : _disp_norm)
     sum += (*dn.first) * dn.second;
 
-  return _u * _my_normal + sum;
+  return (_u * _my_normal + sum) * _my_normal;
 }
