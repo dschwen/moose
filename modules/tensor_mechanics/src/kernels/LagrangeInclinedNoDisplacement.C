@@ -20,11 +20,7 @@ LagrangeInclinedNoDisplacement::validParams()
 }
 
 LagrangeInclinedNoDisplacement::LagrangeInclinedNoDisplacement(const InputParameters & parameters)
-  : ADKernel(parameters),
-    _fe(FEGenericBase<Real>::build(
-        _mesh.dimension(), FEType(_mesh.hasSecondOrderElements() ? SECOND : FIRST, LAGRANGE))),
-    _normals(_fe->get_normals()),
-    _disp(adCoupledValues("displacements"))
+  : ADKernel(parameters), _normals(_assembly.adNormals()), _disp(adCoupledValues("displacements"))
 {
 }
 
@@ -37,11 +33,8 @@ LagrangeInclinedNoDisplacement::precalculateResidual()
   // query side id corresponding to current lower dim element
   auto s = ip->which_side_am_i(_current_elem);
 
-  // attach proper quadrature rule
-  _fe->attach_quadrature_rule(_assembly.writeableQRule());
-
   // update normals
-  _fe->reinit(ip, s);
+  _assembly.reinit(ip, s);
 }
 
 ADReal
