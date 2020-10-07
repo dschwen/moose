@@ -27,8 +27,11 @@ protected:
 
   virtual ADReal computeQpResidual() override;
 
+  /// custom finite element object for normals computation
+  std::unique_ptr<FEGenericBase<Real>> _fe;
+
   /// normals
-  const MooseArray<ADPoint> & _normals;
+  const std::vector<Point> & _normals;
 
   /// displacement variables
   const std::vector<const ADVariableValue *> _disp;
