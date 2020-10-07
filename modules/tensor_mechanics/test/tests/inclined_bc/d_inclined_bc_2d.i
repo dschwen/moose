@@ -20,6 +20,28 @@
     vector_value = '0 0 -60'
     input = generated_mesh
   []
+  [lower]
+    type = LowerDBlockFromSidesetGenerator
+    input = rotate
+    sidesets = 'right bottom'
+    new_block_name = lower
+  []
+[]
+
+[Variables]
+  [lambda]
+    order = CONSTANT
+    family = MONOMIAL
+    block = lower
+  []
+[]
+
+[Kernels]
+  [lambda]
+    type = LagrangeInclinedNoDisplacement
+    variable = lambda
+    block = lower
+  []
 []
 
 [Modules/TensorMechanics/Master/All]
@@ -28,53 +50,53 @@
 []
 
 [BCs]
-  [./Pressure]
-    [./top]
+  [Pressure]
+    [top]
       boundary = top
       function = '-1000*t'
-    [../]
-  [../]
+    []
+  []
 
-  [./right_x]
-    type = InclinedDirichletBC
+  [right_x]
+    type = LagrangeInclinedNoDisplacementBC
     variable = disp_x
+    component = 0
     boundary = right
-    displacements = 'disp_x disp_y'
-    normal = '-0.866025 -0.5 0'
-  [../]
-  [./right_y]
-    type = InclinedDirichletBC
+    lambda = lambda
+  []
+  [right_y]
+    type = LagrangeInclinedNoDisplacementBC
     variable = disp_y
+    component = 1
     boundary = right
-    displacements = 'disp_x disp_y'
-    normal = '-0.866025 -0.5 0'
-  [../]
+    lambda = lambda
+  []
 
-  [./bottom_x]
-    type = InclinedDirichletBC
+  [bottom_x]
+    type = LagrangeInclinedNoDisplacementBC
     variable = disp_x
+    component = 0
     boundary = bottom
-    displacements = 'disp_x disp_y'
-    normal = '0.5 -0.866025 0'
-  [../]
-  [./bottom_y]
-    type = InclinedDirichletBC
+    lambda = lambda
+  []
+  [bottom_y]
+    type = LagrangeInclinedNoDisplacementBC
     variable = disp_y
+    component = 1
     boundary = bottom
-    displacements = 'disp_x disp_y'
-    normal = '0.5 -0.866025 0'
-  [../]
+    lambda = lambda
+  []
 []
 
 [Materials]
-  [./elasticity_tensor]
+  [elasticity_tensor]
     type = ComputeIsotropicElasticityTensor
     youngs_modulus = 1e6
     poissons_ratio = 0.3
-  [../]
-  [./stress]
+  []
+  [stress]
     type = ComputeFiniteStrainElasticStress
-  [../]
+  []
 []
 
 [Executioner]
@@ -101,10 +123,10 @@
 []
 
 [Preconditioning]
-  [./smp]
+  [smp]
     type = SMP
     full = true
-  [../]
+  []
 []
 
 [Outputs]
