@@ -9,23 +9,21 @@
 
 #pragma once
 
-#include "ADIntegratedBC.h"
+#include "IntegratedBC.h"
 
 /**
- *
+ * Compensate stress at the surface by an applied pressure
  */
-class LagrangeInclinedNoDisplacementBC : public ADIntegratedBC
+class NitscheInclinedNoDisplacementBC : public IntegratedBC
 {
 public:
   static InputParameters validParams();
 
-  LagrangeInclinedNoDisplacementBC(const InputParameters & parameters);
+  NitscheInclinedNoDisplacementBC(const InputParameters & parameters);
 
 protected:
-  virtual ADReal computeQpResidual();
+  virtual Real computeQpResidual();
 
   unsigned int _component;
-
-  // const std::vector<const ADVariableValue *> _disp;
-  const ADVariableValue & _lambda;
+  const MaterialProperty<RankTwoTensor> & _stress;
 };

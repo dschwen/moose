@@ -17,7 +17,7 @@
   [rotate]
     type = TransformGenerator
     transform = ROTATE
-    vector_value = '0 0 -60'
+    vector_value = '0 0 -20'
     input = generated_mesh
   []
 []
@@ -37,13 +37,15 @@
   [./InclinedNoDisplacementBC]
     [./right]
       boundary = right
-      penalty = 1.0e8
+      penalty = 1.0e4
       displacements = 'disp_x disp_y'
+      stress = stress
     [../]
     [./bottom]
       boundary = bottom
-      penalty = 1.0e8
+      penalty = 1.0e4
       displacements = 'disp_x disp_y'
+      stress = stress
     [../]
   [../]
 []

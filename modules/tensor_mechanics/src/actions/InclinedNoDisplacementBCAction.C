@@ -28,6 +28,11 @@ InclinedNoDisplacementBCAction::validParams()
       "The displacements appropriate for the simulation geometry and coordinate system");
   params.addParam<std::vector<AuxVariableName>>("save_in", "The displacement residuals");
 
+  params.addParam<MaterialPropertyName>(
+      "stress",
+      "Name of the stress material property. If specified a compensatory pressure is applied to "
+      "improve BC enforement");
+
   params.addRequiredParam<Real>("penalty", "Penalty parameter");
   return params;
 }
@@ -49,23 +54,39 @@ InclinedNoDisplacementBCAction::InclinedNoDisplacementBCAction(const InputParame
 void
 InclinedNoDisplacementBCAction::act()
 {
-  const std::string kernel_name = "PenaltyInclinedNoDisplacementBC";
+  const bool use_stress = isParamValid("stress");
 
-  // Create pressure BCs
+  // Create pressure and penalty BCs
   for (unsigned int i = 0; i < _ndisp; ++i)
   {
-    // Create unique kernel name for each of the components
-    std::string unique_kernel_name = kernel_name + "_" + _name + "_" + Moose::stringify(i);
+    {
+      const std::string name = "PenaltyInclinedNoDisplacementBC";
+      InputParameters params = _factory.getValidParams(name);
+      params.applyParameters(parameters());
+      params.set<bool>("use_displaced_mesh") = false;
+      params.set<unsigned int>("component") = i;
+      params.set<NonlinearVariableName>("variable") = _displacements[i];
 
-    InputParameters params = _factory.getValidParams(kernel_name);
-    params.applyParameters(parameters());
-    params.set<bool>("use_displaced_mesh") = false;
-    params.set<unsigned int>("component") = i;
-    params.set<NonlinearVariableName>("variable") = _displacements[i];
+      if (_save_in.size() == _ndisp)
+        params.set<std::vector<AuxVariableName>>("save_in") = {_save_in[i]};
 
-    if (_save_in.size() == _ndisp)
-      params.set<std::vector<AuxVariableName>>("save_in") = {_save_in[i]};
+      _problem->addBoundaryCondition(name, name + "_" + _name + "_" + Moose::stringify(i), params);
+    }
 
-    _problem->addBoundaryCondition(kernel_name, unique_kernel_name, params);
+    if (use_stress)
+    {
+      const std::string name = "NitscheInclinedNoDisplacementBC";
+      InputParameters params = _factory.getValidParams(name);
+      params.applyParameters(parameters());
+      params.set<bool>("use_displaced_mesh") = false;
+      params.set<unsigned int>("component") = i;
+      params.set<NonlinearVariableName>("variable") = _displacements[i];
+      params.set<MaterialPropertyName>("stress") = getParam<MaterialPropertyName>("stress");
+
+      // if (_save_in.size() == _ndisp)
+      //   params.set<std::vector<AuxVariableName>>("save_in") = {_save_in[i]};
+
+      _problem->addBoundaryCondition(name, name + "_" + _name + "_" + Moose::stringify(i), params);
+    }
   }
 }
