@@ -33,7 +33,9 @@ InclinedNoDisplacementBCAction::validParams()
       "Name of the stress material property. If specified a compensatory pressure is applied to "
       "improve BC enforement");
 
-  params.addRequiredParam<Real>("penalty", "Penalty parameter");
+  params.addParam<std::vector<VariableName>>("lambda",
+                                             "If specified a lagrange multiplier term is added'");
+  params.addParam<Real>("penalty", "Penalty parameter");
   return params;
 }
 
@@ -54,11 +56,14 @@ InclinedNoDisplacementBCAction::InclinedNoDisplacementBCAction(const InputParame
 void
 InclinedNoDisplacementBCAction::act()
 {
+  const bool use_penalty = isParamValid("penalty");
   const bool use_stress = isParamValid("stress");
+  const bool use_lagrange = isParamValid("lambda");
 
   // Create pressure and penalty BCs
   for (unsigned int i = 0; i < _ndisp; ++i)
   {
+    if (use_penalty)
     {
       const std::string name = "PenaltyInclinedNoDisplacementBC";
       InputParameters params = _factory.getValidParams(name);
@@ -85,6 +90,18 @@ InclinedNoDisplacementBCAction::act()
 
       // if (_save_in.size() == _ndisp)
       //   params.set<std::vector<AuxVariableName>>("save_in") = {_save_in[i]};
+
+      _problem->addBoundaryCondition(name, name + "_" + _name + "_" + Moose::stringify(i), params);
+    }
+
+    if (use_lagrange)
+    {
+      const std::string name = "LagrangeInclinedNoDisplacementBC";
+      InputParameters params = _factory.getValidParams(name);
+      params.applyParameters(parameters());
+      params.set<bool>("use_displaced_mesh") = false;
+      params.set<unsigned int>("component") = i;
+      params.set<NonlinearVariableName>("variable") = _displacements[i];
 
       _problem->addBoundaryCondition(name, name + "_" + _name + "_" + Moose::stringify(i), params);
     }
