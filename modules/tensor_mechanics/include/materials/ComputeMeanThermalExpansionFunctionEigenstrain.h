@@ -48,4 +48,7 @@ protected:
   const Function & _thermal_expansion_function;
 
   const Real & _thexp_func_ref_temp;
+
+  /// fallback finite differencing parameter
+  const Real _epsilon;
 };
