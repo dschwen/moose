@@ -90,15 +90,22 @@ adOffset(unsigned int var_num,
               "If our element type is anything other than ElementType::Element, then you "
               "must supply num_vars_in_system in order to calculate the offset");
 
+  std::cout << "var_num = " << var_num << '\n';
+  std::cout << "max_dofs_per_elem = " << max_dofs_per_elem << '\n';
+  std::cout << "num_vars_in_system = " << num_vars_in_system << '\n';
+
   switch (element_type)
   {
     case ElementType::Element:
+      std::cout << "ElementType::Element\n";
       return var_num * max_dofs_per_elem;
 
     case ElementType::Neighbor:
+      std::cout << "ElementType::Neighbor\n";
       return num_vars_in_system * max_dofs_per_elem + var_num * max_dofs_per_elem;
 
     case ElementType::Lower:
+      std::cout << "ElementType::Lower\n";
       return 2 * num_vars_in_system * max_dofs_per_elem + var_num * max_dofs_per_elem;
 
     default:

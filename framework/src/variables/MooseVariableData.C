@@ -1321,6 +1321,8 @@ MooseVariableData<OutputType>::computeAD(const unsigned int num_dofs, const unsi
               "Either this is the zeroth variable or we should have an offset");
 
 #ifndef MOOSE_SPARSE_AD
+  std::cout << "num_dofs = " << num_dofs << '\n';
+  std::cout << "ad_offset = " << ad_offset << '\n';
   if (ad_offset + num_dofs > MOOSE_AD_MAX_DOFS_PER_ELEM)
     mooseError("Current number of dofs per element ",
                ad_offset + num_dofs,
