@@ -96,24 +96,20 @@
   [../]
   [./mc_coh]
     type = TensorMechanicsHardeningConstant
-    block = '2'
     value = 10E6
   [../]
   [./mc_phi]
     type = TensorMechanicsHardeningConstant
-    block = '2'
     value = 40
     convert_to_radians = true
   [../]
   [./mc_psi]
     type = TensorMechanicsHardeningConstant
-    block = '2'
     value = 40
     convert_to_radians = true
   [../]
   [./mc]
     type = TensorMechanicsPlasticMohrCoulomb
-    block = '2'
     cohesion = mc_coh
     friction_angle = mc_phi
     dilation_angle = mc_psi

@@ -55,6 +55,13 @@ ComputeElasticityTensorTempl<is_ad>::ComputeElasticityTensorTempl(
 
 template <bool is_ad>
 void
+ComputeElasticityTensorTempl<is_ad>::initQpStatefulProperties()
+{
+  computeQpElasticityTensor();
+}
+
+template <bool is_ad>
+void
 ComputeElasticityTensorTempl<is_ad>::computeQpElasticityTensor()
 {
   // Assign elasticity tensor at a given quad point
