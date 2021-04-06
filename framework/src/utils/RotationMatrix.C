@@ -55,3 +55,39 @@ RotationMatrix::rotVec1ToVec2(RealVectorValue vec1, RealVectorValue vec2)
   RealTensorValue rot2_to_z = rotVecToZ(vec2);
   return rot2_to_z.transpose() * rot1_to_z;
 }
+
+RealTensorValue
+RotationMatrix::rotAboutAxis(Real angle, RealVectorValue axis)
+{
+  const Real c = std::cos(angle);
+  const Real s = std::sin(angle);
+  const Real t = 1.0 - c;
+
+  RealTensorValue r;
+  r(0, 0) = c + axis(0) * axis(0) * t;
+  r(1, 1) = c + axis(1) * axis(1) * t;
+  r(2, 2) = c + axis(2) * axis(2) * t;
+
+  {
+    const Real tmp1 = axis(0) * axis(1) * t;
+    const Real tmp2 = axis(2) * s;
+    r(1, 0) = tmp1 + tmp2;
+    r(0, 1) = tmp1 - tmp2;
+  }
+
+  {
+    const Real tmp1 = axis(0) * axis(2) * t;
+    const Real tmp2 = axis(1) * s;
+    r(2, 0) = tmp1 - tmp2;
+    r(0, 2) = tmp1 + tmp2;
+  }
+
+  {
+    const Real tmp1 = axis(1) * axis(2) * t;
+    const Real tmp2 = axis(0) * s;
+    r(2, 1) = tmp1 + tmp2;
+    r(1, 2) = tmp1 - tmp2;
+  }
+
+  return r;
+}
