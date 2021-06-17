@@ -61,6 +61,29 @@ TEST(NestedSolve, DynamicSize)
   EXPECT_NEAR(solution(1), 1, 1e-6);
 }
 
+TEST(NestedSolve, DynamicSizePowell)
+{
+  auto compute = [&](const NestedSolve::Value<> & guess,
+                     NestedSolve::Value<> & residual,
+                     NestedSolve::Jacobian<> & jacobian) {
+    residual(0) = guess(0) + guess(0) * guess(1) - 4;
+    residual(1) = guess(0) + guess(1) - 3;
+
+    jacobian(0, 0) = 1 + guess(1);
+    jacobian(0, 1) = guess(0);
+    jacobian(1, 0) = 1;
+    jacobian(1, 1) = 1;
+  };
+
+  NestedSolve solver;
+  NestedSolve::Value<> solution(2);
+  solution << 1.98, 1.02;
+  solver.nonlinearPowell(solution, compute);
+
+  EXPECT_NEAR(solution(0), 2, 1e-6);
+  EXPECT_NEAR(solution(1), 1, 1e-6);
+}
+
 TEST(NestedSolve, RankTwoTensor)
 {
   auto compute =
