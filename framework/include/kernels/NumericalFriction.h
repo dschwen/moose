@@ -11,6 +11,9 @@
 
 #include "Kernel.h"
 
+/**
+ * Adds a penalty proportional to the variable increment in the current time step.
+ */
 class NumericalFriction : public Kernel
 {
 public:

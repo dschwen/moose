@@ -22,18 +22,18 @@ NumericalFriction::validParams()
 }
 
 NumericalFriction::NumericalFriction(const InputParameters & parameters)
-  : Kernel(parameters), _u_old(_var.slnOld()), _penalty(getParam<Real>("penalty"))
+  : Kernel(parameters), _u_old(valueOld()), _penalty(getParam<Real>("penalty"))
 {
 }
 
 Real
 NumericalFriction::computeQpResidual()
 {
-  return _penalty * Utility::pow<2>(_u[_qp] - _u_old[_qp]) * _test[_i][_qp];
+  return _penalty * (_u[_qp] - _u_old[_qp]) * _test[_i][_qp];
 }
 
 Real
 NumericalFriction::computeQpJacobian()
 {
-  return _penalty * 2.0 * (_u[_qp] - _u_old[_qp]) * _phi[_j][_qp] * _test[_i][_qp];
+  return _penalty * _phi[_j][_qp] * _test[_i][_qp];
 }
