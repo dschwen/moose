@@ -36,23 +36,40 @@ uexternaldb_(
 
       Moose::out << *LOP << "lop " << fasum << ' ' << SMAFloatArraySize(1) << ' ' << iasum << ' '
                  << SMAIntArraySize(67) << '\n';
+      break;
     }
 
-    // beginnging of the timestep
+    // beginning of the timestep
     case 1:
     {
       Real * fa = SMAFloatArrayAccess(1);
       for (unsigned int i = 0; i < SMAFloatArraySize(1); ++i)
         fa[i] += i + *KINC;
 
-      int * ia = SMAIntArrayAccess(1);
+      int * ia = SMAIntArrayAccess(67);
       for (unsigned int i = 0; i < SMAIntArraySize(67); ++i)
         ia[i] += i + *KINC;
+      break;
     }
 
     // end of the simulation
     case 3:
     {
+      Real * fa = SMAFloatArrayAccess(1);
+      Real fasum = 0.0;
+      for (unsigned int i = 0; i < SMAFloatArraySize(1); ++i)
+        fasum += fa[i];
+      SMAFloatArrayDelete(1);
+
+      int iasum = 0;
+      int * ia = SMAIntArrayAccess(67);
+      for (unsigned int i = 0; i < SMAIntArraySize(67); ++i)
+        iasum += ia[i];
+
+      SMAIntArrayDelete(67);
+
+      Moose::out << *LOP << "lop " << fasum << ' ' << iasum << ' ' << '\n';
+      break;
     }
   }
 }
