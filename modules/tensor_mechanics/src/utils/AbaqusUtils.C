@@ -223,9 +223,9 @@ SMAFloatArrayCreate(int id, int len, Real val)
 extern "C" int * __attribute__((visibility("default")))
 SMALocalIntArrayCreate(int id, int len, int val)
 {
-  ParallelUniqueId puid;
   AbaqusUtils::smaInitialize();
-  auto & array = AbaqusUtils::_sma_local_int_array[puid.id][id];
+  auto & array = AbaqusUtils::getSMAThreadArray(AbaqusUtils::_sma_local_int_array,
+                                                "SMALocalIntArrayCreate")[id];
   array.assign(len, val);
   return array.data();
 }
@@ -233,9 +233,9 @@ SMALocalIntArrayCreate(int id, int len, int val)
 extern "C" Real * __attribute__((visibility("default")))
 SMALocalFloatArrayCreate(int id, int len, Real val)
 {
-  ParallelUniqueId puid;
   AbaqusUtils::smaInitialize();
-  auto & array = AbaqusUtils::_sma_local_float_array[puid.id][id];
+  auto & array = AbaqusUtils::getSMAThreadArray(AbaqusUtils::_sma_local_float_array,
+                                                "SMALocalFloatArrayCreate")[id];
   array.assign(len, val);
   return array.data();
 }
@@ -244,39 +244,29 @@ SMALocalFloatArrayCreate(int id, int len, Real val)
 
 extern "C" int * __attribute__((visibility("default"))) SMAIntArrayAccess(int id)
 {
-  auto it = AbaqusUtils::_sma_int_array.find(id);
-  if (it == AbaqusUtils::_sma_int_array.end())
-    mooseError("Invalid id ", id, " in SMAIntArrayAccess.");
+  auto it = AbaqusUtils::getSMAIterator(AbaqusUtils::_sma_int_array, id, "SMAIntArrayAccess");
   return it->second.data();
 }
 
 extern "C" Real * __attribute__((visibility("default"))) SMAFloatArrayAccess(int id)
 {
-  auto it = AbaqusUtils::_sma_float_array.find(id);
-  if (it == AbaqusUtils::_sma_float_array.end())
-    mooseError("Invalid id ", id, " in SMAFloatArrayAccess.");
+  auto it = AbaqusUtils::getSMAIterator(AbaqusUtils::_sma_float_array, id, "SMAFloatArrayAccess");
   return it->second.data();
 }
 
 extern "C" int * __attribute__((visibility("default"))) SMALocalIntArrayAccess(int id)
 {
-  ParallelUniqueId puid;
-  mooseAssert(puid.id < AbaqusUtils::_sma_local_int_array.size(),
-              "SMA storage not properly initialized");
-  auto it = AbaqusUtils::_sma_local_int_array[puid.id].find(id);
-  if (it == AbaqusUtils::_sma_local_int_array[puid.id].end())
-    mooseError("Invalid id ", id, " in SMALocalIntArrayAccess.");
+  auto array =
+      AbaqusUtils::getSMAThreadArray(AbaqusUtils::_sma_local_int_array, "SMALocalIntArrayAccess");
+  auto it = AbaqusUtils::getSMAIterator(array, id, "SMALocalIntArrayAccess");
   return it->second.data();
 }
 
 extern "C" Real * __attribute__((visibility("default"))) SMALocalFloatArrayAccess(int id)
 {
-  ParallelUniqueId puid;
-  mooseAssert(puid.id < AbaqusUtils::_sma_local_float_array.size(),
-              "SMA storage not properly initialized");
-  auto it = AbaqusUtils::_sma_local_float_array[puid.id].find(id);
-  if (it == AbaqusUtils::_sma_local_float_array[puid.id].end())
-    mooseError("Invalid id ", id, " in SMALocalFloatArrayAccess.");
+  auto array = AbaqusUtils::getSMAThreadArray(AbaqusUtils::_sma_local_float_array,
+                                              "SMALocalFloatArrayAccess");
+  auto it = AbaqusUtils::getSMAIterator(array, id, "SMALocalFloatArrayAccess");
   return it->second.data();
 }
 
@@ -284,39 +274,29 @@ extern "C" Real * __attribute__((visibility("default"))) SMALocalFloatArrayAcces
 
 extern "C" std::size_t __attribute__((visibility("default"))) SMAIntArraySize(int id)
 {
-  auto it = AbaqusUtils::_sma_int_array.find(id);
-  if (it == AbaqusUtils::_sma_int_array.end())
-    mooseError("Invalid id ", id, " in SMAIntArraySize.");
+  auto it = AbaqusUtils::getSMAIterator(AbaqusUtils::_sma_int_array, id, "SMAIntArraySize");
   return it->second.size();
 }
 
 extern "C" std::size_t __attribute__((visibility("default"))) SMAFloatArraySize(int id)
 {
-  auto it = AbaqusUtils::_sma_float_array.find(id);
-  if (it == AbaqusUtils::_sma_float_array.end())
-    mooseError("Invalid id ", id, " in SMAFloatArraySize.");
+  auto it = AbaqusUtils::getSMAIterator(AbaqusUtils::_sma_float_array, id, "SMAFloatArraySize");
   return it->second.size();
 }
 
 extern "C" std::size_t __attribute__((visibility("default"))) SMALocalIntArraySize(int id)
 {
-  ParallelUniqueId puid;
-  mooseAssert(puid.id < AbaqusUtils::_sma_local_int_array.size(),
-              "SMA storage not properly initialized");
-  auto it = AbaqusUtils::_sma_local_int_array[puid.id].find(id);
-  if (it == AbaqusUtils::_sma_local_int_array[puid.id].end())
-    mooseError("Invalid id ", id, " in SMALocalIntArraySize.");
+  auto array =
+      AbaqusUtils::getSMAThreadArray(AbaqusUtils::_sma_local_int_array, "SMALocalIntArraySize");
+  auto it = AbaqusUtils::getSMAIterator(array, id, "SMALocalIntArraySize");
   return it->second.size();
 }
 
 extern "C" std::size_t __attribute__((visibility("default"))) SMALocalFloatArraySize(int id)
 {
-  ParallelUniqueId puid;
-  mooseAssert(puid.id < AbaqusUtils::_sma_local_float_array.size(),
-              "SMA storage not properly initialized");
-  auto it = AbaqusUtils::_sma_local_float_array[puid.id].find(id);
-  if (it == AbaqusUtils::_sma_local_float_array[puid.id].end())
-    mooseError("Invalid id ", id, " in SMALocalFloatArraySize.");
+  auto array =
+      AbaqusUtils::getSMAThreadArray(AbaqusUtils::_sma_local_float_array, "SMALocalFloatArraySize");
+  auto it = AbaqusUtils::getSMAIterator(array, id, "SMALocalFloatArraySize");
   return it->second.size();
 }
 
@@ -324,40 +304,30 @@ extern "C" std::size_t __attribute__((visibility("default"))) SMALocalFloatArray
 
 extern "C" void __attribute__((visibility("default"))) SMAIntArrayDelete(int id)
 {
-  auto it = AbaqusUtils::_sma_int_array.find(id);
-  if (it == AbaqusUtils::_sma_int_array.end())
-    mooseError("Invalid id ", id, " in SMAIntArrayDelete.");
+  auto it = AbaqusUtils::getSMAIterator(AbaqusUtils::_sma_int_array, id, "SMAIntArrayDelete");
   AbaqusUtils::_sma_int_array.erase(it);
 }
 
 extern "C" void __attribute__((visibility("default"))) SMAFloatArrayDelete(int id)
 {
-  auto it = AbaqusUtils::_sma_float_array.find(id);
-  if (it == AbaqusUtils::_sma_float_array.end())
-    mooseError("Invalid id ", id, " in SMAFloatArrayDelete.");
+  auto it = AbaqusUtils::getSMAIterator(AbaqusUtils::_sma_float_array, id, "SMAFloatArrayDelete");
   AbaqusUtils::_sma_float_array.erase(it);
 }
 
 extern "C" void __attribute__((visibility("default"))) SMALocalIntArrayDelete(int id)
 {
-  ParallelUniqueId puid;
-  mooseAssert(puid.id < AbaqusUtils::_sma_local_int_array.size(),
-              "SMA storage not properly initialized");
-  auto it = AbaqusUtils::_sma_local_int_array[puid.id].find(id);
-  if (it == AbaqusUtils::_sma_local_int_array[puid.id].end())
-    mooseError("Invalid id ", id, " in SMALocalIntArrayDelete.");
-  AbaqusUtils::_sma_local_int_array[puid.id].erase(it);
+  auto array =
+      AbaqusUtils::getSMAThreadArray(AbaqusUtils::_sma_local_int_array, "SMALocalIntArrayDelete");
+  auto it = AbaqusUtils::getSMAIterator(array, id, "SMALocalIntArrayDelete");
+  array.erase(it);
 }
 
 extern "C" void __attribute__((visibility("default"))) SMALocalFloatArrayDelete(int id)
 {
-  ParallelUniqueId puid;
-  mooseAssert(puid.id < AbaqusUtils::_sma_local_float_array.size(),
-              "SMA storage not properly initialized");
-  auto it = AbaqusUtils::_sma_local_float_array[puid.id].find(id);
-  if (it == AbaqusUtils::_sma_local_float_array[puid.id].end())
-    mooseError("Invalid id ", id, " in SMALocalFloatArrayDelete.");
-  AbaqusUtils::_sma_local_float_array[puid.id].erase(it);
+  auto array = AbaqusUtils::getSMAThreadArray(AbaqusUtils::_sma_local_float_array,
+                                              "SMALocalFloatArrayDelete");
+  auto it = AbaqusUtils::getSMAIterator(array, id, "SMALocalFloatArrayDelete");
+  array.erase(it);
 }
 
 // Mutex handling
