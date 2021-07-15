@@ -9,6 +9,7 @@
 
 #include "AbaqusUtils.h"
 #include "MooseUtils.h"
+#include "libmesh/threads.h"
 
 // MPI
 
@@ -46,13 +47,9 @@ extern "C" void __attribute__((visibility("default"))) getrank_(int * rank)
 
 extern "C" int __attribute__((visibility("default"))) getnumthreads_()
 {
-#if defined(LIBMESH_HAVE_TBB_API) ||                                                               \
-    (!defined(LIBMESH_HAVE_OPENMP) && defined(LIBMESH_HAVE_PTHREAD))
   return libMesh::n_threads();
-#else
-  return 1;
-#endif
 }
+extern "C" int __attribute__((visibility("default"))) getnumthreads() { return getnumthreads_(); }
 
 extern "C" int __attribute__((visibility("default"))) get_thread_id_()
 {
@@ -190,10 +187,10 @@ AbaqusUtils::smaInitialize()
   // Guard the initialization with a double checked lock
   if (!initialized)
   {
-    Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
+    // Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
     if (!initialized)
     {
-      auto n = getnumthreads_();
+      auto n = getnumthreads();
       _sma_local_int_array.resize(n);
       _sma_local_float_array.resize(n);
       initialized = true;
@@ -224,21 +221,27 @@ SMAFloatArrayCreate(int id, int len, Real val)
 extern "C" int * __attribute__((visibility("default")))
 SMALocalIntArrayCreate(int id, int len, int val)
 {
+  Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
+
   AbaqusUtils::smaInitialize();
-  auto & array = AbaqusUtils::getSMAThreadArray(AbaqusUtils::_sma_local_int_array,
-                                                "SMALocalIntArrayCreate")[id];
-  array.assign(len, val);
-  return array.data();
+  auto & map =
+      AbaqusUtils::getSMAThreadArray(AbaqusUtils::_sma_local_int_array, "SMALocalIntArrayCreate");
+  auto & vector = map[id];
+  vector.assign(len, val);
+  return vector.data();
 }
 
 extern "C" Real * __attribute__((visibility("default")))
 SMALocalFloatArrayCreate(int id, int len, Real val)
 {
+  Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
+
   AbaqusUtils::smaInitialize();
-  auto & array = AbaqusUtils::getSMAThreadArray(AbaqusUtils::_sma_local_float_array,
-                                                "SMALocalFloatArrayCreate")[id];
-  array.assign(len, val);
-  return array.data();
+  auto & map = AbaqusUtils::getSMAThreadArray(AbaqusUtils::_sma_local_float_array,
+                                              "SMALocalFloatArrayCreate");
+  auto & vector = map[id];
+  vector.assign(len, val);
+  return vector.data();
 }
 
 // Array access
@@ -257,6 +260,8 @@ extern "C" Real * __attribute__((visibility("default"))) SMAFloatArrayAccess(int
 
 extern "C" int * __attribute__((visibility("default"))) SMALocalIntArrayAccess(int id)
 {
+  Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
+
   auto array =
       AbaqusUtils::getSMAThreadArray(AbaqusUtils::_sma_local_int_array, "SMALocalIntArrayAccess");
   auto it = AbaqusUtils::getSMAIterator(array, id, "SMALocalIntArrayAccess");
@@ -265,6 +270,8 @@ extern "C" int * __attribute__((visibility("default"))) SMALocalIntArrayAccess(i
 
 extern "C" Real * __attribute__((visibility("default"))) SMALocalFloatArrayAccess(int id)
 {
+  Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
+
   auto array = AbaqusUtils::getSMAThreadArray(AbaqusUtils::_sma_local_float_array,
                                               "SMALocalFloatArrayAccess");
   auto it = AbaqusUtils::getSMAIterator(array, id, "SMALocalFloatArrayAccess");
@@ -287,6 +294,8 @@ extern "C" std::size_t __attribute__((visibility("default"))) SMAFloatArraySize(
 
 extern "C" std::size_t __attribute__((visibility("default"))) SMALocalIntArraySize(int id)
 {
+  Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
+
   auto array =
       AbaqusUtils::getSMAThreadArray(AbaqusUtils::_sma_local_int_array, "SMALocalIntArraySize");
   auto it = AbaqusUtils::getSMAIterator(array, id, "SMALocalIntArraySize");
@@ -295,6 +304,7 @@ extern "C" std::size_t __attribute__((visibility("default"))) SMALocalIntArraySi
 
 extern "C" std::size_t __attribute__((visibility("default"))) SMALocalFloatArraySize(int id)
 {
+  Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
   auto array =
       AbaqusUtils::getSMAThreadArray(AbaqusUtils::_sma_local_float_array, "SMALocalFloatArraySize");
   auto it = AbaqusUtils::getSMAIterator(array, id, "SMALocalFloatArraySize");
@@ -317,6 +327,7 @@ extern "C" void __attribute__((visibility("default"))) SMAFloatArrayDelete(int i
 
 extern "C" void __attribute__((visibility("default"))) SMALocalIntArrayDelete(int id)
 {
+  Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
   auto array =
       AbaqusUtils::getSMAThreadArray(AbaqusUtils::_sma_local_int_array, "SMALocalIntArrayDelete");
   auto it = AbaqusUtils::getSMAIterator(array, id, "SMALocalIntArrayDelete");
@@ -325,6 +336,7 @@ extern "C" void __attribute__((visibility("default"))) SMALocalIntArrayDelete(in
 
 extern "C" void __attribute__((visibility("default"))) SMALocalFloatArrayDelete(int id)
 {
+  Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
   auto array = AbaqusUtils::getSMAThreadArray(AbaqusUtils::_sma_local_float_array,
                                               "SMALocalFloatArrayDelete");
   auto it = AbaqusUtils::getSMAIterator(array, id, "SMALocalFloatArrayDelete");

@@ -155,4 +155,14 @@
       detail = 'supporting at least 4 threads.'
     []
   []
+
+  [sma]
+    type = 'RunApp'
+    input = 'sma_memory.i'
+    library_mode = 'DYNAMIC'
+    valgrind = 'NONE'
+    expect_out = 'getjobname          17 utility_functions '
+    requirement = 'The Abaqus UEXTERNALDB interface shall provide the Abaqus API for accessing '
+                  'shared memory objects.'
+  []
 []

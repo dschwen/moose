@@ -14,7 +14,7 @@
 extern "C" int * SMAIntArrayCreate(int id, int len, int val = 0);
 extern "C" Real * SMAFloatArrayCreate(int id, int len, Real val = 0.0);
 extern "C" int * SMALocalIntArrayCreate(int id, int len, int val = 0);
-extern "C" Real * SMALoaclFloatArrayCreate(int id, int len, Real val = 0.0);
+extern "C" Real * SMALocalFloatArrayCreate(int id, int len, Real val = 0.0);
 
 extern "C" int * SMAIntArrayAccess(int id);
 extern "C" Real * SMAFloatArrayAccess(int id);
@@ -31,6 +31,7 @@ extern "C" void SMAFloatArrayDelete(int id);
 extern "C" void SMALocalIntArrayDelete(int id);
 extern "C" void SMALocalFloatArrayDelete(int id);
 
+extern "C" int getnumthreads();
 extern "C" int get_thread_id();
 
 extern "C" void MutexInit(int id);

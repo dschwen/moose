@@ -55,6 +55,22 @@ public:
   static void mutexLock(std::size_t n);
   static void mutexUnlock(std::size_t n);
   ///@}
+  static void smaDebug()
+  {
+    Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
+    ParallelUniqueId puid;
+
+    Moose::out << "thread: " << puid.id
+               << "\n_sma_local_float_array.size() = " << _sma_local_float_array.size() << '\n';
+
+    for (auto & map : _sma_local_float_array)
+    {
+      Moose::out << "Mop " << &map << '\n';
+      for (auto pair : map)
+        Moose::out << "  " << pair.first << " -> " << pair.second.data() << '\n';
+    }
+  }
+
 private:
   static std::array<std::unique_ptr<Threads::spin_mutex>, 101> _mutex;
   static std::string _output_dir;
@@ -80,7 +96,8 @@ AbaqusUtils::getSMAThreadArray(std::vector<std::map<int, std::vector<T>>> & loca
                                const std::string & function)
 {
   ParallelUniqueId puid;
-  if (puid.id < local_array.size())
+  Moose::out << "getSMAThreadArray puid.id = " << puid.id << '\n';
+  if (puid.id >= local_array.size())
     mooseError("SMA storage not properly initialized in ", function, ".");
   return local_array[puid.id];
 }
