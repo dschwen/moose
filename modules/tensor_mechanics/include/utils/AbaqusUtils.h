@@ -55,21 +55,7 @@ public:
   static void mutexLock(std::size_t n);
   static void mutexUnlock(std::size_t n);
   ///@}
-  static void smaDebug()
-  {
-    Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
-    ParallelUniqueId puid;
-
-    Moose::out << "thread: " << puid.id
-               << "\n_sma_local_float_array.size() = " << _sma_local_float_array.size() << '\n';
-
-    for (auto & map : _sma_local_float_array)
-    {
-      Moose::out << "Mop " << &map << '\n';
-      for (auto pair : map)
-        Moose::out << "  " << pair.first << " -> " << pair.second.data() << '\n';
-    }
-  }
+  static void smaDebug();
 
 private:
   static std::array<std::unique_ptr<Threads::spin_mutex>, 101> _mutex;
