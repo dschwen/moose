@@ -41,6 +41,8 @@ public:
 
   virtual Real value(const Point & p) override;
 
+  void compute() override;
+
 protected:
   const Real _value;
 };
