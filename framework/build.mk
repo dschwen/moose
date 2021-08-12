@@ -36,7 +36,7 @@ libmesh_CPPFLAGS := $(shell METHOD=$(METHOD) $(libmesh_config) --cppflags)
 libmesh_CXXFLAGS := $(shell METHOD=$(METHOD) $(libmesh_config) --cxxflags)
 libmesh_CFLAGS   := $(shell METHOD=$(METHOD) $(libmesh_config) --cflags)
 libmesh_FFLAGS   := $(shell METHOD=$(METHOD) $(libmesh_config) --fflags)
-libmesh_LIBS     := $(shell METHOD=$(METHOD) $(libmesh_config) --libs)
+libmesh_LIBS     := $(shell METHOD=$(METHOD) $(libmesh_config) --libs) -lgmsh
 libmesh_HOST     := $(shell METHOD=$(METHOD) $(libmesh_config) --host)
 libmesh_LDFLAGS  := $(shell METHOD=$(METHOD) $(libmesh_config) --ldflags)
 
