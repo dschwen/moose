@@ -26,6 +26,7 @@
 #include "libmesh/cell_tet4.h"
 #include "libmesh/cell_tet10.h"
 #include "libmesh/cell_hex8.h"
+#include "libmesh/cell_hex20.h"
 #include "libmesh/cell_hex27.h"
 #include "libmesh/cell_prism6.h"
 #include "libmesh/cell_prism15.h"
@@ -63,6 +64,9 @@ gmshToLibMesh(MeshBase & mesh)
   for (std::size_t i = 0; i < n_nodes; ++i)
     nodes[nodeTags[i]] = mesh.add_point(Point(coord[3 * i], coord[3 * i + 1], coord[3 * i + 2]), i);
 
+  // Gmsh model dimension
+  auto model_dim = gmsh::model::getDimension();
+
   // Gmsh element data
   std::vector<int> elementTypes;
   std::vector<std::vector<std::size_t>> elementTags;
@@ -73,23 +77,53 @@ gmshToLibMesh(MeshBase & mesh)
   auto n_elem_types = elementTypes.size();
   for (std::size_t i = 0; i < n_elem_types; ++i)
   {
-    if (gmshElemDim(elementTypes[i]) != 2)
+    std::string elementName;
+    int dim;
+    int order;
+    int n_nodes;
+    std::vector<double> localNodeCoord;
+    int numPrimaryNodes;
+
+    gmsh::model::mesh::getElementProperties(
+        elementTypes[i], elementName, dim, order, n_nodes, localNodeCoord, numPrimaryNodes);
+
+    // skip lower dimensional elements (faces/edges/points)
+    if (dim < model_dim)
       continue;
 
-    auto n_nodes = gmshElemNodes(elementTypes[i]);
     mooseAssert(nodeTagsVec[i].size() % n_nodes == 0,
                 "Number of nodes returned is not divisible by number of nodes per element for the "
                 "given type");
 
+    // Node order mapping vectors contain the libmesh node index at the  Gmsh index position
+    static const std::map<std::size_t, std::vector<std::size_t>> node_order_map = {
+        {11 /* Tet10 */, {0, 1, 2, 3, 4, 5, 6, 7, 9, 8}},
+        {17 /* Hex20 */, {0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 9, 13, 10, 14, 15, 16, 19, 17, 18}},
+        {12 /* Hex27 */, {0,  1,  2,  3,  4,  5,  6,  7,  8,  11, 12, 9,  13, 10,
+                          14, 15, 16, 19, 17, 18, 20, 21, 24, 22, 23, 25, 26}},
+        {18 /* Prism15 */, {0, 1, 2, 3, 4, 5, 6, 8, 9, 7, 10, 11, 12, 14, 13}},
+        {13 /* Prism18 */, {0, 1, 2, 3, 4, 5, 6, 8, 9, 7, 10, 11, 12, 14, 13, 15, 17, 16}},
+        {19 /* Pyramid13 */, {0, 1, 2, 3, 4, 5, 8, 9, 6, 10, 7, 11, 12}},
+        {14 /* Pyramid14 */, {0, 1, 2, 3, 4, 5, 8, 9, 6, 10, 7, 11, 12, 13}}};
+    auto it = node_order_map.find(elementTypes[i]);
+
     auto n_elems = nodeTagsVec[i].size() / n_nodes;
     for (std::size_t j = 0; j < n_elems; ++j)
     {
-      auto elem = mesh.add_elem(gmshNewElem(elementTypes[i]));
-      for (std::size_t k = 0; k < n_nodes; ++k)
-      {
-        // TODO: verify node orders
-        elem->set_node(k) = nodes[nodeTagsVec[i][j * n_nodes + k]];
-      }
+      auto elem = gmshNewElem(elementTypes[i]);
+      if (!elem)
+        mooseError("Unsupported element type ", elementTypes[i], " (", elementName, ")");
+
+      elem = mesh.add_elem(elem);
+
+      // most element types have the same order in Gmsh and libMesh
+      if (it == node_order_map.end())
+        for (int k = 0; k < n_nodes; ++k)
+          elem->set_node(k) = nodes[nodeTagsVec[i][j * n_nodes + k]];
+      // some need to be shuffled though...
+      else
+        for (int k = 0; k < n_nodes; ++k)
+          elem->set_node(it->second[k]) = nodes[nodeTagsVec[i][j * n_nodes + k]];
     }
   }
 }
@@ -131,43 +165,14 @@ gmshNewElem(int type)
       return new NodeElem;
     case 16:
       return new Quad8;
-    // case 17: Hex20
+    case 17:
+      return new Hex20;
     case 18:
       return new Prism15;
     case 19:
       return new Pyramid13;
   }
-  mooseError("Unsupported Gmsh element type ", type);
-}
-
-std::size_t
-gmshElemNodes(int type)
-{
-  const std::array<std::size_t, 20> n_node_table = {0, 2,  3,  4,  4,  8, 6, 5, 3,  6,
-                                                    9, 10, 27, 18, 14, 1, 8, 0, 15, 13};
-  std::size_t n_node = 0;
-  if (type > 0 && type < int(n_node_table.size()))
-    n_node = n_node_table[type];
-
-  if (n_node == 0)
-    mooseError("Unsupported Gmsh element type ", type);
-
-  return n_node;
-}
-
-int
-gmshElemDim(int type)
-{
-  const std::array<int, 20> dim_table = {-1, 1, 2, 2, 3, 3, 3, 3,  1, 2,
-                                         2,  3, 3, 3, 3, 0, 2, -1, 3, 3};
-  int dim = -1;
-  if (type > 0 && type < int(dim_table.size()))
-    dim = dim_table[type];
-
-  if (dim == -1)
-    mooseError("Unsupported Gmsh element type ", type);
-
-  return dim;
+  return nullptr;
 }
 
 int

@@ -19,12 +19,6 @@ void gmshToLibMesh(MeshBase & mesh);
 // construct a new libMesh element from a Gmsh type id
 Elem * gmshNewElem(int type);
 
-// get number of nodes in an element of a given Gmsh type
-std::size_t gmshElemNodes(int type);
-
-// get dimension of an element of a given Gmsh type
-int gmshElemDim(int type);
-
 // Add rectangular loop
 int gmshAddRectangleLoop(Real xmin, Real xmax, Real ymin, Real ymax, Real lc);
 
