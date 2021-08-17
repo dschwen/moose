@@ -1,11 +1,7 @@
 [Mesh]
   [gmsh]
-    type = GmshHolePlateGenerator
-    spacing = 0.02
-    x = '0.1  0.7 0.4'
-    y = '0.15 0.6 0.7'
-    r = '0.075 0.15 0.1'
-    hole_names = 'c1 c2 c3'
+    type = GmshPlateGenerator
+    spacing = 0.05
   []
 []
 
@@ -32,13 +28,7 @@
     type = DirichletBC
     variable = u
     boundary = right
-    value = 0
-  [../]
-  [./c3]
-    type = DirichletBC
-    variable = u
-    boundary = c3
-    value = 10
+    value = 1
   [../]
 []
 

@@ -16,9 +16,11 @@ InputParameters
 GmshHolePlateGenerator::validParams()
 {
   InputParameters params = GmshPlateGenerator::validParams();
+  params.set<int>("dim") = 2;
   params.addParam<std::vector<Real>>("x", "Circle hole x coordinates");
   params.addParam<std::vector<Real>>("y", "Circle hole y coordinates");
   params.addParam<std::vector<Real>>("r", "Circle hole radii");
+  params.addRequiredParam<std::vector<std::string>>("hole_names", "Names of the circle holes");
   return params;
 }
 
@@ -27,12 +29,15 @@ GmshHolePlateGenerator::GmshHolePlateGenerator(const InputParameters & parameter
     _x(getParam<std::vector<Real>>("x")),
     _y(getParam<std::vector<Real>>("y")),
     _r(getParam<std::vector<Real>>("r")),
+    _names(getParam<std::vector<std::string>>("hole_names")),
     _n_holes(_x.size())
 {
   if (_n_holes != _y.size())
     paramError("y", "x and y vectors must be of identical length");
   if (_n_holes != _r.size())
     paramError("r", "Provide one radius per circle center");
+  if (_n_holes != _names.size())
+    paramError("hole_names", "Provide one name per circle");
 
   for (std::size_t i = 0; i < _n_holes; ++i)
     for (std::size_t j = 0; j < i; ++j)
@@ -48,7 +53,7 @@ GmshHolePlateGenerator::generateGeometry()
 
   std::vector<int> tags{Moose::gmshAddRectangleLoop(_xmin, _xmax, _ymin, _ymax, lc)};
   for (std::size_t i = 0; i < _n_holes; ++i)
-    tags.push_back(Moose::gmshAddCircleLoop(_x[i], _y[i], _r[i], lc));
+    tags.push_back(Moose::gmshAddCircleLoop(_x[i], _y[i], _r[i], lc, _names[i]));
 
   gmsh::model::geo::addPlaneSurface(tags, 1);
 }
