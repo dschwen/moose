@@ -11,6 +11,7 @@
 
 #include "MeshGenerator.h"
 #include "gmsh.h"
+#include "GmshUtils.h"
 
 /**
  * Generates a line, square, or cube mesh with uniformly spaced or biased elements.
@@ -26,4 +27,19 @@ public:
 
 protected:
   virtual void generateGeometry() = 0;
+
+  // add physical groups for lower dimensional entities, this is needed in mapping boundary elements
+  void addPhysicalGroups();
+  void updateNodes(MeshBase & mesh);
+  void updateElements(MeshBase & mesh);
+  void updateBoundaryInfo(MeshBase & mesh);
+
+  std::map<std::size_t, Node *> _map_tag_to_Node;
+  std::vector<std::size_t> _nodeTags;
+
+  // Map for node tag -> physical tag
+  std::map<std::size_t, std::set<int>> _tag_node_to_physical;
+
+  // Mesh dimension
+  const int _dim;
 };

@@ -15,6 +15,7 @@ InputParameters
 GmshPlateGenerator::validParams()
 {
   InputParameters params = GmshGeneratorBase::validParams();
+  params.set<int>("dim") = 2;
   params.addParam<Real>("spacing", 1e-2, "Mesh size");
   params.addParam<Real>("xmin", 0.0, "Lower X Coordinate of the generated mesh");
   params.addParam<Real>("xmax", 1.0, "Upper X Coordinate of the generated mesh");

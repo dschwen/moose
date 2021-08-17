@@ -13,16 +13,23 @@
 
 namespace Moose
 {
-// convert the current Gmsh mesh to a libMesh mesh
-void gmshToLibMesh(MeshBase & mesh);
-
 // construct a new libMesh element from a Gmsh type id
 Elem * gmshNewElem(int type);
 
 // Add rectangular loop
-int gmshAddRectangleLoop(Real xmin, Real xmax, Real ymin, Real ymax, Real lc);
+int gmshAddRectangleLoop(Real xmin,
+                         Real xmax,
+                         Real ymin,
+                         Real ymax,
+                         Real lc,
+                         const std::vector<std::string> & names = {
+                             "bottom", "right", "top", "left"});
 
 // Add circular loop
-int gmshAddCircleLoop(Real x, Real y, Real r, Real lc);
+int gmshAddCircleLoop(Real x,
+                      Real y,
+                      Real r,
+                      Real lc,
+                      const std::string & name = "circle");
 
 }

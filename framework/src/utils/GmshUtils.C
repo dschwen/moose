@@ -45,89 +45,6 @@
 namespace Moose
 {
 
-void
-gmshToLibMesh(MeshBase & mesh)
-{
-  // Gmsh node data
-  std::vector<std::size_t> nodeTags;
-  std::vector<double> coord;
-  std::vector<double> parametricCoord;
-
-  // libmesh nodes
-  std::map<std::size_t, Node *> nodes;
-
-  // get and add nodes
-  gmsh::model::mesh::getNodes(nodeTags, coord, parametricCoord);
-  auto n_nodes = nodeTags.size();
-  std::cout << "n_nodes = " << n_nodes << '\n';
-  mooseAssert(n_nodes * 3 == coord.size(), "Wrong gmsh vector sizes returned");
-  for (std::size_t i = 0; i < n_nodes; ++i)
-    nodes[nodeTags[i]] = mesh.add_point(Point(coord[3 * i], coord[3 * i + 1], coord[3 * i + 2]), i);
-
-  // Gmsh model dimension
-  auto model_dim = gmsh::model::getDimension();
-
-  // Gmsh element data
-  std::vector<int> elementTypes;
-  std::vector<std::vector<std::size_t>> elementTags;
-  std::vector<std::vector<std::size_t>> nodeTagsVec;
-
-  // get and add elements
-  gmsh::model::mesh::getElements(elementTypes, elementTags, nodeTagsVec);
-  auto n_elem_types = elementTypes.size();
-  for (std::size_t i = 0; i < n_elem_types; ++i)
-  {
-    std::string elementName;
-    int dim;
-    int order;
-    int n_nodes;
-    std::vector<double> localNodeCoord;
-    int numPrimaryNodes;
-
-    gmsh::model::mesh::getElementProperties(
-        elementTypes[i], elementName, dim, order, n_nodes, localNodeCoord, numPrimaryNodes);
-
-    // skip lower dimensional elements (faces/edges/points)
-    if (dim < model_dim)
-      continue;
-
-    mooseAssert(nodeTagsVec[i].size() % n_nodes == 0,
-                "Number of nodes returned is not divisible by number of nodes per element for the "
-                "given type");
-
-    // Node order mapping vectors contain the libmesh node index at the  Gmsh index position
-    static const std::map<std::size_t, std::vector<std::size_t>> node_order_map = {
-        {11 /* Tet10 */, {0, 1, 2, 3, 4, 5, 6, 7, 9, 8}},
-        {17 /* Hex20 */, {0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 9, 13, 10, 14, 15, 16, 19, 17, 18}},
-        {12 /* Hex27 */, {0,  1,  2,  3,  4,  5,  6,  7,  8,  11, 12, 9,  13, 10,
-                          14, 15, 16, 19, 17, 18, 20, 21, 24, 22, 23, 25, 26}},
-        {18 /* Prism15 */, {0, 1, 2, 3, 4, 5, 6, 8, 9, 7, 10, 11, 12, 14, 13}},
-        {13 /* Prism18 */, {0, 1, 2, 3, 4, 5, 6, 8, 9, 7, 10, 11, 12, 14, 13, 15, 17, 16}},
-        {19 /* Pyramid13 */, {0, 1, 2, 3, 4, 5, 8, 9, 6, 10, 7, 11, 12}},
-        {14 /* Pyramid14 */, {0, 1, 2, 3, 4, 5, 8, 9, 6, 10, 7, 11, 12, 13}}};
-    auto it = node_order_map.find(elementTypes[i]);
-
-    auto n_elems = nodeTagsVec[i].size() / n_nodes;
-    for (std::size_t j = 0; j < n_elems; ++j)
-    {
-      auto elem = gmshNewElem(elementTypes[i]);
-      if (!elem)
-        mooseError("Unsupported element type ", elementTypes[i], " (", elementName, ")");
-
-      elem = mesh.add_elem(elem);
-
-      // most element types have the same order in Gmsh and libMesh
-      if (it == node_order_map.end())
-        for (int k = 0; k < n_nodes; ++k)
-          elem->set_node(k) = nodes[nodeTagsVec[i][j * n_nodes + k]];
-      // some need to be shuffled though...
-      else
-        for (int k = 0; k < n_nodes; ++k)
-          elem->set_node(it->second[k]) = nodes[nodeTagsVec[i][j * n_nodes + k]];
-    }
-  }
-}
-
 Elem *
 gmshNewElem(int type)
 {
@@ -176,7 +93,12 @@ gmshNewElem(int type)
 }
 
 int
-gmshAddRectangleLoop(Real xmin, Real xmax, Real ymin, Real ymax, Real lc)
+gmshAddRectangleLoop(Real xmin,
+                     Real xmax,
+                     Real ymin,
+                     Real ymax,
+                     Real lc,
+                     const std::vector<std::string> & names)
 {
   int p1 = gmsh::model::geo::addPoint(xmin, ymin, 0, lc);
   int p2 = gmsh::model::geo::addPoint(xmax, ymin, 0, lc);
@@ -188,11 +110,21 @@ gmshAddRectangleLoop(Real xmin, Real xmax, Real ymin, Real ymax, Real lc)
   int l3 = gmsh::model::geo::addLine(p3, p4);
   int l4 = gmsh::model::geo::addLine(p4, p1);
 
+  int s1 = gmsh::model::addPhysicalGroup(1, {l1});
+  gmsh::model::setPhysicalName(1, s1, names[0]);
+  int s2 = gmsh::model::addPhysicalGroup(1, {l2});
+  gmsh::model::setPhysicalName(1, s2, names[1]);
+  int s3 = gmsh::model::addPhysicalGroup(1, {l3});
+  gmsh::model::setPhysicalName(1, s3, names[2]);
+  int s4 = gmsh::model::addPhysicalGroup(1, {l4});
+  gmsh::model::setPhysicalName(1, s4, names[3]);
+
   return gmsh::model::geo::addCurveLoop({l1, l2, l3, l4});
 }
 
 int
-gmshAddCircleLoop(Real x, Real y, Real r, Real lc)
+gmshAddCircleLoop(
+    Real x, Real y, Real r, Real lc, const std::string & name)
 {
   int c = gmsh::model::geo::addPoint(x, y, 0, lc);
   int p1 = gmsh::model::geo::addPoint(x - r, y, 0, lc);
@@ -205,6 +137,10 @@ gmshAddCircleLoop(Real x, Real y, Real r, Real lc)
   int l3 = gmsh::model::geo::addCircleArc(p3, c, p4);
   int l4 = gmsh::model::geo::addCircleArc(p4, c, p1);
 
+  int s = gmsh::model::addPhysicalGroup(1, {l1, l2, l3, l4});
+  gmsh::model::setPhysicalName(1, s, name);
+
+  // return gmsh::model::geo::addCurveLoop({s});
   return gmsh::model::geo::addCurveLoop({l1, l2, l3, l4});
 }
 

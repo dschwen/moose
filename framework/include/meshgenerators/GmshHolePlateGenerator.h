@@ -24,5 +24,6 @@ protected:
   std::vector<Real> _x;
   std::vector<Real> _y;
   std::vector<Real> _r;
+  std::vector<std::string> _names;
   std::size_t _n_holes;
 };
