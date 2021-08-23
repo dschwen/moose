@@ -57,20 +57,21 @@ NewmarkBeta::computeTimeDerivatives()
 {
   if (!_sys.solutionUDot())
     mooseError("NewmarkBeta: Time derivative of solution (`u_dot`) is not stored. Please set "
-               "uDotRequested() to true in FEProblemBase befor requesting `u_dot`.");
+               "uDotRequested() to true in FEProblemBase before requesting `u_dot`.");
 
   if (!_sys.solutionUDotDot())
     mooseError("NewmarkBeta: Second time derivative of solution (`u_dotdot`) is not stored. Please "
-               "set uDotDotRequested() to true in FEProblemBase befor requesting `u_dotdot`.");
+               "set uDotDotRequested() to true in FEProblemBase before requesting `u_dotdot`.");
 
   if (!_sys.solutionUDotOld())
     mooseError("NewmarkBeta: Old time derivative of solution (`u_dot_old`) is not stored. Please "
-               "set uDotOldRequested() to true in FEProblemBase befor requesting `u_dot_old`.");
+               "set uDotOldRequested() to true in FEProblemBase before requesting `u_dot_old`.");
 
   if (!_sys.solutionUDotDotOld())
-    mooseError("NewmarkBeta: Old second time derivative of solution (`u_dotdot_old`) is not "
-               "stored. Please set uDotDotOldRequested() to true in FEProblemBase befor requesting "
-               "`u_dotdot_old`.");
+    mooseError(
+        "NewmarkBeta: Old second time derivative of solution (`u_dotdot_old`) is not "
+        "stored. Please set uDotDotOldRequested() to true in FEProblemBase before requesting "
+        "`u_dotdot_old`.");
 
   NumericVector<Number> & u_dot = *_sys.solutionUDot();
   NumericVector<Number> & u_dotdot = *_sys.solutionUDotDot();
