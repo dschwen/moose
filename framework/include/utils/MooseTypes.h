@@ -14,6 +14,8 @@
 #include "ADRankTwoTensorForward.h"
 #include "ADRankThreeTensorForward.h"
 #include "ADRankFourTensorForward.h"
+#include "ADSymmetricRankTwoTensorForward.h"
+#include "ADSymmetricRankFourTensorForward.h"
 
 #include "libmesh/libmesh.h"
 #include "libmesh/id_types.h"
@@ -356,6 +358,18 @@ struct ADType<RankFourTensor>
 {
   typedef ADRankFourTensor type;
 };
+
+template <>
+struct ADType<SymmetricRankTwoTensor>
+{
+  typedef ADSymmetricRankTwoTensor type;
+};
+template <>
+struct ADType<SymmetricRankFourTensor>
+{
+  typedef ADSymmetricRankFourTensor type;
+};
+
 template <template <typename> class W>
 struct ADType<W<Real>>
 {

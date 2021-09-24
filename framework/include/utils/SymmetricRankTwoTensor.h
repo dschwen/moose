@@ -10,14 +10,12 @@
 #pragma once
 
 #include "Moose.h"
-#include "ADRankTwoTensorForward.h"
-#include "ADRankFourTensorForward.h"
-#include "ADRankThreeTensorForward.h"
+#include "ADSymmetricRankTwoTensorForward.h"
+#include "ADSymmetricRankFourTensorForward.h"
 #include "MooseUtils.h"
 
 // Any requisite includes here
 #include "libmesh/libmesh.h"
-#include "libmesh/tensor_value.h"
 
 #include "metaphysicl/raw_type.h"
 
@@ -51,27 +49,24 @@ void mooseSetToZero(T & v);
  * Needed by DerivativeMaterialInterface
  */
 template <>
-void mooseSetToZero<RankTwoTensor>(RankTwoTensor & v);
+void mooseSetToZero<SymmetricRankTwoTensor>(SymmetricRankTwoTensor & v);
 
 /**
  * Helper function template specialization to set an object to zero.
  * Needed by DerivativeMaterialInterface
  */
 template <>
-void mooseSetToZero<ADRankTwoTensor>(ADRankTwoTensor & v);
+void mooseSetToZero<ADSymmetricRankTwoTensor>(ADSymmetricRankTwoTensor & v);
 }
 
 /**
- * RankTwoTensorTempl is designed to handle the Stress or Strain Tensor for a fully anisotropic
- * material. It is designed to allow for maximum clarity of the mathematics and ease of use.
- * Original class authors: A. M. Jokisaari, O. Heinonen, M. R. Tonks
- *
- * RankTwoTensorTempl holds the 9 separate Sigma_ij or Epsilon_ij entries.
- * The entries are accessed by index, with i, j equal to 1, 2, or 3, or
- * internally i, j = 0, 1, 2.
+ * SymmetricRankTwoTensorTempl is designed to handle the Stress or Strain Tensor for
+ * an anisotropic material. It is designed to reduce the redundancies of the
+ * Complete tensor classes for regular mechanics problems and to enable use of the
+ * Voigt notation.
  */
 template <typename T>
-class RankTwoTensorTempl : public TensorValue<T>
+class SymmetricRankTwoTensorTempl : public TensorValue<T>
 {
 public:
   // Select initialization
@@ -82,10 +77,10 @@ public:
   };
 
   /// Default constructor; fills to zero
-  RankTwoTensorTempl();
+  SymmetricRankTwoTensorTempl();
 
   /// Select specific initialization pattern
-  RankTwoTensorTempl(const InitMethod);
+  SymmetricRankTwoTensorTempl(const InitMethod);
 
   /**
    * To fill up the 9 entries in the 2nd-order tensor, fillFromInputVector
@@ -105,50 +100,43 @@ public:
    * Constructor that takes in 3 vectors and uses them to create rows
    * _coords[0][i] = row1(i), _coords[1][i] = row2(i), _coords[2][i] = row3(i)
    */
-  RankTwoTensorTempl(const TypeVector<T> & row1,
-                     const TypeVector<T> & row2,
-                     const TypeVector<T> & row3);
-
-  /// named constructor for initializing symetrically
-  static RankTwoTensorTempl
-  initializeSymmetric(const TypeVector<T> & v0, const TypeVector<T> & v1, const TypeVector<T> & v2);
-
-  /// named constructor for initializing from row vectors
-  static RankTwoTensorTempl initializeFromRows(const TypeVector<T> & row0,
-                                               const TypeVector<T> & row1,
-                                               const TypeVector<T> & row2);
-
-  /// named constructor for initializing from column vectors
-  static RankTwoTensorTempl initializeFromColumns(const TypeVector<T> & col0,
-                                                  const TypeVector<T> & col1,
-                                                  const TypeVector<T> & col2);
+  SymmetricRankTwoTensorTempl(const TypeVector<T> & row1,
+                              const TypeVector<T> & row2,
+                              const TypeVector<T> & row3);
 
   /// Constructor that proxies the fillFromInputVector method
-  RankTwoTensorTempl(const std::vector<T> & input) { this->fillFromInputVector(input); };
+  SymmetricRankTwoTensorTempl(const std::vector<T> & input) { this->fillFromInputVector(input); };
 
   /// Initialization list replacement constructors, 6 arguments
-  RankTwoTensorTempl(T S11, T S22, T S33, T S23, T S13, T S12);
+  SymmetricRankTwoTensorTempl(T S11, T S22, T S33, T S23, T S13, T S12);
 
   /// Initialization list replacement constructors, 9 arguments
-  RankTwoTensorTempl(T S11, T S21, T S31, T S12, T S22, T S32, T S13, T S23, T S33);
+  SymmetricRankTwoTensorTempl(T S11, T S21, T S31, T S12, T S22, T S32, T S13, T S23, T S33);
 
   /// Copy assignment operator must be defined if used
-  RankTwoTensorTempl(const RankTwoTensorTempl<T> & a) = default;
+  SymmetricRankTwoTensorTempl(const SymmetricRankTwoTensorTempl<T> & a) = default;
 
   /// Copy constructor from TensorValue<T>
-  RankTwoTensorTempl(const TensorValue<T> & a) : TensorValue<T>(a) {}
+  SymmetricRankTwoTensorTempl(const TensorValue<T> & a) : TensorValue<T>(a) {}
 
   /// Copy constructor from TypeTensor<T>
-  RankTwoTensorTempl(const TypeTensor<T> & a) : TensorValue<T>(a) {}
+  SymmetricRankTwoTensorTempl(const TypeTensor<T> & a) : TensorValue<T>(a) {}
 
   /// Construct from other template
   template <typename T2>
-  RankTwoTensorTempl(const RankTwoTensorTempl<T2> & a) : TensorValue<T>(a)
+  SymmetricRankTwoTensorTempl(const SymmetricRankTwoTensorTempl<T2> & a) : TensorValue<T>(a)
   {
   }
 
   // Named constructors
-  static RankTwoTensorTempl Identity() { return RankTwoTensorTempl(initIdentity); }
+  static SymmetricRankTwoTensorTempl Identity()
+  {
+    return SymmetricRankTwoTensorTempl(initIdentity);
+  }
+
+  /// named constructor for initializing symmetrically
+  static SymmetricRankTwoTensorTempl
+  initializeSymmetric(const TypeVector<T> & v0, const TypeVector<T> & v1, const TypeVector<T> & v2);
 
   /// Static method for use in validParams for getting the "fill_method"
   static MooseEnum fillMethodEnum();
@@ -172,46 +160,32 @@ public:
    */
   void fillFromScalarVariable(const VariableValue & scalar_variable);
 
-  /// returns _coords[i][c], ie, column c, with c = 0, 1, 2
-  TypeVector<T> column(const unsigned int c) const;
+  /// Gets the value for the index specified.  Takes index = 0,1,2
+  inline T & operator()(unsigned int i) { return _vals[i]; }
 
   /// multiply vector v with row n of this tensor
   T rowMultiply(std::size_t n, const TypeVector<T> & v) const;
 
   /**
-   * Returns a rotated version of the tensor data given a rank two tensor rotation tensor
-   * _coords[i][j] = R_ij * R_jl * _coords[k][l]
-   * @param R rotation matrix as another RankTwoTensorTempl
+   * Gets the value for the index specified.  Takes index = 0,1,2
+   * used for const
    */
-  RankTwoTensorTempl<T> rotated(const RankTwoTensorTempl<T> & R) const;
-
-  /**
-   * rotates the tensor data given a rank two tensor rotation tensor
-   * _coords[i][j] = R_ij * R_jl * _coords[k][l]
-   * @param R rotation matrix as a RankTwoTensorTempl
-   */
-  void rotate(const RankTwoTensorTempl<T> & R);
-
-  /**
-   * rotates the tensor data anticlockwise around the z-axis
-   * @param a angle in radians
-   */
-  RankTwoTensorTempl<T> rotateXyPlane(T a);
+  inline T operator()(unsigned int i) const { return _vals[i]; }
 
   /**
    * Returns a matrix that is the transpose of the matrix this
-   * was called on.
+   * was called on. This is a non-operation.
    */
-  RankTwoTensorTempl<T> transpose() const;
+  SymmetricRankTwoTensorTempl<T> transpose() const;
 
   /// sets _coords to a, and returns _coords
-  RankTwoTensorTempl<T> & operator=(const RankTwoTensorTempl<T> & a);
+  SymmetricRankTwoTensorTempl<T> & operator=(const SymmetricRankTwoTensorTempl<T> & a);
 
   /**
    * Assignment-from-scalar operator.  Used only to zero out vectors.
    */
   template <typename Scalar>
-  typename boostcopy::enable_if_c<ScalarTraits<Scalar>::value, RankTwoTensorTempl &>::type
+  typename boostcopy::enable_if_c<ScalarTraits<Scalar>::value, SymmetricRankTwoTensorTempl &>::type
   operator=(const Scalar & libmesh_dbg_var(p))
   {
     libmesh_assert_equal_to(p, Scalar(0));
@@ -220,37 +194,39 @@ public:
   }
 
   /// adds a to _coords
-  RankTwoTensorTempl<T> & operator+=(const RankTwoTensorTempl<T> & a);
+  SymmetricRankTwoTensorTempl<T> & operator+=(const SymmetricRankTwoTensorTempl<T> & a);
 
   /// returns _coords + a
   template <typename T2>
-  RankTwoTensorTempl<typename CompareTypes<T, T2>::supertype>
-  operator+(const TypeTensor<T2> & a) const;
+  SymmetricRankTwoTensorTempl<typename CompareTypes<T, T2>::supertype>
+  operator+(const SymmetricRankTwoTensorTempl<T2> & a) const;
 
   /// sets _coords -= a and returns vals
-  RankTwoTensorTempl<T> & operator-=(const RankTwoTensorTempl<T> & a);
+  SymmetricRankTwoTensorTempl<T> & operator-=(const SymmetricRankTwoTensorTempl<T> & a);
 
   /// returns _coords - a
   template <typename T2>
-  RankTwoTensorTempl<typename CompareTypes<T, T2>::supertype>
-  operator-(const TypeTensor<T2> & a) const;
+  SymmetricRankTwoTensorTempl<typename CompareTypes<T, T2>::supertype>
+  operator-(const SymmetricRankTwoTensorTempl<T2> & a) const;
 
   /// returns -_coords
-  RankTwoTensorTempl<T> operator-() const;
+  SymmetricRankTwoTensorTempl<T> operator-() const;
 
   /// performs _coords *= a
-  RankTwoTensorTempl<T> & operator*=(const T & a);
+  SymmetricRankTwoTensorTempl<T> & operator*=(const T & a);
 
   /// returns _coords*a
   template <typename T2, typename std::enable_if<ScalarTraits<T2>::value, int>::type = 0>
-  RankTwoTensorTempl<typename CompareTypes<T, T2>::supertype> operator*(const T2 & a) const;
+  SymmetricRankTwoTensorTempl<typename CompareTypes<T, T2>::supertype>
+  operator*(const T2 & a) const;
 
   /// performs _coords /= a
-  RankTwoTensorTempl<T> & operator/=(const T & a);
+  SymmetricRankTwoTensorTempl<T> & operator/=(const T & a);
 
   /// returns _coords/a
   template <typename T2, typename std::enable_if<ScalarTraits<T2>::value, int>::type = 0>
-  RankTwoTensorTempl<typename CompareTypes<T, T2>::supertype> operator/(const T2 & a) const;
+  SymmetricRankTwoTensorTempl<typename CompareTypes<T, T2>::supertype>
+  operator/(const T2 & a) const;
 
   /// Defines multiplication with a vector to get a vector
   template <typename T2>
@@ -258,70 +234,72 @@ public:
 
   /// Defines multiplication with a TypeTensor<T>
   template <typename T2>
-  RankTwoTensorTempl<typename CompareTypes<T, T2>::supertype>
+  SymmetricRankTwoTensorTempl<typename CompareTypes<T, T2>::supertype>
   operator*(const TypeTensor<T2> & a) const;
 
   /// Defines multiplication with a TypeTensor<T>
-  RankTwoTensorTempl<T> & operator*=(const TypeTensor<T> & a);
+  SymmetricRankTwoTensorTempl<T> & operator*=(const TypeTensor<T> & a);
 
-  /// Defines logical equality with another RankTwoTensorTempl<T>
-  bool operator==(const RankTwoTensorTempl<T> & a) const;
+  /// Defines logical equality with another SymmetricRankTwoTensorTempl<T2>
+  template <typename T2>
+  bool operator==(const SymmetricRankTwoTensorTempl<T2> & a) const;
+
+  /// Defines logical inequality with another SymmetricRankTwoTensorTempl<T2>
+  template <typename T2>
+  bool operator!=(const SymmetricRankTwoTensorTempl<T2> & a) const;
 
   /// Sets _coords to the values in a ColumnMajorMatrix (must be 3x3)
-  RankTwoTensorTempl<T> & operator=(const ColumnMajorMatrixTempl<T> & a);
+  SymmetricRankTwoTensorTempl<T> & operator=(const ColumnMajorMatrixTempl<T> & a);
 
   /// returns _coords_ij * a_ij (sum on i, j)
-  T doubleContraction(const RankTwoTensorTempl<T> & a) const;
+  T doubleContraction(const SymmetricRankTwoTensorTempl<T> & a) const;
 
   /// returns C_ijkl = a_ij * b_kl
-  RankFourTensorTempl<T> outerProduct(const RankTwoTensorTempl<T> & a) const;
+  SymmetricRankFourTensorTempl<T> outerProduct(const SymmetricRankTwoTensorTempl<T> & a) const;
 
   /// returns C_ijkl = a_ik * b_jl
-  RankFourTensorTempl<T> mixedProductIkJl(const RankTwoTensorTempl<T> & a) const;
+  SymmetricRankFourTensorTempl<T> mixedProductIkJl(const SymmetricRankTwoTensorTempl<T> & a) const;
 
   /// returns C_ijkl = a_jk * b_il
-  RankFourTensorTempl<T> mixedProductJkIl(const RankTwoTensorTempl<T> & a) const;
+  SymmetricRankFourTensorTempl<T> mixedProductJkIl(const SymmetricRankTwoTensorTempl<T> & a) const;
 
   /// returns C_ijkl = a_il * b_jk
-  RankFourTensorTempl<T> mixedProductIlJk(const RankTwoTensorTempl<T> & a) const;
+  SymmetricRankFourTensorTempl<T> mixedProductIlJk(const SymmetricRankTwoTensorTempl<T> & a) const;
 
   /// returns C_iklm = a_ij * b_jklm
-  RankFourTensorTempl<T> mixedProductIjJklm(const RankFourTensorTempl<T> & a) const;
+  SymmetricRankFourTensorTempl<T>
+  mixedProductIjJklm(const SymmetricRankFourTensorTempl<T> & a) const;
 
   /// returns C_iklm = a_jm * b_ijkl
-  RankFourTensorTempl<T> mixedProductJmIjkl(const RankFourTensorTempl<T> & b) const;
+  SymmetricRankFourTensorTempl<T>
+  mixedProductJmIjkl(const SymmetricRankFourTensorTempl<T> & b) const;
 
   /// returns C_iklm = a_jk * b_ijlm
-  RankFourTensorTempl<T> mixedProductJkIjlm(const RankFourTensorTempl<T> & b) const;
-
-  /// returns C_ikl = a_ij * b_jkl
-  RankThreeTensorTempl<T> mixedProductIjJkl(const RankThreeTensorTempl<T> & b) const;
-
-  /// returns C_ijk = a_jk * b_i
-  RankThreeTensorTempl<T> mixedProductJkI(const VectorValue<T> & b) const;
+  SymmetricRankFourTensorTempl<T>
+  mixedProductJkIjlm(const SymmetricRankFourTensorTempl<T> & b) const;
 
   /// return positive projection tensor of eigen-decomposition
   template <typename T2 = T>
-  typename std::enable_if<MooseUtils::IsLikeReal<T2>::value, RankFourTensorTempl<T>>::type
-  positiveProjectionEigenDecomposition(std::vector<T> &, RankTwoTensorTempl<T> &) const;
+  typename std::enable_if<MooseUtils::IsLikeReal<T2>::value, SymmetricRankFourTensorTempl<T>>::type
+  positiveProjectionEigenDecomposition(std::vector<T> &, SymmetricRankTwoTensorTempl<T> &) const;
   template <typename T2 = T>
-  typename std::enable_if<!MooseUtils::IsLikeReal<T2>::value, RankFourTensorTempl<T>>::type
-  positiveProjectionEigenDecomposition(std::vector<T> &, RankTwoTensorTempl<T> &) const;
+  typename std::enable_if<!MooseUtils::IsLikeReal<T2>::value, SymmetricRankFourTensorTempl<T>>::type
+  positiveProjectionEigenDecomposition(std::vector<T> &, SymmetricRankTwoTensorTempl<T> &) const;
 
   /// returns A_ij - de_ij*tr(A)/3, where A are the _coords
-  RankTwoTensorTempl<T> deviatoric() const;
+  SymmetricRankTwoTensorTempl<T> deviatoric() const;
 
   /// returns the trace of the tensor, ie _coords[i][i] (sum i = 0, 1, 2)
   T trace() const;
 
   /// retuns the inverse of the tensor
-  RankTwoTensorTempl<T> inverse() const;
+  SymmetricRankTwoTensorTempl<T> inverse() const;
 
   /**
    * Denote the _coords[i][j] by A_ij, then this returns
    * d(trace)/dA_ij
    */
-  RankTwoTensorTempl<T> dtrace() const;
+  SymmetricRankTwoTensorTempl<T> dtrace() const;
 
   /**
    * Denote the _coords[i][j] by A_ij, then
@@ -340,13 +318,13 @@ public:
    * Denote the _coords[i][j] by A_ij, then this returns
    * d(secondInvariant)/dA_ij
    */
-  RankTwoTensorTempl<T> dsecondInvariant() const;
+  SymmetricRankTwoTensorTempl<T> dsecondInvariant() const;
 
   /**
    * Denote the _coords[i][j] by A_ij, then this returns
    * d^2(secondInvariant)/dA_ij/dA_kl
    */
-  RankFourTensorTempl<T> d2secondInvariant() const;
+  SymmetricRankFourTensorTempl<T> d2secondInvariant() const;
 
   /**
    * Sin(3*Lode_angle)
@@ -368,10 +346,10 @@ public:
    * Note that sin(3*Lode_angle) is not defined for secondInvariant() = 0
    */
   template <typename T2 = T>
-  typename std::enable_if<MooseUtils::IsLikeReal<T2>::value, RankTwoTensorTempl<T>>::type
+  typename std::enable_if<MooseUtils::IsLikeReal<T2>::value, SymmetricRankTwoTensorTempl<T>>::type
   dsin3Lode(const T & r0) const;
   template <typename T2 = T>
-  typename std::enable_if<!MooseUtils::IsLikeReal<T2>::value, RankTwoTensorTempl<T>>::type
+  typename std::enable_if<!MooseUtils::IsLikeReal<T2>::value, SymmetricRankTwoTensorTempl<T>>::type
   dsin3Lode(const T & r0) const;
 
   /**
@@ -381,10 +359,10 @@ public:
    * Note that sin(3*Lode_angle) is not defined for secondInvariant() = 0
    */
   template <typename T2 = T>
-  typename std::enable_if<MooseUtils::IsLikeReal<T2>::value, RankFourTensorTempl<T>>::type
+  typename std::enable_if<MooseUtils::IsLikeReal<T2>::value, SymmetricRankFourTensorTempl<T>>::type
   d2sin3Lode(const T & r0) const;
   template <typename T2 = T>
-  typename std::enable_if<!MooseUtils::IsLikeReal<T2>::value, RankFourTensorTempl<T>>::type
+  typename std::enable_if<!MooseUtils::IsLikeReal<T2>::value, SymmetricRankFourTensorTempl<T>>::type
   d2sin3Lode(const T & r0) const;
 
   /**
@@ -399,19 +377,19 @@ public:
    * Denote the _coords[i][j] by A_ij, then
    * this returns d(thirdInvariant()/dA_ij
    */
-  RankTwoTensorTempl<T> dthirdInvariant() const;
+  SymmetricRankTwoTensorTempl<T> dthirdInvariant() const;
 
   /**
    * Denote the _coords[i][j] by A_ij, then this returns
    * d^2(thirdInvariant)/dA_ij/dA_kl
    */
-  RankFourTensorTempl<T> d2thirdInvariant() const;
+  SymmetricRankFourTensorTempl<T> d2thirdInvariant() const;
 
   /**
    * Denote the _coords[i][j] by A_ij, then this returns
    * d(det)/dA_ij
    */
-  RankTwoTensorTempl<T> ddet() const;
+  SymmetricRankTwoTensorTempl<T> ddet() const;
 
   /// Print the rank two tensor
   void print(std::ostream & stm = Moose::out) const;
@@ -447,7 +425,7 @@ public:
    * Dual numbers are permuted as well
    * P * A permutes rows and A * P^T permutes columns
    */
-  RankTwoTensorTempl<T>
+  SymmetricRankTwoTensorTempl<T>
   permutationTensor(const std::array<unsigned int, LIBMESH_DIM> & old_elements,
                     const std::array<unsigned int, LIBMESH_DIM> & new_elements) const;
 
@@ -456,7 +434,7 @@ public:
    * @param row1 is the row number of the first component to rotate
    * @param row2 is the row number of the second component to rotate
    * @param col is the column number of the components to rotate
-   * consider a RankTwoTensor A = [ a11 a12 a13
+   * consider a SymmetricRankTwoTensor A = [ a11 a12 a13
    *                                a21 a22 a23
    *                                a31 a32 a33]
    * and we want to rotate a21 and a31. Then row1 = 1, row2 = 2, col = 0.
@@ -467,19 +445,19 @@ public:
    * A DualReal instantiation is available to rotate dual numbers as well.
    */
   template <typename T2 = T>
-  typename std::enable_if<MooseUtils::IsLikeReal<T2>::value, RankTwoTensorTempl<T>>::type
+  typename std::enable_if<MooseUtils::IsLikeReal<T2>::value, SymmetricRankTwoTensorTempl<T>>::type
   givensRotation(unsigned int row1, unsigned int row2, unsigned int col) const;
   template <typename T2 = T>
-  typename std::enable_if<!MooseUtils::IsLikeReal<T2>::value, RankTwoTensorTempl<T>>::type
+  typename std::enable_if<!MooseUtils::IsLikeReal<T2>::value, SymmetricRankTwoTensorTempl<T>>::type
   givensRotation(unsigned int, unsigned int, unsigned int) const;
 
   /// computes the Hessenberg form of this matrix A and its unitary transformation U such that A = U * H * U^T
-  void hessenberg(RankTwoTensorTempl<T> & H, RankTwoTensorTempl<T> & U) const;
+  void hessenberg(SymmetricRankTwoTensorTempl<T> & H, SymmetricRankTwoTensorTempl<T> & U) const;
 
   /// computes the QR factorization such that A = Q * R, where Q is the unitary matrix and R an upper triangular matrix
-  void QR(RankTwoTensorTempl<T> & Q,
-          RankTwoTensorTempl<T> & R,
-          unsigned int dim = RankTwoTensorTempl<T>::N) const;
+  void QR(SymmetricRankTwoTensorTempl<T> & Q,
+          SymmetricRankTwoTensorTempl<T> & R,
+          unsigned int dim = SymmetricRankTwoTensorTempl<T>::N) const;
 
   /**
    * computes eigenvalues and eigenvectors, assuming tens is symmetric, and places them
@@ -487,7 +465,7 @@ public:
    * being the first eigenvector, the second column being the second, etc.
    */
   void symmetricEigenvaluesEigenvectors(std::vector<T> & eigvals,
-                                        RankTwoTensorTempl<T> & eigvecs) const;
+                                        SymmetricRankTwoTensorTempl<T> & eigvecs) const;
 
   /**
    * computes eigenvalues, and their symmetric derivatives wrt vals,
@@ -501,13 +479,13 @@ public:
    * too sophisticated for this routine.
    */
   void dsymmetricEigenvalues(std::vector<T> & eigvals,
-                             std::vector<RankTwoTensorTempl<T>> & deigvals) const;
+                             std::vector<SymmetricRankTwoTensorTempl<T>> & deigvals) const;
 
   /**
    * Computes second derivatives of Eigenvalues of a rank two tensor
    * @param deriv store second derivative of the current tensor in here
    */
-  void d2symmetricEigenvalues(std::vector<RankFourTensorTempl<T>> & deriv) const;
+  void d2symmetricEigenvalues(std::vector<SymmetricRankFourTensorTempl<T>> & deriv) const;
 
   /**
    * Uses the petscblaslapack.h LAPACKsyev_ routine to find, for symmetric _coords:
@@ -524,7 +502,7 @@ public:
    * Uses the petscblaslapack.h LAPACKsyev_ routine to perform RU decomposition and obtain the
    * rotation tensor.
    */
-  void getRUDecompositionRotation(RankTwoTensorTempl<T> & rot) const;
+  void getRUDecompositionRotation(SymmetricRankTwoTensorTempl<T> & rot) const;
 
   /**
    * This function initializes random seed based on a user-defined number.
@@ -536,16 +514,16 @@ public:
    * The first real scales the random number.
    * The second real offsets the uniform random number
    */
-  static RankTwoTensorTempl<T> genRandomTensor(T, T);
+  static SymmetricRankTwoTensorTempl<T> genRandomTensor(T, T);
 
   /**
    * This function generates a random symmetric rank two tensor.
    * The first real scales the random number.
    * The second real offsets the uniform random number
    */
-  static RankTwoTensorTempl<T> genRandomSymmTensor(T, T);
+  static SymmetricRankTwoTensorTempl<T> genRandomSymmTensor(T, T);
 
-  /// RankTwoTensorTempl<T> from outer product of vectors
+  /// SymmetricRankTwoTensorTempl<T> from outer product of vectors
   void vectorOuterProduct(const TypeVector<T> &, const TypeVector<T> &);
 
   /// Return real tensor of a rank two tensor
@@ -558,40 +536,44 @@ public:
   void fillColumn(unsigned int, const TypeVector<T> &);
 
   /// returns this_ij * b_ijkl
-  RankTwoTensorTempl<T> initialContraction(const RankFourTensorTempl<T> & b) const;
+  SymmetricRankTwoTensorTempl<T>
+  initialContraction(const SymmetricRankFourTensorTempl<T> & b) const;
 
   /// set the tensor to the identity matrix
   void setToIdentity();
 
+  static constexpr unsigned int N = 6;
+
 private:
-  static constexpr unsigned int N = LIBMESH_DIM;
-  static constexpr unsigned int N2 = N * N;
-  static constexpr Real identityCoords[N2] = {1, 0, 0, 0, 1, 0, 0, 0, 1};
+  static constexpr std::array<Real, N> identityCoords = {1, 1, 1, 0, 0, 0};
+
+  // tensor components
+  std::array<T, N> _vals;
+
+  /// as std::sqrt is not constexpr we need to define this here ourselves
+  static constexpr Real SQRT2 = 1.4142135623730951;
 
   template <class T2>
-  friend void dataStore(std::ostream &, RankTwoTensorTempl<T2> &, void *);
+  friend void dataStore(std::ostream &, SymmetricRankTwoTensorTempl<T2> &, void *);
 
   template <class T2>
-  friend void dataLoad(std::istream &, RankTwoTensorTempl<T2> &, void *);
+  friend void dataLoad(std::istream &, SymmetricRankTwoTensorTempl<T2> &, void *);
   template <class T2>
-  friend class RankFourTensorTempl;
-  template <class T2>
-  friend class RankThreeTensorTempl;
+  friend class SymmetricRankFourTensorTempl;
 };
 
 namespace MetaPhysicL
 {
 template <typename T>
-struct RawType<RankTwoTensorTempl<T>>
+struct RawType<SymmetricRankTwoTensorTempl<T>>
 {
-  typedef RankTwoTensorTempl<typename RawType<T>::value_type> value_type;
+  typedef SymmetricRankTwoTensorTempl<typename RawType<T>::value_type> value_type;
 
-  static value_type value(const RankTwoTensorTempl<T> & in)
+  static value_type value(const SymmetricRankTwoTensorTempl<T> & in)
   {
     value_type ret;
-    for (unsigned int i = 0; i < LIBMESH_DIM; ++i)
-      for (unsigned int j = 0; j < LIBMESH_DIM; ++j)
-        ret(i, j) = raw_value(in(i, j));
+    for (unsigned int i = 0; i < SymmetricRankTwoTensorTempl<T>::N; ++i)
+      ret(i) = raw_value(in(i));
 
     return ret;
   }
@@ -600,57 +582,9 @@ struct RawType<RankTwoTensorTempl<T>>
 
 template <typename T>
 template <typename T2>
-RankTwoTensorTempl<typename CompareTypes<T, T2>::supertype>
-RankTwoTensorTempl<T>::operator+(const TypeTensor<T2> & b) const
-{
-  return TensorValue<T>::operator+(b);
-}
-
-template <typename T>
-template <typename T2>
-RankTwoTensorTempl<typename CompareTypes<T, T2>::supertype>
-RankTwoTensorTempl<T>::operator-(const TypeTensor<T2> & b) const
-{
-  return TensorValue<T>::operator-(b);
-}
-
-template <typename T>
-template <typename T2, typename std::enable_if<ScalarTraits<T2>::value, int>::type>
-RankTwoTensorTempl<typename CompareTypes<T, T2>::supertype>
-RankTwoTensorTempl<T>::operator*(const T2 & b) const
-{
-  return TensorValue<T>::operator*(b);
-}
-
-template <typename T>
-template <typename T2>
-TypeVector<typename CompareTypes<T, T2>::supertype>
-RankTwoTensorTempl<T>::operator*(const TypeVector<T2> & b) const
-{
-  return TensorValue<T>::operator*(b);
-}
-
-template <typename T>
-template <typename T2>
-RankTwoTensorTempl<typename CompareTypes<T, T2>::supertype>
-RankTwoTensorTempl<T>::operator*(const TypeTensor<T2> & b) const
-{
-  return TensorValue<T>::operator*(b);
-}
-
-template <typename T>
-template <typename T2, typename std::enable_if<ScalarTraits<T2>::value, int>::type>
-RankTwoTensorTempl<typename CompareTypes<T, T2>::supertype>
-RankTwoTensorTempl<T>::operator/(const T2 & b) const
-{
-  return TensorValue<T>::operator/(b);
-}
-
-template <typename T>
-template <typename T2>
-typename std::enable_if<MooseUtils::IsLikeReal<T2>::value, RankFourTensorTempl<T>>::type
-RankTwoTensorTempl<T>::positiveProjectionEigenDecomposition(std::vector<T> & eigval,
-                                                            RankTwoTensorTempl<T> & eigvec) const
+typename std::enable_if<MooseUtils::IsLikeReal<T2>::value, SymmetricRankFourTensorTempl<T>>::type
+SymmetricRankTwoTensorTempl<T>::positiveProjectionEigenDecomposition(
+    std::vector<T> & eigval, SymmetricRankTwoTensorTempl<T> & eigvec) const
 {
   // The calculate of projection tensor follows
   // C. Miehe and M. Lambrecht, Commun. Numer. Meth. Engng 2001; 17:337~353
@@ -668,9 +602,9 @@ RankTwoTensorTempl<T>::positiveProjectionEigenDecomposition(std::vector<T> & eig
   }
 
   // projection tensor
-  RankFourTensorTempl<T> proj_pos;
-  RankFourTensorTempl<T> Gab, Gba;
-  RankTwoTensorTempl<T> Ma, Mb;
+  SymmetricRankFourTensorTempl<T> proj_pos;
+  SymmetricRankFourTensorTempl<T> Gab, Gba;
+  SymmetricRankTwoTensorTempl<T> Ma, Mb;
 
   for (unsigned int a = 0; a < N; ++a)
   {
@@ -700,9 +634,9 @@ RankTwoTensorTempl<T>::positiveProjectionEigenDecomposition(std::vector<T> & eig
 
 template <typename T>
 template <typename T2>
-typename std::enable_if<!MooseUtils::IsLikeReal<T2>::value, RankFourTensorTempl<T>>::type
-RankTwoTensorTempl<T>::positiveProjectionEigenDecomposition(std::vector<T> &,
-                                                            RankTwoTensorTempl<T> &) const
+typename std::enable_if<!MooseUtils::IsLikeReal<T2>::value, SymmetricRankFourTensorTempl<T>>::type
+SymmetricRankTwoTensorTempl<T>::positiveProjectionEigenDecomposition(
+    std::vector<T> &, SymmetricRankTwoTensorTempl<T> &) const
 {
   mooseError(
       "positiveProjectionEigenDecomposition is only available for ordered tensor component types");
@@ -710,8 +644,10 @@ RankTwoTensorTempl<T>::positiveProjectionEigenDecomposition(std::vector<T> &,
 
 template <typename T>
 template <typename T2>
-typename std::enable_if<MooseUtils::IsLikeReal<T2>::value, RankTwoTensorTempl<T>>::type
-RankTwoTensorTempl<T>::givensRotation(unsigned int row1, unsigned int row2, unsigned int col) const
+typename std::enable_if<MooseUtils::IsLikeReal<T2>::value, SymmetricRankTwoTensorTempl<T>>::type
+SymmetricRankTwoTensorTempl<T>::givensRotation(unsigned int row1,
+                                               unsigned int row2,
+                                               unsigned int col) const
 {
   T c, s;
   T a = (*this)(row1, col);
@@ -739,7 +675,7 @@ RankTwoTensorTempl<T>::givensRotation(unsigned int row1, unsigned int row2, unsi
     c = s * t;
   }
 
-  RankTwoTensorTempl<T> R(initIdentity);
+  SymmetricRankTwoTensorTempl<T> R(initIdentity);
   R(row1, row1) = c;
   R(row1, row2) = s;
   R(row2, row1) = -s;
@@ -750,8 +686,8 @@ RankTwoTensorTempl<T>::givensRotation(unsigned int row1, unsigned int row2, unsi
 
 template <typename T>
 template <typename T2>
-typename std::enable_if<!MooseUtils::IsLikeReal<T2>::value, RankTwoTensorTempl<T>>::type
-RankTwoTensorTempl<T>::givensRotation(unsigned int, unsigned int, unsigned int) const
+typename std::enable_if<!MooseUtils::IsLikeReal<T2>::value, SymmetricRankTwoTensorTempl<T>>::type
+SymmetricRankTwoTensorTempl<T>::givensRotation(unsigned int, unsigned int, unsigned int) const
 {
   mooseError("givensRotation is only available for ordered tensor component types");
 }
@@ -759,7 +695,7 @@ RankTwoTensorTempl<T>::givensRotation(unsigned int, unsigned int, unsigned int) 
 template <typename T>
 template <typename T2>
 typename std::enable_if<MooseUtils::IsLikeReal<T2>::value, T>::type
-RankTwoTensorTempl<T>::sin3Lode(const T & r0, const T & r0_value) const
+SymmetricRankTwoTensorTempl<T>::sin3Lode(const T & r0, const T & r0_value) const
 {
   T bar = secondInvariant();
   if (bar <= r0)
@@ -774,19 +710,19 @@ RankTwoTensorTempl<T>::sin3Lode(const T & r0, const T & r0_value) const
 template <typename T>
 template <typename T2>
 typename std::enable_if<!MooseUtils::IsLikeReal<T2>::value, T>::type
-RankTwoTensorTempl<T>::sin3Lode(const T &, const T &) const
+SymmetricRankTwoTensorTempl<T>::sin3Lode(const T &, const T &) const
 {
   mooseError("sin3Lode is only available for ordered tensor component types");
 }
 
 template <typename T>
 template <typename T2>
-typename std::enable_if<MooseUtils::IsLikeReal<T2>::value, RankTwoTensorTempl<T>>::type
-RankTwoTensorTempl<T>::dsin3Lode(const T & r0) const
+typename std::enable_if<MooseUtils::IsLikeReal<T2>::value, SymmetricRankTwoTensorTempl<T>>::type
+SymmetricRankTwoTensorTempl<T>::dsin3Lode(const T & r0) const
 {
   T bar = secondInvariant();
   if (bar <= r0)
-    return RankTwoTensorTempl<T>();
+    return SymmetricRankTwoTensorTempl<T>();
   else
     return -1.5 * std::sqrt(3.0) *
            (dthirdInvariant() / std::pow(bar, 1.5) -
@@ -795,25 +731,25 @@ RankTwoTensorTempl<T>::dsin3Lode(const T & r0) const
 
 template <typename T>
 template <typename T2>
-typename std::enable_if<!MooseUtils::IsLikeReal<T2>::value, RankTwoTensorTempl<T>>::type
-RankTwoTensorTempl<T>::dsin3Lode(const T &) const
+typename std::enable_if<!MooseUtils::IsLikeReal<T2>::value, SymmetricRankTwoTensorTempl<T>>::type
+SymmetricRankTwoTensorTempl<T>::dsin3Lode(const T &) const
 {
   mooseError("dsin3Lode is only available for ordered tensor component types");
 }
 
 template <typename T>
 template <typename T2>
-typename std::enable_if<MooseUtils::IsLikeReal<T2>::value, RankFourTensorTempl<T>>::type
-RankTwoTensorTempl<T>::d2sin3Lode(const T & r0) const
+typename std::enable_if<MooseUtils::IsLikeReal<T2>::value, SymmetricRankFourTensorTempl<T>>::type
+SymmetricRankTwoTensorTempl<T>::d2sin3Lode(const T & r0) const
 {
   T bar = secondInvariant();
   if (bar <= r0)
-    return RankFourTensorTempl<T>();
+    return SymmetricRankFourTensorTempl<T>();
 
   T J3 = thirdInvariant();
-  RankTwoTensorTempl<T> dII = dsecondInvariant();
-  RankTwoTensorTempl<T> dIII = dthirdInvariant();
-  RankFourTensorTempl<T> deriv =
+  SymmetricRankTwoTensorTempl<T> dII = dsecondInvariant();
+  SymmetricRankTwoTensorTempl<T> dIII = dthirdInvariant();
+  SymmetricRankFourTensorTempl<T> deriv =
       d2thirdInvariant() / std::pow(bar, 1.5) - 1.5 * d2secondInvariant() * J3 / std::pow(bar, 2.5);
 
   for (unsigned i = 0; i < N; ++i)
@@ -830,8 +766,8 @@ RankTwoTensorTempl<T>::d2sin3Lode(const T & r0) const
 
 template <typename T>
 template <typename T2>
-typename std::enable_if<!MooseUtils::IsLikeReal<T2>::value, RankFourTensorTempl<T>>::type
-RankTwoTensorTempl<T>::d2sin3Lode(const T &) const
+typename std::enable_if<!MooseUtils::IsLikeReal<T2>::value, SymmetricRankFourTensorTempl<T>>::type
+SymmetricRankTwoTensorTempl<T>::d2sin3Lode(const T &) const
 {
   mooseError("d2sin3Lode is only available for ordered tensor component types");
 }
