@@ -1275,6 +1275,15 @@ RankTwoTensorTempl<T>::vectorOuterProduct(const TypeVector<T> & v1, const TypeVe
 
 template <typename T>
 void
+RankTwoTensorTempl<T>::vectorSelfOuterProduct(const TypeVector<T> & v)
+{
+  for (unsigned int i = 0; i < N; ++i)
+    for (unsigned int j = 0; j < N; ++j)
+      (*this)(i, j) = v(i) * v(j);
+}
+
+template <typename T>
+void
 RankTwoTensorTempl<T>::fillRealTensor(TensorValue<T> & tensor)
 {
   for (unsigned int i = 0; i < N; ++i)
