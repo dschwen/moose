@@ -138,11 +138,11 @@ ADComputeFiniteStrainTempl<R2, R4>::computeQpIncrements(ADR2 & total_strain_incr
       ADRankTwoTensor A(ADRankTwoTensor::initIdentity);
       A -= invFhat;
 
-      // Cinv - I = A A^T - A - A^T;
-      ADRankTwoTensor Cinv_I = A * A.transpose() - A - A.transpose();
+      // Cinv - I = A A^T - (A + A^T);
+      ADR2 Cinv_I = ADR2::timesTranspose(A) - ADR2::plusTranspose(A);
 
       // strain rate D from Taylor expansion, Chat = (-1/2(Chat^-1 - I) + 1/4*(Chat^-1 - I)^2 + ...
-      total_strain_increment = -Cinv_I * 0.5 + Cinv_I * Cinv_I * 0.25;
+      total_strain_increment = -Cinv_I * 0.5 + Cinv_I.sqr() * 0.25;
 
       const ADReal a[3] = {invFhat(1, 2) - invFhat(2, 1),
                            invFhat(2, 0) - invFhat(0, 2),
@@ -211,7 +211,8 @@ ADComputeFiniteStrainTempl<R2, R4>::computeQpIncrements(ADR2 & total_strain_incr
       const auto lambda1 = std::sqrt(e_value[0]);
       const auto lambda2 = std::sqrt(e_value[1]);
       const auto lambda3 = std::sqrt(e_value[2]);
-
+      e_vector.print(std::cout);
+      std::cout << '\n' << lambda1 << ' ' << lambda2 << ' ' << lambda3 << '\n';
       // outer product of a vector with itself is guaranteed to be symmetric
       N1.vectorSelfOuterProduct(e_vector.column(0));
       N2.vectorSelfOuterProduct(e_vector.column(1));
@@ -232,5 +233,6 @@ ADComputeFiniteStrainTempl<R2, R4>::computeQpIncrements(ADR2 & total_strain_incr
                  "EigenSolution.");
   }
 }
+
 template class ADComputeFiniteStrainTempl<RankTwoTensor, RankFourTensor>;
 template class ADComputeFiniteStrainTempl<SymmetricRankTwoTensor, SymmetricRankFourTensor>;
