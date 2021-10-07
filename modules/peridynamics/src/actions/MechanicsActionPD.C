@@ -50,12 +50,24 @@ MechanicsActionPD::validParams()
   params.addParam<std::vector<SubdomainName>>("block",
                                               "List of ids of the blocks (subdomains) that the "
                                               "peridynamic mechanics kernel will be applied to");
-  params.addParam<std::vector<AuxVariableName>>("save_in", "The displacement residuals");
-  params.addParam<std::vector<AuxVariableName>>("diag_save_in",
-                                                "The displacement diagonal preconditioner terms");
+  params.addDeprecatedParam<std::vector<AuxVariableName>>(
+      "save_in",
+      "The displacement residuals",
+      "The save_in method is deprecated, utilize extra_vector_tags instead");
+  params.addDeprecatedParam<std::vector<AuxVariableName>>(
+      "diag_save_in",
+      "The displacement diagonal preconditioner terms",
+      "The save_in method is deprecated, utilize extra_matrix_tags instead");
   params.addParam<std::vector<MaterialPropertyName>>(
       "eigenstrain_names",
       "List of eigenstrains to be coupled in non-ordinary state-based mechanics kernels");
+
+  params.addParam<std::vector<TagName>>(
+      "extra_vector_tags",
+      "The tag names for extra vectors that residual data should be saved into");
+  params.addParam<std::vector<TagName>>(
+      "extra_matrix_tags",
+      "The tag names for extra matrices that residual data should be saved into");
 
   return params;
 }

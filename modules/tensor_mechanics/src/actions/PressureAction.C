@@ -27,12 +27,22 @@ PressureAction::validParams()
       "displacements",
       "The displacements appropriate for the simulation geometry and coordinate system");
 
-  params.addParam<std::vector<AuxVariableName>>("save_in_disp_x",
-                                                "The save_in variables for x displacement");
-  params.addParam<std::vector<AuxVariableName>>("save_in_disp_y",
-                                                "The save_in variables for y displacement");
-  params.addParam<std::vector<AuxVariableName>>("save_in_disp_z",
-                                                "The save_in variables for z displacement");
+  params.addDeprecatedParam<std::vector<AuxVariableName>>(
+      "save_in_disp_x",
+      "The save_in variables for x displacement",
+      "The save_in method is deprecated, utilize extra_vector_tags instead");
+  params.addDeprecatedParam<std::vector<AuxVariableName>>(
+      "save_in_disp_y",
+      "The save_in variables for y displacement",
+      "The save_in method is deprecated, utilize extra_vector_tags instead");
+  params.addDeprecatedParam<std::vector<AuxVariableName>>(
+      "save_in_disp_z",
+      "The save_in variables for z displacement",
+      "The save_in method is deprecated, utilize extra_vector_tags instead");
+
+  params.addParam<std::vector<TagName>>(
+      "extra_vector_tags",
+      "The tag names for extra vectors that residual data should be saved into");
 
   params.addParam<Real>("factor", 1.0, "The factor to use in computing the pressure");
   params.addParam<Real>("hht_alpha",

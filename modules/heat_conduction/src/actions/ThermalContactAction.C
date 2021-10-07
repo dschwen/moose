@@ -80,8 +80,14 @@ ThermalContactAction::validParams()
       "displacements",
       "The displacements appropriate for the simulation geometry and coordinate system");
 
-  params.addParam<std::vector<AuxVariableName>>(
-      "save_in", "The Auxiliary Variable to (optionally) save the boundary flux in");
+  params.addDeprecatedParam<std::vector<AuxVariableName>>(
+      "save_in",
+      "The Auxiliary Variable to (optionally) save the boundary flux in",
+      "The save_in method is deprecated, utilize extra_vector_tags instead");
+  params.addParam<std::vector<TagName>>(
+      "extra_vector_tags",
+      "The tag names for extra vectors that residual data should be saved into");
+
   params.addRangeCheckedParam<Real>("gap_conductivity",
                                     1.0,
                                     "gap_conductivity>0",

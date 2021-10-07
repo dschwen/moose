@@ -27,12 +27,22 @@ CoupledPressureAction::validParams()
       "displacements",
       "The displacements appropriate for the simulation geometry and coordinate system");
 
-  params.addParam<std::vector<AuxVariableName>>("save_in_disp_x",
-                                                "The save_in variables for x displacement");
-  params.addParam<std::vector<AuxVariableName>>("save_in_disp_y",
-                                                "The save_in variables for y displacement");
-  params.addParam<std::vector<AuxVariableName>>("save_in_disp_z",
-                                                "The save_in variables for z displacement");
+  params.addDeprecatedParam<std::vector<AuxVariableName>>(
+      "save_in_disp_x",
+      "The save_in variables for x displacement",
+      "The save_in method is deprecated, utilize extra_vector_tags instead");
+  params.addDeprecatedParam<std::vector<AuxVariableName>>(
+      "save_in_disp_y",
+      "The save_in variables for y displacement",
+      "The save_in method is deprecated, utilize extra_vector_tags instead");
+  params.addDeprecatedParam<std::vector<AuxVariableName>>(
+      "save_in_disp_z",
+      "The save_in variables for z displacement",
+      "The save_in method is deprecated, utilize extra_vector_tags instead");
+
+  params.addParam<std::vector<TagName>>(
+      "extra_vector_tags",
+      "The tag names for extra vectors that residual data should be saved into");
 
   params.addParam<VariableName>("pressure", "The variable that contains the pressure");
   return params;
@@ -63,7 +73,7 @@ CoupledPressureAction::act()
     std::string unique_kernel_name = kernel_name + "_" + _name + "_" + Moose::stringify(i);
 
     InputParameters params = _factory.getValidParams(kernel_name);
-    params.applySpecificParameters(parameters(), {"boundary"});
+    params.applyParameters(parameters(), {"pressure"});
     params.set<std::vector<VariableName>>("pressure") = {getParam<VariableName>("pressure")};
     params.set<bool>("use_displaced_mesh") = true;
     params.set<unsigned int>("component") = i;

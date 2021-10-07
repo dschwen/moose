@@ -22,8 +22,13 @@ CavityPressureAction::validParams()
       "boundary", "The list of boundary IDs from the mesh where the pressure will be applied");
   params.addRequiredParam<std::vector<VariableName>>("displacements",
                                                      "The nonlinear displacement variables");
-  params.addParam<std::vector<AuxVariableName>>(
-      "save_in", "Auxiliary variables to save the displacement residuals");
+  params.addDeprecatedParam<std::vector<AuxVariableName>>(
+      "save_in",
+      "The displacement residuals",
+      "The save_in method is deprecated, utilize extra_vector_tags instead");
+  params.addParam<std::vector<TagName>>(
+      "extra_vector_tags",
+      "The tag names for extra vectors that residual data should be saved into");
   params.addParam<std::string>("output", "The name to use for the cavity pressure value");
   params.addParam<bool>(
       "use_displaced_mesh", true, "Whether to use displaced mesh in the boundary condition");

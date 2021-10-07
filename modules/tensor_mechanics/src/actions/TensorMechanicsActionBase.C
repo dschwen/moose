@@ -100,9 +100,14 @@ TensorMechanicsActionBase::validParams()
       "of the deformed shape with the periodic BC");
 
   // Advanced
-  params.addParam<std::vector<AuxVariableName>>("save_in", "The displacement residuals");
-  params.addParam<std::vector<AuxVariableName>>("diag_save_in",
-                                                "The displacement diagonal preconditioner terms");
+  params.addDeprecatedParam<std::vector<AuxVariableName>>(
+      "save_in",
+      "The displacement residuals",
+      "The save_in method is deprecated, utilize extra_vector_tags instead");
+  params.addDeprecatedParam<std::vector<AuxVariableName>>(
+      "diag_save_in",
+      "The displacement diagonal preconditioner terms",
+      "The save_in method is deprecated, utilize extra_matrix_tags instead");
   params.addParam<MooseEnum>("decomposition_method",
                              ComputeFiniteStrain::decompositionType(),
                              "Methods to calculate the finite strain and rotation increments");

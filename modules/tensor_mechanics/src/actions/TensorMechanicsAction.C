@@ -75,6 +75,9 @@ TensorMechanicsAction::validParams()
   params.addParam<std::vector<TagName>>(
       "extra_vector_tags",
       "The tag names for extra vectors that residual data should be saved into");
+  params.addParam<std::vector<TagName>>(
+      "extra_matrix_tags",
+      "The tag names for extra matrices that residual data should be saved into");
   params.addParam<Real>("scaling", "The scaling to apply to the displacement variables");
   params.addParam<Point>(
       "cylindrical_axis_point1",
