@@ -213,6 +213,14 @@ public:
   virtual const std::set<unsigned int> & getMatPropDependencies() const = 0;
 
   /**
+   * Retrieve the set of material properties that _this_ object weakly depends on.
+   *
+   * @return The IDs corresponding to the material properties that
+   * MUST be reinited before evaluating this object
+   */
+  virtual const std::set<std::string> & getOptionalMatPropDependencies() const = 0;
+
+  /**
    * @return Whether this material has stateful properties
    */
   bool hasStatefulProperties() const { return _has_stateful_property; }

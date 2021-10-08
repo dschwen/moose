@@ -104,6 +104,11 @@ public:
     return TwoMaterialPropertyInterface::getMatPropDependencies();
   }
 
+  virtual const std::set<std::string> & getOptionalMatPropDependencies() const override
+  {
+    return TwoMaterialPropertyInterface::getOptionalMatPropDependencies();
+  }
+
 protected:
   virtual const MaterialData & materialData() const override { return *_material_data; }
   virtual MaterialData & materialData() override { return *_material_data; }

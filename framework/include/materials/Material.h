@@ -138,6 +138,10 @@ public:
   {
     return MaterialPropertyInterface::getMatPropDependencies();
   }
+  virtual const std::set<std::string> & getOptionalMatPropDependencies() const override
+  {
+    return MaterialPropertyInterface::getOptionalMatPropDependencies();
+  }
   virtual void subdomainSetup() override;
 
   enum class ConstantTypeEnum

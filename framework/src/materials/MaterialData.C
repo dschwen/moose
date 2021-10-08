@@ -109,3 +109,13 @@ MaterialData::isSwapped()
 {
   return _swapped;
 }
+
+const std::set<std::string> &
+MaterialData::getExistingOptionalProperties()
+{
+  for (auto & p : _optional_properties)
+    if (p.second->resolve())
+      _existing_optional_properties.insert(p.first);
+
+  return _existing_optional_properties;
+}

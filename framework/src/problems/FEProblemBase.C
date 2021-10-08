@@ -6501,6 +6501,7 @@ FEProblemBase::checkDependMaterialsHelper(
     const std::map<SubdomainID, std::vector<std::shared_ptr<MaterialBase>>> & materials_map)
 {
   auto & prop_names = _material_props.statefulPropNames();
+  const auto & optional_names = _material_data[0]->getExistingOptionalProperties();
 
   for (const auto & it : materials_map)
   {
@@ -6517,6 +6518,14 @@ FEProblemBase::checkDependMaterialsHelper(
       {
         if (prop_names.count(dep) > 0)
           block_depend_props.insert(prop_names.at(dep));
+      }
+
+      // insert optional dependencies if the reqested property exists
+      auto & optdeps = mat1->getOptionalMatPropDependencies();
+      for (auto & dep : optdeps)
+      {
+        if (optional_names.count(dep) > 0)
+          block_depend_props.insert(dep);
       }
 
       // See if any of the active materials supply this property

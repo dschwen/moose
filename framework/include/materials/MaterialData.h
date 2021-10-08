@@ -19,6 +19,7 @@
 #include <vector>
 
 class Material;
+class MaterialPropertyPromiseBase;
 
 /**
  * Proxy for accessing MaterialPropertyStorage.
@@ -157,6 +158,11 @@ public:
   MaterialProperty<T> & getPropertyOlder(const std::string & prop_name);
   ///@}
 
+  template <typename T>
+  const MaterialProperty<T> * const & getOptionalProperty(const std::string & prop_name);
+  template <typename T>
+  const ADMaterialProperty<T> * const & getOptionalADProperty(const std::string & prop_name);
+
   /**
    * Returns true if the stateful material is in a swapped state.
    */
@@ -198,6 +204,12 @@ public:
    */
   void eraseProperty(const Elem * elem) { _storage.eraseProperty(elem); };
 
+  /**
+   * Get a set of all optional material properties that are not provided by any material.
+   * This list will be used in FEProblemBase to skip dependency errors .
+   */
+  const std::set<std::string> & getExistingOptionalProperties();
+
 protected:
   /// Reference to the MaterialStorage class
   MaterialPropertyStorage & _storage;
@@ -231,6 +243,12 @@ protected:
   /// Default is false (normal resize behaviour)
   bool _resize_only_if_smaller;
 
+  /// list of optional property pointers
+  std::map<std::string, std::unique_ptr<MaterialPropertyPromiseBase>> _optional_properties;
+
+  /// optional properties that do not exist
+  std::set<std::string> _existing_optional_properties;
+
 private:
   template <typename T>
   MaterialProperty<T> &
@@ -239,6 +257,64 @@ private:
   template <typename T>
   ADMaterialProperty<T> &
   declareADHelper(MaterialProperties & props, const std::string & prop_name, unsigned int prop_id);
+};
+
+class MaterialPropertyPromiseBase
+{
+public:
+  MaterialPropertyPromiseBase(const std::string & name, MaterialData * md) : _name(name), _md(md) {}
+  virtual ~MaterialPropertyPromiseBase() {}
+  virtual bool resolve() = 0;
+
+protected:
+  std::string _name;
+  MaterialData * _md;
+};
+
+template <typename T>
+class MaterialPropertyPromise : public MaterialPropertyPromiseBase
+{
+public:
+  MaterialPropertyPromise(const std::string & name, MaterialData * md)
+    : MaterialPropertyPromiseBase(name, md), _value(nullptr)
+  {
+  }
+  const MaterialProperty<T> * const & value() { return _value; }
+  bool resolve() override
+  {
+    if (_md->haveProperty<T>(_name))
+    {
+      _value = &_md->getProperty<T>(_name);
+      return true;
+    }
+    return false;
+  }
+
+protected:
+  MaterialProperty<T> * _value;
+};
+
+template <typename T>
+class ADMaterialPropertyPromise : public MaterialPropertyPromiseBase
+{
+public:
+  ADMaterialPropertyPromise(const std::string & name, MaterialData * md)
+    : MaterialPropertyPromiseBase(name, md), _value(nullptr)
+  {
+  }
+  const ADMaterialProperty<T> * const & value() { return _value; }
+  bool resolve()
+  {
+    if (_md->haveADProperty<T>(_name))
+    {
+      _value = &_md->getADProperty<T>(_name);
+      return true;
+    }
+    return false;
+  }
+
+protected:
+  ADMaterialProperty<T> * _value;
 };
 
 template <typename T>
@@ -448,4 +524,30 @@ MaterialProperty<T> &
 MaterialData::getPropertyOlder(const std::string & name)
 {
   return declareHelper<T>(_props_older, name, _storage.addPropertyOlder(name));
+}
+
+template <typename T>
+const MaterialProperty<T> * const &
+MaterialData::getOptionalProperty(const std::string & name)
+{
+  auto it = _optional_properties.find(name);
+  if (it != _optional_properties.end() &&
+      dynamic_cast<MaterialPropertyPromise<T> *>(it->second.get()) == nullptr)
+    mooseError("The requested oprional property " + name +
+               " has already been requested as either a different type or as an AD property");
+
+  auto promise = std::make_unique<MaterialPropertyPromise<T>>(name, this);
+  auto & value = promise->value();
+  _optional_properties.insert(std::make_pair(name, std::move(promise)));
+  return value;
+}
+
+template <typename T>
+const ADMaterialProperty<T> * const &
+MaterialData::getOptionalADProperty(const std::string & name)
+{
+  auto promise = std::make_unique<ADMaterialPropertyPromise<T>>(name, this);
+  auto & value = promise->value();
+  _optional_properties.insert(std::make_pair(name, std::move(promise)));
+  return value;
 }

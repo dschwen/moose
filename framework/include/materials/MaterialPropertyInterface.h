@@ -185,6 +185,13 @@ public:
   MaterialBase & getMaterialByName(const std::string & name, bool no_warn = false);
   ///@}
 
+  template <typename T>
+  const MaterialProperty<T> * const &
+  getOptionalMaterialPropertyByName(const MaterialPropertyName & name);
+  template <typename T>
+  const ADMaterialProperty<T> * const &
+  getOptionalADMaterialPropertyByName(const MaterialPropertyName & name);
+
   ///@{
   /**
    * Check if the material property exists
@@ -245,6 +252,17 @@ public:
   const std::set<unsigned int> & getMatPropDependencies() const
   {
     return _material_property_dependencies;
+  }
+
+  /**
+   * Retrieve the set of material properties that _this_ object depends on.
+   *
+   * @return The IDs corresponding to the material properties that
+   * MUST be reinited before evaluating this object
+   */
+  const std::set<std::string> & getOptionalMatPropDependencies() const
+  {
+    return _optional_material_property_dependencies;
   }
 
 protected:
@@ -343,6 +361,12 @@ protected:
 
   /// The set of material properties (as given by their IDs) that _this_ object depends on
   std::set<unsigned int> _material_property_dependencies;
+
+  /**
+   * The set of material properties (as given by their IDs) that _this_ object weakly depends on
+   * this is a set of names, as a property ID may or may not exist for this optional dependence
+   */
+  std::set<std::string> _optional_material_property_dependencies;
 
   const MaterialPropertyName _get_suffix;
 
@@ -586,6 +610,22 @@ MaterialPropertyInterface::getBlockMaterialProperty(const MaterialPropertyName &
 
   return std::pair<const MaterialProperty<T> *, std::set<SubdomainID>>(
       &_material_data->getProperty<T>(name), getMaterialPropertyBlocks(name));
+}
+
+template <typename T>
+const MaterialProperty<T> * const &
+MaterialPropertyInterface::getOptionalMaterialPropertyByName(const MaterialPropertyName & name)
+{
+  _optional_material_property_dependencies.insert(name);
+  return _material_data->getOptionalProperty<T>(name);
+}
+
+template <typename T>
+const ADMaterialProperty<T> * const &
+MaterialPropertyInterface::getOptionalADMaterialPropertyByName(const MaterialPropertyName & name)
+{
+  _optional_material_property_dependencies.insert(name);
+  return _material_data->getOptionalADProperty<T>(name);
 }
 
 template <typename T>
