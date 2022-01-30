@@ -7,28 +7,24 @@
 //* Licensed under LGPL 2.1, please see LICENSE for details
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
-#include "KKSACBulkC.h"
-
-registerMooseObject("PhaseFieldApp", KKSACBulkC);
+#include "KKSACBulkCBase.h"
 
 InputParameters
-KKSACBulkCIntermediate::validParams()
+KKSACBulkCBase::validParams()
 {
   InputParameters params = KKSACBulkBase::validParams();
   params.addClassDescription("KKS model kernel (part 2 of 2) for the Bulk Allen-Cahn. This "
                              "includes all terms dependent on chemical potential.");
-  params.addRequiredCoupledVar("ca", "a-phase concentration");
-  params.addRequiredCoupledVar("cb", "b-phase concentration");
   return params;
 }
 
-KKSACBulkCIntermediate::KKSACBulkCIntermediate(const InputParameters & parameters)
-  : KKSACBulkCBase(parameters, getVar("ca", 0)->name()),
-    _ca(coupledValue("ca")),
-    _cb(coupledValue("cb"))
+KKSACBulkCBase::KKSACBulkCBase(const InputParameters & parameters, const std::string & ca_name)
+  : KKSACBulkBase(parameters),
+    _prop_dFadca(getMaterialPropertyDerivative<Real>("fa_name", ca_name)),
+    _prop_d2Fadca2(getMaterialPropertyDerivative<Real>("fa_name", ca_name, ca_name)),
+    _prop_d2Fadcadarg(_n_args)
 {
-  _ca_var = coupled("ca");
-  _cb_var = coupled("cb");
+  // get second partial derivatives wrt ca and other coupled variable
+  for (unsigned int i = 0; i < _n_args; ++i)
+    _prop_d2Fadcadarg[i] = &getMaterialPropertyDerivative<Real>("fa_name", ca_name, i);
 }
-
-template class KKSACBulkCBaseResidual<KKSACBulkCIntermediate>;

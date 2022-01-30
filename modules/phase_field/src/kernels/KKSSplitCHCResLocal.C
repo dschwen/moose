@@ -7,20 +7,20 @@
 //* Licensed under LGPL 2.1, please see LICENSE for details
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
-#include "KKSSplitCHCRes.h"
+#include "KKSSplitCHCResLocal.h"
 
-registerMooseObject("PhaseFieldApp", KKSSplitCHCRes);
+registerMooseObject("PhaseFieldApp", KKSSplitCHCResLocal);
 
 InputParameters
-KKSSplitCHCRes::validParams()
+KKSSplitCHCResLocal::validParams()
 {
   InputParameters params = KKSSplitCHCResBase::validParams();
-  params.addRequiredCoupledVar(
+  params.addRequiredParam<MaterialPropertyName>(
       "ca", "phase concentration corresponding to the non-linear variable of this kernel");
   return params;
 }
 
-KKSSplitCHCRes::KKSSplitCHCRes(const InputParameters & parameters)
-  : KKSSplitCHCResBase(parameters, getVar("ca", 0)->name())
+KKSSplitCHCResLocal::KKSSplitCHCResLocal(const InputParameters & parameters)
+  : KKSSplitCHCResBase(parameters, getParam<MaterialPropertyName>("ca"))
 {
 }

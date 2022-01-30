@@ -20,19 +20,19 @@
  *
  * The non-linear variable for this Kernel is the order parameter 'eta'.
  */
-class KKSACBulkCIntermediate : public KKSACBulkCBase
+class KKSACBulkCLocalIntermediate : public KKSACBulkCBase
 {
 public:
   static InputParameters validParams();
 
-  KKSACBulkCIntermediate(const InputParameters & parameters);
+  KKSACBulkCLocalIntermediate(const InputParameters & parameters);
 
 protected:
   /// phase a concentration
-  const VariableValue & _ca;
+  const MaterialProperty<Real> & _ca;
 
   /// phase b concentration
-  const VariableValue & _cb;
+  const MaterialProperty<Real> & _cb;
 };
 
-typedef KKSACBulkCBaseResidual<KKSACBulkCIntermediate> KKSACBulkC;
+typedef KKSACBulkCBaseResidual<KKSACBulkCLocalIntermediate> KKSACBulkCLocal;

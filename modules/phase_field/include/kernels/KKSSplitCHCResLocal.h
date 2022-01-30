@@ -25,10 +25,16 @@
  * The user picks one phase free energy \f$ F_a \f$ (f_base) and its corresponding
  * phase concentration \f$ c_a \f$
  */
-class KKSSplitCHCRes : public KKSSplitCHCResBase
+class KKSSplitCHCResLocal : public KKSSplitCHCResBase
 {
 public:
   static InputParameters validParams();
 
-  KKSSplitCHCRes(const InputParameters & parameters);
+  KKSSplitCHCResLocal(const InputParameters & parameters);
+
+protected:
+  virtual Real computeDFDC(PFFunctionType type);
+  virtual Real computeQpOffDiagJacobian(unsigned int jvar);
+  virtual Real computeQpResidual();
+  virtual void initialSetup();
 };

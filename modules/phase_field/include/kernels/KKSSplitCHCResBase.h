@@ -9,7 +9,9 @@
 
 #pragma once
 
-#include "KKSSplitCHCResBase.h"
+#include "SplitCHBase.h"
+#include "JvarMapInterface.h"
+#include "DerivativeMaterialInterface.h"
 
 // Forward Declarations
 
@@ -25,10 +27,26 @@
  * The user picks one phase free energy \f$ F_a \f$ (f_base) and its corresponding
  * phase concentration \f$ c_a \f$
  */
-class KKSSplitCHCRes : public KKSSplitCHCResBase
+class KKSSplitCHCResBase : public DerivativeMaterialInterface<JvarMapKernelInterface<SplitCHBase>>
 {
 public:
   static InputParameters validParams();
 
-  KKSSplitCHCRes(const InputParameters & parameters);
+  KKSSplitCHCResBase(const InputParameters & parameters, const std::string & ca_name);
+
+protected:
+  virtual Real computeDFDC(PFFunctionType type);
+  virtual Real computeQpOffDiagJacobian(unsigned int jvar);
+  virtual Real computeQpResidual();
+  virtual void initialSetup();
+
+  /// chemical potential
+  const MaterialProperty<Real> & _dFadca;
+
+  /// Second derivatives of fa with respect to all ca and coupled variables
+  std::vector<const MaterialProperty<Real> *> _d2Fadcadarg;
+
+  /// Chemical potential
+  unsigned int _w_var;
+  const VariableValue & _w;
 };
