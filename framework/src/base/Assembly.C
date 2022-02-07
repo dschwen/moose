@@ -4766,3 +4766,17 @@ template void coordTransformFactor<ADPoint, ADReal>(const SubProblem & s,
                                                     const ADPoint & point,
                                                     ADReal & factor,
                                                     SubdomainID neighbor_sub_id);
+
+template <>
+const MooseArray<MooseADWrapper<Point, false>> &
+Assembly::genericQPoints<false>() const
+{
+  return qPoints();
+}
+
+template <>
+const MooseArray<MooseADWrapper<Point, true>> &
+Assembly::genericQPoints<true>() const
+{
+  return adQPoints();
+}
