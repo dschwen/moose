@@ -168,9 +168,9 @@
     absolute_tolerance = 1e-14
     relative_tolerance = 1e-12
     base_name = trial_plasticity
-    internal_solve_full_iteration_history = true
+    # internal_solve_full_iteration_history = true
     max_inelastic_increment = 2.0e-6
-    internal_solve_output_on = on_error
+    # internal_solve_output_on = on_error
   []
 []
 

@@ -102,6 +102,9 @@ protected:
    */
   virtual void iterationFinalize(GenericReal<is_ad> /*scalar*/) {}
 
+  /// Whether to check to see whether iterative solution is within admissible range, and set within that range if outside
+  bool _check_range;
+
 private:
   enum class InternalSolveOutput
   {

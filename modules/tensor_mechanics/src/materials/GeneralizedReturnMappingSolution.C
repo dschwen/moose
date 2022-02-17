@@ -28,6 +28,8 @@ InputParameters
 GeneralizedReturnMappingSolutionTempl<is_ad>::validParams()
 {
   InputParameters params = ADNestedSolve::validParams();
+  params.set<unsigned int>("min_iterations") = 1;
+
   // params.addParam<Real>(
   //     "relative_tolerance", 1e-8, "Relative convergence tolerance for Newton iteration");
   // params.addParam<Real>(
@@ -55,20 +57,7 @@ GeneralizedReturnMappingSolutionTempl<is_ad>::validParams()
 template <bool is_ad>
 GeneralizedReturnMappingSolutionTempl<is_ad>::GeneralizedReturnMappingSolutionTempl(
     const InputParameters & parameters)
-  : // _check_range(false),
-    //   _line_search(true),
-    //   _bracket_solution(false),
-    //   _internal_solve_output_on(
-    //       parameters.get<MooseEnum>("internal_solve_output_on").getEnum<InternalSolveOutput>()),
-    // _max_its(50),
-    // _internal_solve_full_iteration_history(
-    //     parameters.get<bool>("internal_solve_full_iteration_history")),
-    // _relative_tolerance(parameters.get<Real>("relative_tolerance")),
-    // _absolute_tolerance(parameters.get<Real>("absolute_tolerance")),
-    // _acceptable_multiplier(parameters.get<Real>("acceptable_multiplier")),
-    // _num_resids(30),
-    // _residual_history(_num_resids, std::numeric_limits<Real>::max()),
-    // _iteration(0),
+  : _check_range(false),
     _initial_residual(0.0),
     _residual(0.0),
     _svrms_name(parameters.get<std::string>("_object_name")),
@@ -119,25 +108,16 @@ GeneralizedReturnMappingSolutionTempl<is_ad>::returnMappingSolve(
     switch (solve_state)
     {
       case SolveState::NAN_INF:
-        *iter_output << "Encountered inf or nan in material return mapping iterations.\n";
+        mooseException("Encountered inf or nan in material return mapping iterations.\n");
         break;
 
       case SolveState::EXCEEDED_ITERATIONS:
-        *iter_output << "Exceeded maximum iterations in material return mapping iterations.\n";
+        mooseException("Exceeded maximum iterations in material return mapping iterations.\n");
         break;
 
       default:
         mooseError("Unhandled solver state");
     }
-
-    // // if full history output is only requested for failed solves we have to repeat
-    // // the solve a second time
-    // if (_internal_solve_full_iteration_history)
-    //   internalSolve(stress_dev, stress_new, scalar, iter_output.get());
-    //
-    // // Append summary and throw exception
-    // outputIterationSummary(iter_output.get(), _iteration);
-    // mooseException(iter_output->str());
   }
 
   // if (_internal_solve_output_on == InternalSolveOutput::ALWAYS)
@@ -160,18 +140,24 @@ GeneralizedReturnMappingSolutionTempl<is_ad>::internalSolve(
   { residual = computeResidual(stress_dev, stress_new, guess); };
   auto jacobianFunctor = [&](const ADReal & guess, ADReal & jacobian)
   { jacobian = computeDerivative(stress_dev, stress_new, guess); };
+  auto boundsFunctor = [&]()
+  {
+    return std::make_pair(MetaPhysicL::raw_value(minimumPermissibleValue(stress_dev)),
+                          MetaPhysicL::raw_value(maximumPermissibleValue(stress_dev)));
+  };
 
   delta_gamma = initialGuess(stress_dev);
-  _solver.nonlinear(delta_gamma, residualFunctor, jacobianFunctor);
 
-  // return SolveState::SUCCESS;
-  // ++_iteration;
-  //
-  // if (std::isnan(_residual) || std::isinf(MetaPhysicL::raw_value(_residual)))
-  //   return SolveState::NAN_INF;
-  //
-  // if (_iteration == _max_its)
-  //   return SolveState::EXCEEDED_ITERATIONS;
+  if (_check_range)
+    _solver.nonlinearBounded(delta_gamma, residualFunctor, jacobianFunctor, boundsFunctor);
+  else
+    _solver.nonlinear(delta_gamma, residualFunctor, jacobianFunctor);
+
+  if (std::isnan(delta_gamma) || std::isinf(MetaPhysicL::raw_value(delta_gamma)))
+    return SolveState::NAN_INF;
+
+  if (_solver.getState() == ADNestedSolve::State::NOT_CONVERGED)
+    return SolveState::EXCEEDED_ITERATIONS;
 
   return SolveState::SUCCESS;
 }
