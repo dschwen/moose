@@ -185,7 +185,7 @@ AbaqusUMATStress::computeQpStress()
   }
 
   // current coordinates
-  for (unsigned int i = 0; i < LIBMESH_DIM; ++i)
+  for (const auto i: make_range(Moose::dim))
     _aqCOORDS[i] = _q_point[_qp](i);
 
   // zero out Jacobian contribution

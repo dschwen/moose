@@ -55,7 +55,7 @@ ElementPropertyReadFile::ElementPropertyReadFile(const InputParameters & paramet
 {
   _nelem = _mesh.nElem();
 
-  for (unsigned int i = 0; i < LIBMESH_DIM; i++)
+  for (const auto i: make_range(Moose::dim))
   {
     _bottom_left(i) = _mesh.getMinInDimension(i);
     _top_right(i) = _mesh.getMaxInDimension(i);
@@ -115,7 +115,7 @@ ElementPropertyReadFile::initGrainCenterPoints()
   _center.resize(_ngrain);
   MooseRandom::seed(_rand_seed);
   for (unsigned int i = 0; i < _ngrain; i++)
-    for (unsigned int j = 0; j < LIBMESH_DIM; j++)
+    for (const auto j: make_range(Moose::dim))
       _center[i](j) = _bottom_left(j) + MooseRandom::rand() * _range(j);
 }
 
