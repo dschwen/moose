@@ -1,4 +1,5 @@
 #include <iostream>
+#include <chrono>
 
 class EPBase
 {
@@ -149,6 +150,38 @@ protected:
 };
 
 template <typename L, typename R>
+class EPSub : public EPBase
+{
+public:
+  EPSub(L left, R right) : _left(left), _right(right) {}
+  const auto eval() const
+  {
+    if constexpr (std::is_base_of<EPNullBase, L>::value && std::is_base_of<EPNullBase, R>::value)
+      return O(0);
+
+    if constexpr (std::is_base_of<EPNullBase, L>::value)
+      return -_right.eval();
+
+    if constexpr (std::is_base_of<EPNullBase, R>::value)
+      return _left.eval();
+
+    return _left.eval() - _right.eval();
+  }
+
+  template <EPTag dtag>
+  auto D() const
+  {
+    return _left.template D<dtag>() - _right.template D<dtag>();
+  }
+
+  typedef typename EPSuperType<typename L::O, typename R::O>::type O;
+
+protected:
+  const L _left;
+  const R _right;
+};
+
+template <typename L, typename R>
 class EPMul : public EPBase
 {
 public:
@@ -205,6 +238,22 @@ template <typename L, typename R
           //                          std::is_base_of<EPBase, R>::value>
           >
 auto
+operator-(const L & left, const R & right)
+{
+  if constexpr (std::is_base_of<EPBase, L>::value && std::is_base_of<EPBase, R>::value)
+    return EPSub(left, right);
+  else if constexpr (std::is_base_of<EPBase, L>::value)
+    return EPSub(left, EPRef<0, R>(right));
+  else if constexpr (std::is_base_of<EPBase, R>::value)
+    return EPSub(EPRef<0, L>(left), right);
+}
+
+template <typename L, typename R
+          // ,
+          // class = std::enable_if_t<std::is_base_of<EPBase, L>::value &&
+          //                          std::is_base_of<EPBase, R>::value>
+          >
+auto
 operator*(const L & left, const R & right)
 {
   if constexpr (std::is_base_of<EPBase, L>::value && std::is_base_of<EPBase, R>::value)
@@ -229,20 +278,39 @@ makeRef(const T & ref, const I & idx)
   return EPArrayRef<tag, T, I>(ref, idx);
 }
 
+double
+time1(double x)
+{
+  const auto X = makeRef<1>(x);
+  const auto result = X * (1.0 + X * (3.0 - X * (2.0 + X * (5.0 - X))));
+  return result.eval();
+}
+
+double
+time2(double X)
+{
+  return X * (1.0 + X * (3.0 - X * (2.0 + X * (5.0 - X))));
+}
+
 int
 main()
 {
-  double x = 1.0;
-  const auto X = makeRef<1>(x);
+  double a = 0;
+  auto a1 = std::chrono::system_clock::now();
+  for (double x = -10; x < 10; x += 1e-6)
+    a += time1(x);
+  auto a2 = std::chrono::system_clock::now();
+  std::cout << a << ' ' << std::chrono::duration_cast<std::chrono::milliseconds>(a2 - a1).count()
+            << std::endl;
 
-  const auto result = 2 * (5 + X * X);
-  const auto derivative = result.D<1>();
+  double b = 0;
+  auto b1 = std::chrono::system_clock::now();
+  for (double x = -10; x < 10; x += 1e-6)
+    b += time2(x);
+  auto b2 = std::chrono::system_clock::now();
 
-  x = 5.0;
-  std::cout << result.eval() << ' ' << derivative.eval() << '\n';
-
-  x = 3.0;
-  std::cout << result.eval() << ' ' << derivative.eval() << '\n';
+  std::cout << b << ' ' << std::chrono::duration_cast<std::chrono::milliseconds>(b2 - b1).count()
+            << std::endl;
 
   return 0;
 }
