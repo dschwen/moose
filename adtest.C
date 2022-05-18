@@ -33,6 +33,12 @@ template <typename L, typename R
           >
 auto operator*(const L & left, const R & right);
 
+template <typename B, typename E>
+auto pow(const B & base, const E & exp);
+
+template <typename E>
+auto exp(const E & exp);
+
 template <typename T>
 class EPNull : public EPNullBase
 {
@@ -47,6 +53,31 @@ public:
   }
 
   typedef T O;
+};
+
+template <typename T>
+class EPUnary : public EPBase
+{
+public:
+  EPUnary(T arg) : _arg(arg) {}
+
+  typedef T O;
+
+protected:
+  const T _arg;
+};
+
+template <typename L, typename R>
+class EPBinary : public EPBase
+{
+public:
+  EPBinary(L left, R right) : _left(left), _right(right) {}
+
+  typedef typename EPSuperType<typename L::O, typename R::O>::type O;
+
+protected:
+  const L _left;
+  const R _right;
 };
 
 template <typename T>
@@ -66,11 +97,11 @@ public:
 };
 
 template <typename T>
-class EPValue : public EPBase
+class EPValue : public EPUnary<T>
 {
 public:
-  EPValue(const T value) : _value(value) {}
-  const auto eval() const { return _value; }
+  EPValue(const T value) : EPUnary<T>(value) {}
+  const auto eval() const { return _arg; }
 
   template <EPTag dtag>
   auto D() const
@@ -78,10 +109,7 @@ public:
     return EPNull<T>();
   }
 
-  typedef T O;
-
-protected:
-  const T _value;
+  using EPUnary<T>::_arg;
 };
 
 template <EPTag tag, typename T>
@@ -111,17 +139,20 @@ class EPArrayRef : public EPRef<tag, T>
 {
 public:
   EPArrayRef(const I & idx) : _idx(idx) {}
-  const auto eval() const { return this->_ref[_idx]; }
+  const auto eval() const { return _ref[_idx]; }
+
+  using typename EPUnary<T>::O;
+  using EPUnary<T>::_ref;
 
 protected:
   const I & _idx;
 };
 
 template <typename L, typename R>
-class EPAdd : public EPBase
+class EPAdd : public EPBinary<L, R>
 {
 public:
-  EPAdd(L left, R right) : _left(left), _right(right) {}
+  EPAdd(L left, R right) : EPBinary<L, R>(left, right) {}
   const auto eval() const
   {
     if constexpr (std::is_base_of<EPNullBase, L>::value && std::is_base_of<EPNullBase, R>::value)
@@ -142,18 +173,16 @@ public:
     return _left.template D<dtag>() + _right.template D<dtag>();
   }
 
-  typedef typename EPSuperType<typename L::O, typename R::O>::type O;
-
-protected:
-  const L _left;
-  const R _right;
+  using typename EPBinary<L, R>::O;
+  using EPBinary<L, R>::_left;
+  using EPBinary<L, R>::_right;
 };
 
 template <typename L, typename R>
-class EPSub : public EPBase
+class EPSub : public EPBinary<L, R>
 {
 public:
-  EPSub(L left, R right) : _left(left), _right(right) {}
+  EPSub(L left, R right) : EPBinary<L, R>(left, right) {}
   const auto eval() const
   {
     if constexpr (std::is_base_of<EPNullBase, L>::value && std::is_base_of<EPNullBase, R>::value)
@@ -174,25 +203,23 @@ public:
     return _left.template D<dtag>() - _right.template D<dtag>();
   }
 
-  typedef typename EPSuperType<typename L::O, typename R::O>::type O;
-
-protected:
-  const L _left;
-  const R _right;
+  using typename EPBinary<L, R>::O;
+  using EPBinary<L, R>::_left;
+  using EPBinary<L, R>::_right;
 };
 
 template <typename L, typename R>
-class EPMul : public EPBase
+class EPMul : public EPBinary<L, R>
 {
 public:
-  EPMul(L left, R right) : _left(left), _right(right) {}
+  EPMul(L left, R right) : EPBinary<L, R>(left, right) {}
   const auto eval() const
   {
     if constexpr (std::is_base_of<EPNullBase, L>::value || std::is_base_of<EPNullBase, R>::value)
       return O(0);
 
     if constexpr (std::is_base_of<EPOneBase, L>::value && std::is_base_of<EPOneBase, R>::value)
-      return EPOne<O>();
+      return O(1);
 
     if constexpr (std::is_base_of<EPOneBase, L>::value)
       return _right.eval();
@@ -209,11 +236,58 @@ public:
     return _left.template D<dtag>() * _right + _right.template D<dtag>() * _left;
   }
 
-  typedef typename EPSuperType<typename L::O, typename R::O>::type O;
+  using typename EPBinary<L, R>::O;
+  using EPBinary<L, R>::_left;
+  using EPBinary<L, R>::_right;
+};
 
-protected:
-  const L _left;
-  const R _right;
+template <typename L, typename R>
+class EPPow : public EPBinary<L, R>
+{
+public:
+  EPPow(L left, R right) : EPBinary<L, R>(left, right) {}
+  const auto eval() const
+  {
+    if constexpr (std::is_base_of<EPNullBase, L>::value)
+      return O(0);
+
+    if constexpr (std::is_base_of<EPOneBase, L>::value || std::is_base_of<EPNullBase, R>::value)
+      return O(1);
+
+    if constexpr (std::is_base_of<EPOneBase, R>::value)
+      return _left.eval();
+
+    return std::pow(_left.eval(), _right.eval());
+  }
+
+  template <EPTag dtag>
+  auto D() const
+  {
+    // MakeTree(cPow, a, b) * (D(b) * MakeTree(cLog, a) + b * D(a)/a);
+
+    return pow(_left, _right) *
+           _right.template D<dtag>(); // * log(_left) + _right * _left.D<dtag>()/_left;
+  }
+
+  using typename EPBinary<L, R>::O;
+  using EPBinary<L, R>::_left;
+  using EPBinary<L, R>::_right;
+};
+
+template <typename T>
+class EPExp : public EPUnary<T>
+{
+public:
+  EPExp(T arg) : EPUnary<T>(arg) {}
+  const auto eval() const { return std::exp(_arg.eval()); }
+  template <EPTag dtag>
+  auto D() const
+  {
+    return exp(_arg);
+  }
+
+  using typename EPUnary<T>::O;
+  using EPUnary<T>::_arg;
 };
 
 template <typename L, typename R
@@ -276,6 +350,20 @@ auto
 makeRef(const T & ref, const I & idx)
 {
   return EPArrayRef<tag, T, I>(ref, idx);
+}
+
+template <typename B, typename E>
+auto
+pow(const B & base, const E & exp)
+{
+  return EPPow(base, exp);
+}
+
+template <typename E>
+auto
+exp(const E & exp)
+{
+  return EPExp(exp);
 }
 
 double
