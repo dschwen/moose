@@ -38,8 +38,10 @@ auto operator*(const L & left, const R & right);
 template <typename B, typename E>
 auto pow(const B & base, const E & exp);
 
-template <typename E>
-auto exp(const E & exp);
+template <typename T>
+auto exp(const T &);
+template <typename T>
+auto log(const T &);
 
 template <typename T>
 class EPNull : public EPNullBase
@@ -320,8 +322,8 @@ public:
   {
     // MakeTree(cPow, a, b) * (D(b) * MakeTree(cLog, a) + b * D(a)/a);
 
-    return pow(_left, _right) *
-           _right.template D<dtag>(); // * log(_left) + _right * _left.D<dtag>()/_left;
+    return pow(_left, _right) * _right.template D<dtag>() * log(_left) +
+           _right * _left.template D<dtag>() / _left;
   }
 
   using typename EPBinary<L, R>::O;
@@ -338,7 +340,7 @@ public:
   template <EPTag dtag>
   auto D() const
   {
-    return exp(_arg);
+    return exp(_arg) * _arg.template D<dtag>();
   }
 
   using typename EPUnary<T>::O;
@@ -372,6 +374,34 @@ EP_OPERATOR_BINARY(-, EPSub)
 EP_OPERATOR_BINARY(*, EPMul)
 EP_OPERATOR_BINARY(/, EPDiv)
 
+#define EP_SIMPLE_UNARY_FUNCTION(Name, name eval_term, deriviative)                                \
+  template <typename T>                                                                            \
+  class Name : public EPUnary<T>                                                                   \
+  {                                                                                                \
+  public:                                                                                          \
+    Name(T arg) : EPUnary<T>(arg)                                                                  \
+    {                                                                                              \
+    }                                                                                              \
+    const auto eval() const                                                                        \
+    {                                                                                              \
+      return eval_term;                                                                            \
+    }                                                                                              \
+    template <EPTag dtag>                                                                          \
+    auto D() const                                                                                 \
+    {                                                                                              \
+      return derivative;                                                                           \
+    }                                                                                              \
+    using typename EPUnary<T>::O;                                                                  \
+    using EPUnary<T>::_arg;                                                                        \
+  };                                                                                               \
+  template <typename T>                                                                            \
+  auto name(const T & v)                                                                           \
+  {                                                                                                \
+    return Name(arg);                                                                              \
+  }
+
+EP_SIMPLE_UNARY_FUNCTION(EPLog, log, std::log(_arg), _arg.template D<dtag>() / _arg)
+
 template <EPTag tag, typename T>
 auto
 makeRef(const T & ref)
@@ -400,11 +430,11 @@ pow(const B & base, const E & exp)
   return EPPow(base, exp);
 }
 
-template <typename E>
+template <typename T>
 auto
-exp(const E & exp)
+exp(const T & v)
 {
-  return EPExp(exp);
+  return EPExp(v);
 }
 
 // double
@@ -425,32 +455,50 @@ exp(const E & exp)
 //   return X * (1.0 + X * (3.0 - X * (2.0 + X * (5.0 - X))));
 // }
 
+double
+sqr(double a)
+{
+  return a * a;
+}
+
 int
 main()
 {
   double x;
 
   {
-    double a = 0;
+    double a = 0, c = 0;
     const auto X = makeRef<1>(x);
-    const auto result = X * (1.0 + X * (3.0 - X * (2.0 + X * (5.0 - X))));
+    const auto result = X * (1.0 + X * (3.0 - X * exp(1.0 / (200.0 + X * (5.0 - X)))));
     auto a1 = std::chrono::system_clock::now();
     for (x = -10; x < 10; x += 1e-6)
+    {
       a += result.eval();
+      c += result.D<1>().eval();
+    }
     auto a2 = std::chrono::system_clock::now();
-    std::cout << a << ' ' << std::chrono::duration_cast<std::chrono::milliseconds>(a2 - a1).count()
+    std::cout << a << ' ' << ' ' << c << ' '
+              << std::chrono::duration_cast<std::chrono::milliseconds>(a2 - a1).count()
               << std::endl;
   }
 
   {
-    double b = 0;
+    double b = 0, d = 0;
     const auto & X = x;
     auto b1 = std::chrono::system_clock::now();
     for (x = -10; x < 10; x += 1e-6)
-      b += X * (1.0 + X * (3.0 - X * (2.0 + X * (5.0 - X))));
+    {
+      b += X * (1.0 + X * (3.0 - X * exp(1.0 / (200.0 + X * (5.0 - X)))));
+      d += -5.0e-5 * X * X * X * X * exp(1.0 / (-X * X + 5.0 * X + 200.0)) /
+               sqr(-0.005 * X * X + 0.025 * X + 1.0) +
+           0.000125 * X * X * X * exp(1.0 / (-X * X + 5.0 * X + 200.0)) /
+               sqr(-0.005 * X * X + 0.025 * X + 1.0) -
+           3.0 * X * X * exp(1.0 / (-X * X + 5.0 * X + 200.0)) + 6.0 * X + 1.0;
+    }
     auto b2 = std::chrono::system_clock::now();
 
-    std::cout << b << ' ' << std::chrono::duration_cast<std::chrono::milliseconds>(b2 - b1).count()
+    std::cout << b << ' ' << d << ' '
+              << std::chrono::duration_cast<std::chrono::milliseconds>(b2 - b1).count()
               << std::endl;
   }
 
