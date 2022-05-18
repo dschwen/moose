@@ -1,5 +1,6 @@
 #include <iostream>
 #include <chrono>
+#include <cmath>
 
 class EPBase
 {
@@ -290,11 +291,7 @@ public:
   using EPUnary<T>::_arg;
 };
 
-template <typename L, typename R
-          // ,
-          // class = std::enable_if_t<std::is_base_of<EPBase, L>::value &&
-          //                          std::is_base_of<EPBase, R>::value>
-          >
+template <typename L, typename R>
 auto
 operator+(const L & left, const R & right)
 {
@@ -304,6 +301,20 @@ operator+(const L & left, const R & right)
     return EPAdd(left, EPRef<0, R>(right));
   else if constexpr (std::is_base_of<EPBase, R>::value)
     return EPAdd(EPRef<0, L>(left), right);
+}
+
+template <typename L, typename R, class = std::enable_if_t<!std::is_base_of<EPBase, L>::value>>
+auto
+operator+(const L && left, const R & right)
+{
+  return EPAdd(EPValue<L>(left), right);
+}
+
+template <typename L, typename R, class = std::enable_if_t<!std::is_base_of<EPBase, R>::value>>
+auto
+operator+(const L & left, const R && right)
+{
+  return EPAdd(left, EPValue<R>(right));
 }
 
 template <typename L, typename R
@@ -317,9 +328,28 @@ operator-(const L & left, const R & right)
   if constexpr (std::is_base_of<EPBase, L>::value && std::is_base_of<EPBase, R>::value)
     return EPSub(left, right);
   else if constexpr (std::is_base_of<EPBase, L>::value)
-    return EPSub(left, EPRef<0, R>(right));
+  {
+    if constexpr (std::is_lvalue_reference<R>::value)
+      return EPSub(left, EPRef<0, R>(right));
+    else
+      return EPSub(left, EPValue<R>(right));
+  }
   else if constexpr (std::is_base_of<EPBase, R>::value)
     return EPSub(EPRef<0, L>(left), right);
+}
+
+template <typename L, typename R, class = std::enable_if_t<!std::is_base_of<EPBase, L>::value>>
+auto
+operator-(const L && left, const R & right)
+{
+  return EPSub(EPValue<L>(left), right);
+}
+
+template <typename L, typename R, class = std::enable_if_t<!std::is_base_of<EPBase, R>::value>>
+auto
+operator-(const L & left, const R && right)
+{
+  return EPSub(left, EPValue<R>(right));
 }
 
 template <typename L, typename R
@@ -336,6 +366,20 @@ operator*(const L & left, const R & right)
     return EPMul(left, EPRef<0, R>(right));
   else if constexpr (std::is_base_of<EPBase, R>::value)
     return EPMul(EPRef<0, L>(left), right);
+}
+
+template <typename L, typename R, class = std::enable_if_t<!std::is_base_of<EPBase, L>::value>>
+auto
+operator*(const L && left, const R & right)
+{
+  return EPMul(EPValue<L>(left), right);
+}
+
+template <typename L, typename R, class = std::enable_if_t<!std::is_base_of<EPBase, R>::value>>
+auto
+operator*(const L & left, const R && right)
+{
+  return EPMul(left, EPValue<R>(right));
 }
 
 template <EPTag tag, typename T>
@@ -371,6 +415,9 @@ time1(double x)
 {
   const auto X = makeRef<1>(x);
   const auto result = X * (1.0 + X * (3.0 - X * (2.0 + X * (5.0 - X))));
+  // double one = 1;
+  // const auto result = one + X + 1;
+  // one = 2;
   return result.eval();
 }
 
