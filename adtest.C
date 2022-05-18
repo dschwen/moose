@@ -332,7 +332,8 @@ public:
   template <EPTag dtag>
   auto D() const
   {
-    return _left.template D<dtag>() / _right - _right.template D<dtag>() / (_right * _right);
+    return _left.template D<dtag>() / _right -
+           _left * _right.template D<dtag>() / (_right * _right);
   }
 
   using typename EPBinary<L, R>::O;
@@ -548,6 +549,7 @@ main()
 
     const auto X = makeRef<dX>(x);
     const auto result = X * (1.0 - X) - (X * log(X) + (1.0 - X) * log(1.0 - X));
+    // const auto result = 2.0 / X;
 
     double r0 = 0, r1 = 0, r2 = 0;
     auto a1 = std::chrono::system_clock::now();
@@ -574,6 +576,9 @@ main()
       r0 += X * (1.0 - X) - (X * log(X) + (1.0 - x) * log(1.0 - X));
       r1 += -2.0 * X - log(X) + log(1.0 - X) - (X - 1.0) / (1.0 - X);
       r2 += -2.0 + 1.0 / (X - 1.0) - 1.0 / X;
+      // r0 += 2.0 / X;
+      // r1 += -2.0 / (X * X);
+      // r2 += 4.0 / (X * X * X);
     }
     auto b2 = std::chrono::system_clock::now();
 
