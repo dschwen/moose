@@ -3,6 +3,43 @@
 #include <chrono>
 #include <cmath>
 
+/////
+template <int N, typename T>
+struct do_pow
+{
+  static inline T apply(const T & x)
+  {
+    if constexpr (N % 2) // odd exponent
+      return x * do_pow<N - 1, T>::apply(x);
+
+    const T xNover2 = do_pow<N / 2, T>::apply(x);
+    return xNover2 * xNover2;
+  }
+};
+
+template <typename T>
+struct do_pow<6, T>
+{
+  static inline T apply(const T & x)
+  {
+    const T x2 = x * x, x4 = x2 * x2;
+    return x4 * x2;
+  }
+};
+
+template <typename T>
+struct do_pow<1, T>
+{
+  static inline T apply(const T & x) { return x; }
+};
+
+template <typename T>
+struct do_pow<0, T>
+{
+  static inline T apply(const T &) { return 1; }
+};
+/////
+
 class EPBase
 {
 };
@@ -37,6 +74,8 @@ auto operator*(const L & left, const R & right);
 
 template <typename B, typename E>
 auto pow(const B & base, const E & exp);
+template <int E, typename B>
+auto pow(const B &);
 
 template <typename T>
 auto exp(const T &);
@@ -65,7 +104,7 @@ class EPUnary : public EPBase
 public:
   EPUnary(T arg) : _arg(arg) {}
 
-  typedef T O;
+  typedef typename T::O O;
 
 protected:
   const T _arg;
@@ -101,11 +140,11 @@ public:
 };
 
 template <typename T>
-class EPValue : public EPUnary<T>
+class EPValue : public EPBase
 {
 public:
-  EPValue(const T value) : EPUnary<T>(value) {}
-  const auto eval() const { return _arg; }
+  EPValue(const T value) : _value(value) {}
+  const auto eval() const { return _value; }
 
   template <EPTag dtag>
   auto D() const
@@ -113,7 +152,10 @@ public:
     return EPNull<T>();
   }
 
-  using EPUnary<T>::_arg;
+  typedef T O;
+
+protected:
+  T _value;
 };
 
 template <EPTag tag, typename T>
@@ -320,8 +362,6 @@ public:
   template <EPTag dtag>
   auto D() const
   {
-    // MakeTree(cPow, a, b) * (D(b) * MakeTree(cLog, a) + b * D(a)/a);
-
     return pow(_left, _right) * _right.template D<dtag>() * log(_left) +
            _right * _left.template D<dtag>() / _left;
   }
@@ -331,20 +371,45 @@ public:
   using EPBinary<L, R>::_right;
 };
 
-template <typename T>
-class EPExp : public EPUnary<T>
+template <typename B, int E>
+class EPIPow : public EPUnary<B>
 {
 public:
-  EPExp(T arg) : EPUnary<T>(arg) {}
-  const auto eval() const { return std::exp(_arg.eval()); }
+  EPIPow(B base) : EPUnary<B>(base) {}
+  const auto eval() const
+  {
+    if constexpr (std::is_base_of<EPNullBase, B>::value)
+      return O(0);
+
+    else if constexpr (std::is_base_of<EPOneBase, B>::value || E == 0)
+      return O(1);
+
+    else if constexpr (E == 1)
+      return _arg.eval();
+
+    // replace with Utility::pow !
+    else if constexpr (E < 0)
+      return 1.0 / do_pow<-E, O>::apply(_arg.eval());
+
+    else
+      return do_pow<E, O>::apply(_arg.eval());
+  }
+
   template <EPTag dtag>
   auto D() const
   {
-    return exp(_arg) * _arg.template D<dtag>();
+    if constexpr (E == 1)
+      return _arg.template D<dtag>();
+
+    else if constexpr (E == 0)
+      return EPNull<O>();
+
+    else
+      return pow<E - 1>(_arg) * E * _arg.template D<dtag>();
   }
 
-  using typename EPUnary<T>::O;
-  using EPUnary<T>::_arg;
+  using typename EPUnary<B>::O;
+  using EPUnary<B>::_arg;
 };
 
 #define EP_OPERATOR_BINARY(op, OP)                                                                 \
@@ -354,9 +419,9 @@ public:
     if constexpr (std::is_base_of<EPBase, L>::value && std::is_base_of<EPBase, R>::value)          \
       return OP(left, right);                                                                      \
     else if constexpr (std::is_base_of<EPBase, L>::value)                                          \
-      return OP(left, EPRef<0, R>(right));                                                         \
+      return OP(left, EPRef<-1, R>(right));                                                        \
     else if constexpr (std::is_base_of<EPBase, R>::value)                                          \
-      return OP(EPRef<0, L>(left), right);                                                         \
+      return OP(EPRef<-1, L>(left), right);                                                        \
   }                                                                                                \
   template <typename L, typename R, class = std::enable_if_t<!std::is_base_of<EPBase, L>::value>>  \
   auto operator op(const L && left, const R & right)                                               \
@@ -374,12 +439,12 @@ EP_OPERATOR_BINARY(-, EPSub)
 EP_OPERATOR_BINARY(*, EPMul)
 EP_OPERATOR_BINARY(/, EPDiv)
 
-#define EP_SIMPLE_UNARY_FUNCTION(Name, name eval_term, deriviative)                                \
+#define EP_SIMPLE_UNARY_FUNCTION(name, eval_term, derivative)                                      \
   template <typename T>                                                                            \
-  class Name : public EPUnary<T>                                                                   \
+  class EPF##name : public EPUnary<T>                                                              \
   {                                                                                                \
   public:                                                                                          \
-    Name(T arg) : EPUnary<T>(arg)                                                                  \
+    EPF##name(T arg) : EPUnary<T>(arg)                                                             \
     {                                                                                              \
     }                                                                                              \
     const auto eval() const                                                                        \
@@ -397,10 +462,19 @@ EP_OPERATOR_BINARY(/, EPDiv)
   template <typename T>                                                                            \
   auto name(const T & v)                                                                           \
   {                                                                                                \
-    return Name(arg);                                                                              \
+    return EPF##name(v);                                                                           \
   }
 
-EP_SIMPLE_UNARY_FUNCTION(EPLog, log, std::log(_arg), _arg.template D<dtag>() / _arg)
+EP_SIMPLE_UNARY_FUNCTION(exp, std::exp(_arg.eval()), exp(_arg) * _arg.template D<dtag>())
+EP_SIMPLE_UNARY_FUNCTION(log, std::log(_arg.eval()), _arg.template D<dtag>() / _arg)
+EP_SIMPLE_UNARY_FUNCTION(sin, std::sin(_arg.eval()), cos(_arg) * _arg.template D<dtag>())
+EP_SIMPLE_UNARY_FUNCTION(cos, std::cos(_arg.eval()), -1.0 * sin(_arg) * _arg.template D<dtag>())
+EP_SIMPLE_UNARY_FUNCTION(tan,
+                         std::tan(_arg.eval()),
+                         (pow<2>(tan(_arg)) + 1.0) * _arg.template D<dtag>())
+EP_SIMPLE_UNARY_FUNCTION(sqrt,
+                         std::sqrt(_arg.eval()),
+                         1.0 / (2.0 * sqrt(_arg)) * _arg.template D<dtag>())
 
 template <EPTag tag, typename T>
 auto
@@ -430,11 +504,11 @@ pow(const B & base, const E & exp)
   return EPPow(base, exp);
 }
 
-template <typename T>
+template <int E, typename B>
 auto
-exp(const T & v)
+pow(const B & base)
 {
-  return EPExp(v);
+  return EPIPow<B, E>(base);
 }
 
 // double
@@ -467,37 +541,43 @@ main()
   double x;
 
   {
-    double a = 0, c = 0;
-    const auto X = makeRef<1>(x);
-    const auto result = X * (1.0 + X * (3.0 - X * exp(1.0 / (200.0 + X * (5.0 - X)))));
-    auto a1 = std::chrono::system_clock::now();
-    for (x = -10; x < 10; x += 1e-6)
+    enum
     {
-      a += result.eval();
-      c += result.D<1>().eval();
+      dX
+    };
+
+    const auto X = makeRef<dX>(x);
+    const auto result = X * (1.0 - X) - (X * log(X) + (1.0 - X) * log(1.0 - X));
+
+    double r0 = 0, r1 = 0, r2 = 0;
+    auto a1 = std::chrono::system_clock::now();
+    for (x = 0.01; x <= 0.99; x += 1e-6)
+    {
+      r0 += result.eval();
+      r1 += result.D<dX>().eval();
+      r2 += result.D<dX>().D<dX>().eval();
     }
     auto a2 = std::chrono::system_clock::now();
-    std::cout << a << ' ' << ' ' << c << ' '
+
+    std::cout << r0 << ' ' << r1 << ' ' << r2 << ' '
               << std::chrono::duration_cast<std::chrono::milliseconds>(a2 - a1).count()
               << std::endl;
   }
 
   {
-    double b = 0, d = 0;
+    double r0 = 0, r1 = 0, r2 = 0;
     const auto & X = x;
+
     auto b1 = std::chrono::system_clock::now();
-    for (x = -10; x < 10; x += 1e-6)
+    for (x = 0.01; x <= 0.99; x += 1e-6)
     {
-      b += X * (1.0 + X * (3.0 - X * exp(1.0 / (200.0 + X * (5.0 - X)))));
-      d += -5.0e-5 * X * X * X * X * exp(1.0 / (-X * X + 5.0 * X + 200.0)) /
-               sqr(-0.005 * X * X + 0.025 * X + 1.0) +
-           0.000125 * X * X * X * exp(1.0 / (-X * X + 5.0 * X + 200.0)) /
-               sqr(-0.005 * X * X + 0.025 * X + 1.0) -
-           3.0 * X * X * exp(1.0 / (-X * X + 5.0 * X + 200.0)) + 6.0 * X + 1.0;
+      r0 += X * (1.0 - X) - (X * log(X) + (1.0 - x) * log(1.0 - X));
+      r1 += -2.0 * X - log(X) + log(1.0 - X) - (X - 1.0) / (1.0 - X);
+      r2 += -2.0 + 1.0 / (X - 1.0) - 1.0 / X;
     }
     auto b2 = std::chrono::system_clock::now();
 
-    std::cout << b << ' ' << d << ' '
+    std::cout << r0 << ' ' << r1 << ' ' << r2 << ' '
               << std::chrono::duration_cast<std::chrono::milliseconds>(b2 - b1).count()
               << std::endl;
   }
