@@ -343,7 +343,7 @@ FEProblemBase::FEProblemBase(const InputParameters & parameters)
     _has_mortar(false),
     _num_grid_steps(0),
     _displaced_neighbor_ref_pts("invert_elem_phys use_undisplaced_ref unset", "unset"),
-    _current_errand(MooseCurrentErrand::Unknown)
+    _current_loop(MooseCurrentLoop::Unknown)
 {
   //  Initialize static do_derivatives member. We initialize this to true so that all the default AD
   //  things that we setup early in the simulation actually get their derivative vectors initalized.
@@ -3000,7 +3000,7 @@ FEProblemBase::projectSolution()
   FloatingPointExceptionGuard fpe_guard(_app);
 
   {
-    PushCurrentErrand errand(this, MooseCurrentErrand::ComputeInitialCondition);
+    PushCurrentLoop errand(this, MooseCurrentLoop::ComputeInitialCondition);
     ConstElemRange & elem_range = *_mesh.getActiveLocalElementRange();
     ComputeInitialConditionThread cic(*this);
     Threads::parallel_reduce(elem_range, cic);
@@ -3012,7 +3012,7 @@ FEProblemBase::projectSolution()
 
   // now run boundary-restricted initial conditions
   {
-    PushCurrentErrand errand(this, MooseCurrentErrand::ComputeBoundaryInitialCondition);
+    PushCurrentLoop errand(this, MooseCurrentLoop::ComputeBoundaryInitialCondition);
     ConstBndNodeRange & bnd_nodes = *_mesh.getBoundaryNodeRange();
     ComputeBoundaryInitialConditionThread cbic(*this);
     Threads::parallel_reduce(bnd_nodes, cbic);
@@ -3057,7 +3057,7 @@ FEProblemBase::projectInitialConditionOnCustomRange(ConstElemRange & elem_range,
                                                     ConstBndNodeRange & bnd_nodes)
 {
   {
-    PushCurrentErrand errand(this, MooseCurrentErrand::ComputeInitialCondition);
+    PushCurrentLoop errand(this, MooseCurrentLoop::ComputeInitialCondition);
     ComputeInitialConditionThread cic(*this);
     Threads::parallel_reduce(elem_range, cic);
   }
@@ -3067,7 +3067,7 @@ FEProblemBase::projectInitialConditionOnCustomRange(ConstElemRange & elem_range,
   _aux->solution().close();
 
   {
-    PushCurrentErrand errand(this, MooseCurrentErrand::ComputeBoundaryInitialCondition);
+    PushCurrentLoop errand(this, MooseCurrentLoop::ComputeBoundaryInitialCondition);
     ComputeBoundaryInitialConditionThread cbic(*this);
     Threads::parallel_reduce(bnd_nodes, cbic);
   }
@@ -3735,7 +3735,7 @@ FEProblemBase::computeIndicators()
 
     // compute Indicators
     {
-      PushCurrentErrand errand(this, MooseCurrentErrand::ComputeIndicators);
+      PushCurrentLoop errand(this, MooseCurrentLoop::ComputeIndicators);
       ComputeIndicatorThread cit(*this);
       Threads::parallel_reduce(*_mesh.getActiveLocalElementRange(), cit);
       _aux->solution().close();
@@ -3775,7 +3775,7 @@ FEProblemBase::computeMarkers()
     }
 
     {
-      PushCurrentErrand errand(this, MooseCurrentErrand::ComputeMarkers);
+      PushCurrentLoop errand(this, MooseCurrentLoop::ComputeMarkers);
       ComputeMarkerThread cmt(*this);
       Threads::parallel_reduce(*_mesh.getActiveLocalElementRange(), cmt);
     }
@@ -3981,7 +3981,7 @@ FEProblemBase::computeUserObjectsInternal(const ExecFlagType & type,
   // Execute Elemental/Side/InternalSideUserObjects
   if (!userobjs.empty())
   {
-    PushCurrentErrand errand(this, MooseCurrentErrand::ComputeUserObjects);
+    PushCurrentLoop errand(this, MooseCurrentLoop::ComputeUserObjects);
     // non-nodal user objects have to be run separately before the nodal user objects run
     // because some nodal user objects (NodalNormal related) depend on elemental user objects :-(
     ComputeUserObjectsThread cppt(*this, getNonlinearSystemBase(), query);
@@ -4004,14 +4004,14 @@ FEProblemBase::computeUserObjectsInternal(const ExecFlagType & type,
     obj->initialize();
   if (query.clone().condition<AttribInterfaces>(Interfaces::NodalUserObject).count() > 0)
   {
-    PushCurrentErrand errand(this, MooseCurrentErrand::ComputeNodalUserObjects);
+    PushCurrentLoop errand(this, MooseCurrentLoop::ComputeNodalUserObjects);
     ComputeNodalUserObjectsThread cnppt(*this, query);
     Threads::parallel_reduce(*_mesh.getLocalNodeRange(), cnppt);
     joinAndFinalize(query.clone().condition<AttribInterfaces>(Interfaces::NodalUserObject));
   }
 
   {
-    PushCurrentErrand errand(this, MooseCurrentErrand::ComputeThreadedGeneralUserObjects);
+    PushCurrentLoop errand(this, MooseCurrentLoop::ComputeThreadedGeneralUserObjects);
 
     for (auto obj : tgobjs)
       obj->initialize();
@@ -4099,7 +4099,7 @@ FEProblemBase::executeSamplers(const ExecFlagType & exec_type)
     if (!objects.empty())
     {
       TIME_SECTION("executeSamplers", 1, "Executing Samplers");
-      PushCurrentErrand errand(this, MooseCurrentErrand::ComputeSamplers);
+      PushCurrentLoop errand(this, MooseCurrentLoop::ComputeSamplers);
       FEProblemBase::objectSetupHelper<Sampler>(objects, exec_type);
       FEProblemBase::objectExecuteHelper<Sampler>(objects);
     }

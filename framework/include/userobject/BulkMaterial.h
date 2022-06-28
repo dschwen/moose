@@ -194,7 +194,7 @@ public:
       _input_data.reserve(_index + bm._index);
 
     // concatenate input data
-    _input_data.insert(std::begin(bm._input_data) + _index,
+    _input_data.insert(std::begin(_input_data) + _index,
                        std::begin(bm._input_data),
                        std::begin(bm._input_data) + bm._index);
     _index += bm._index;

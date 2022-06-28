@@ -47,7 +47,7 @@ BulkTestMaterial::computeProperties()
   // For now we can simply skip evaluation if the current errand on FEProblem is computing user
   // objects.
   //
-  if (_fe_problem.getCurrentErrand() == MooseCurrentErrand::ComputeUserObjects)
+  if (_fe_problem.getCurrentLoop() == MooseCurrentLoop::ComputeUserObjects)
     return;
 
   const auto index = _bulk_uo.getIndex(_current_elem->id());

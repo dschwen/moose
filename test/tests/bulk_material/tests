@@ -3,7 +3,7 @@
     type = RunApp
     input = test.i
     design = BulkMaterial.md
-    issues = #21225
+    issues = '#21225'
     requirement = 'The bulk material system shall provide the capability for gathering and serializing variable and material property values for bulk property computation.'
   []
 []
