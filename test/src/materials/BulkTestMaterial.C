@@ -39,17 +39,6 @@ BulkTestMaterial::BulkTestMaterial(const InputParameters & parameters)
 void
 BulkTestMaterial::computeProperties()
 {
-  //
-  // Currently in MOOSE we do not have selective material evaluation. If material properties are
-  // needed _all_materials are run (in the order that satisfies dependency resolution).
-  // Unfortunately that means this material is run when the BulkMaterialTest UO is run. But the
-  // BulkTestMaterial material depends on the  BulkMaterialTest UO having completed a run.
-  // For now we can simply skip evaluation if the current errand on FEProblem is computing user
-  // objects.
-  //
-  if (_fe_problem.getCurrentLoop() == MooseCurrentLoop::ComputeUserObjects)
-    return;
-
   const auto index = _bulk_uo.getIndex(_current_elem->id());
 
   for (_qp = 0; _qp < _qrule->n_points(); ++_qp)

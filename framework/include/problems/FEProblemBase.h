@@ -80,7 +80,6 @@ class UserObject;
 class AutomaticMortarGeneration;
 class VectorPostprocessor;
 class MooseFunctionBase;
-class PushCurrentLoop;
 template <typename>
 class FunctionTempl;
 class MooseCoordTransform;
@@ -134,19 +133,6 @@ enum class MooseLinearConvergenceReason
   DIVERGED_NANORINF = -9,
   // DIVERGED_INDEFINITE_MAT      = -10
   DIVERGED_PCSETUP_FAILED = -11
-};
-
-enum class MooseCurrentLoop
-{
-  Unknown,
-  ComputeUserObjects,
-  ComputeNodalUserObjects,
-  ComputeThreadedGeneralUserObjects,
-  ComputeInitialCondition,
-  ComputeBoundaryInitialCondition,
-  ComputeIndicators,
-  ComputeMarkers,
-  ComputeSamplers
 };
 
 /**
@@ -2007,8 +1993,6 @@ public:
    */
   MooseCoordTransform & coordTransform();
 
-  MooseCurrentLoop getCurrentLoop() { return _current_loop; }
-
 protected:
   /// Create extra tagged vectors and matrices
   void createTagVectors();
@@ -2371,11 +2355,6 @@ private:
 
   /// Flag used to indicate whether we are computing the scaling Residual
   bool _computing_scaling_residual = false;
-
-  /// current errand MOOSE is working on
-  MooseCurrentLoop _current_loop;
-
-  friend PushCurrentLoop;
 };
 
 using FVProblemBase = FEProblemBase;
@@ -2453,22 +2432,3 @@ FEProblemBase::addObject(const std::string & type,
 
 template <>
 FunctionTempl<Real> & FEProblemBase::getFunction<Real>(const std::string & name, THREAD_ID tid);
-
-/**
- * Updates the current errand MOOSE is working on for a given scope. Restores previous errand
- * upon destruction. This is helpful in case an exception is thrown and the stack is unrolled.
- */
-class PushCurrentLoop
-{
-public:
-  PushCurrentLoop(FEProblemBase * fe_problem, MooseCurrentLoop errand)
-    : _fe_problem(*fe_problem), _old_loop(_fe_problem._current_loop)
-  {
-    _fe_problem._current_loop = errand;
-  }
-  ~PushCurrentLoop() { _fe_problem._current_loop = _old_loop; }
-
-private:
-  FEProblemBase & _fe_problem;
-  MooseCurrentLoop _old_loop;
-};
