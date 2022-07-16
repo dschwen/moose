@@ -270,6 +270,9 @@ protected:
 
   virtual const QBase & qRule() const = 0;
 
+  /// calls registerZeroMaterialPropertyDependency on MaterialPropertyInterface
+  void registerZeroMaterialPropertyDependencyHelper(const std::string & name);
+
   SubProblem & _subproblem;
 
   FEProblemBase & _fe_problem;
@@ -416,6 +419,9 @@ MaterialBase::getGenericZeroMaterialPropertyByName(const std::string & prop_name
     preload_with_zero.resize(nqp);
   for (unsigned int qp = 0; qp < nqp; ++qp)
     MathUtils::mooseSetToZero(preload_with_zero[qp]);
+
+  // mark this property as potentially needed by the current object
+  registerZeroMaterialPropertyDependencyHelper(prop_name);
 
   return preload_with_zero;
 }

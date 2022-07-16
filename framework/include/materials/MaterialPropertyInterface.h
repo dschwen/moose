@@ -351,6 +351,13 @@ public:
   template <typename T>
   const MaterialProperty<T> & getMaterialPropertyOlderByName(const MaterialPropertyName & name,
                                                              MaterialData & material_data);
+  /// register zero material property dependency (add such propertys to _material_property_dependencies if they are declared - this happens in resolveZeroMaterialPropertyDependencies)
+  void registerZeroMaterialPropertyDependency(const std::string & name)
+  {
+    _zero_material_properties.push_back(name);
+  }
+
+  void resolveZeroMaterialPropertyDependencies();
 
 protected:
   /// Parameters of the object with this interface
@@ -449,6 +456,9 @@ protected:
 
   /// The set of material properties (as given by their IDs) that _this_ object depends on
   std::set<unsigned int> _material_property_dependencies;
+
+  /// store all names of properties obtained through getGenerizZeroMaterialProperty to mark them as requoired, iff they exist
+  std::vector<std::string> _zero_material_properties;
 
   const MaterialPropertyName _get_suffix;
 
@@ -676,6 +686,10 @@ template <typename T, bool is_ad>
 const GenericMaterialProperty<T, is_ad> &
 MaterialPropertyInterface::getGenericZeroMaterialPropertyByName(const std::string & prop_name)
 {
+  // TODO: this schema has been broken for a long time. This call is also uses by UserObjects, which
+  // are constructed _before_ materials are constructed. The following conditional will always
+  // return false for those.
+
   // if found return the requested property
   if (hasGenericMaterialPropertyByName<T, is_ad>(prop_name))
     return getGenericMaterialPropertyByName<T, is_ad>(prop_name);
@@ -692,6 +706,9 @@ MaterialPropertyInterface::getGenericZeroMaterialPropertyByName(const std::strin
   // set values for all qpoints to zero
   for (unsigned int qp = 0; qp < nqp; ++qp)
     MathUtils::mooseSetToZero(zero[qp]);
+
+  // mark this property as potentially needed by the current object
+  registerZeroMaterialPropertyDependency(prop_name);
 
   return zero;
 }

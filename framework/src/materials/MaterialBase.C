@@ -13,6 +13,7 @@
 #include "Assembly.h"
 #include "Executioner.h"
 #include "Transient.h"
+#include "MaterialPropertyInterface.h"
 
 #include "libmesh/quadrature.h"
 
@@ -219,4 +220,15 @@ MaterialBase::checkExecutionStage()
   if (_fe_problem.startedInitialSetup())
     mooseError("Material properties must be retrieved during material object construction to "
                "ensure correct dependency resolution.");
+}
+
+void
+MaterialBase::registerZeroMaterialPropertyDependencyHelper(const std::string & name)
+{
+  auto * mpi = dynamic_cast<MaterialPropertyInterface *>(this);
+  if (mpi)
+    mpi->registerZeroMaterialPropertyDependency(name);
+  else
+    mooseError("Unexpectedly encountered an object that derives from Materialbase, but does not "
+               "derive from MaterialPropertyInterface. Please contact a developer.");
 }

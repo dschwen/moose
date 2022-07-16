@@ -169,6 +169,9 @@ Material::getMaterialByName(const std::string & name, bool no_warn, bool no_dep)
 void
 Material::resolveOptionalProperties()
 {
+  // deal with all fetched optional properties
   for (auto & proxy : _optional_property_proxies)
     proxy->resolve(*this);
+
+  resolveZeroMaterialPropertyDependencies();
 }

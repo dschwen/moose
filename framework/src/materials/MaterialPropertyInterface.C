@@ -319,6 +319,17 @@ MaterialPropertyInterface::checkExecutionStage()
 void
 MaterialPropertyInterface::resolveOptionalProperties()
 {
+  // deal with all fetched optional properties
   for (auto & proxy : _optional_property_proxies)
     proxy->resolve(*this);
+
+  resolveZeroMaterialPropertyDependencies();
+}
+
+void
+MaterialPropertyInterface::resolveZeroMaterialPropertyDependencies()
+{ // register zero material property dependencies
+  for (const auto & prop_name : _zero_material_properties)
+    if (_material_data->getMaterialPropertyStorage().hasProperty(prop_name))
+      _material_property_dependencies.insert(_material_data->getPropertyId(prop_name));
 }
