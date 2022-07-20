@@ -29,29 +29,6 @@ GeneralizedReturnMappingSolutionTempl<is_ad>::validParams()
 {
   InputParameters params = ADNestedSolve::validParams();
   params.set<unsigned int>("min_iterations") = 1;
-
-  // params.addParam<Real>(
-  //     "relative_tolerance", 1e-8, "Relative convergence tolerance for Newton iteration");
-  // params.addParam<Real>(
-  //     "absolute_tolerance", 1e-11, "Absolute convergence tolerance for Newton iteration");
-  // params.addParam<Real>("acceptable_multiplier",
-  //                       10,
-  //                       "Factor applied to relative and absolute "
-  //                       "tolerance for acceptable convergence if "
-  //                       "iterations are no longer making progress");
-  //
-  // // diagnostic output parameters
-  // MooseEnum internal_solve_output_on_enum("never on_error always", "on_error");
-  // params.addParam<MooseEnum>("internal_solve_output_on",
-  //                            internal_solve_output_on_enum,
-  //                            "When to output internal Newton solve information");
-  // params.addParam<bool>("internal_solve_full_iteration_history",
-  //                       false,
-  //                       "Set true to output full internal Newton iteration history at times "
-  //                       "determined by `internal_solve_output_on`. If false, only a summary is "
-  //                       "output.");
-  // params.addParamNamesToGroup("internal_solve_output_on internal_solve_full_iteration_history",
-  //                             "Debug");
   return params;
 }
 template <bool is_ad>
@@ -86,12 +63,10 @@ void
 GeneralizedReturnMappingSolutionTempl<is_ad>::returnMappingSolve(
     const GenericDenseVector<is_ad> & stress_dev,
     const GenericDenseVector<is_ad> & stress_new,
-    GenericReal<is_ad> & scalar,
-    const ConsoleStream & console)
+    GenericReal<is_ad> & scalar)
 {
-  // do the internal solve and capture iteration info during the first round
-  // iff full history output is requested regardless of whether the solve failed or succeeded
-  auto solve_state = internalSolve(stress_dev, stress_new, scalar, nullptr);
+  // do the internal solve
+  auto solve_state = internalSolve(stress_dev, stress_new, scalar);
 
   if (solve_state != SolveState::SUCCESS &&
       _internal_solve_output_on != InternalSolveOutput::ALWAYS)
@@ -119,13 +94,6 @@ GeneralizedReturnMappingSolutionTempl<is_ad>::returnMappingSolve(
         mooseError("Unhandled solver state");
     }
   }
-
-  // if (_internal_solve_output_on == InternalSolveOutput::ALWAYS)
-  // {
-  //   // the solve did not fail but the user requested debug output anyways
-  //   outputIterationSummary(iter_output.get(), _iteration);
-  //   console << iter_output->str();
-  // }
 }
 
 template <bool is_ad>
@@ -133,8 +101,7 @@ typename GeneralizedReturnMappingSolutionTempl<is_ad>::SolveState
 GeneralizedReturnMappingSolutionTempl<is_ad>::internalSolve(
     const GenericDenseVector<is_ad> & stress_dev,
     const GenericDenseVector<is_ad> & stress_new,
-    GenericReal<is_ad> & delta_gamma,
-    std::stringstream * iter_output)
+    GenericReal<is_ad> & delta_gamma)
 {
   auto residualFunctor = [&](const ADReal & guess, ADReal & residual)
   { residual = computeResidual(stress_dev, stress_new, guess); };

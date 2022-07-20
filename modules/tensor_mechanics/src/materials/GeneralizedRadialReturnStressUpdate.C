@@ -127,7 +127,7 @@ GeneralizedRadialReturnStressUpdateTempl<is_ad>::updateState(
   // Use Newton iteration to determine the scalar effective inelastic strain increment
   if (!MooseUtils::absoluteFuzzyEqual(MetaPhysicL::raw_value(stress_dev).l2_norm(), 0.0))
   {
-    this->returnMappingSolve(stress_dev, stress_new_vector, delta_gamma, this->_console);
+    this->returnMappingSolve(stress_dev, stress_new_vector, delta_gamma);
 
     computeStrainFinalize(inelastic_strain_increment, stress_new, stress_dev, delta_gamma);
   }

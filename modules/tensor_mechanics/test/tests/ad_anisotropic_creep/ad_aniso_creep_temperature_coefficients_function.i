@@ -213,7 +213,6 @@
     max_inelastic_increment = 0.00003
     relative_tolerance = 1e-20
     absolute_tolerance = 1e-20
-    # internal_solve_output_on = never
     # Force it to not use integration error
     max_integration_error = 1.0
   []

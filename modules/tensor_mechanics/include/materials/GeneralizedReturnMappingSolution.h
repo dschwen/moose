@@ -14,8 +14,6 @@
 #include "MooseTypes.h"
 #include "NestedSolve.h"
 
-class ConsoleStream;
-
 /**
  * Base class that provides capability for Newton generalized (anisotropic) return mapping
  * iterations on a single variable
@@ -38,8 +36,7 @@ protected:
    */
   void returnMappingSolve(const GenericDenseVector<is_ad> & effective_trial_stress,
                           const GenericDenseVector<is_ad> & stress_new,
-                          GenericReal<is_ad> & scalar,
-                          const ConsoleStream & console);
+                          GenericReal<is_ad> & scalar);
   /**
    * Compute the minimum permissible value of the scalar.  For some models, the magnitude
    * of this may be known.
@@ -137,8 +134,7 @@ private:
    */
   SolveState internalSolve(const GenericDenseVector<is_ad> & effective_trial_stress,
                            const GenericDenseVector<is_ad> & stress_new,
-                           GenericReal<is_ad> & scalar,
-                           std::stringstream * iter_output = nullptr);
+                           GenericReal<is_ad> & scalar);
 
   /// Solver helper object
   ADNestedSolve _solver;
