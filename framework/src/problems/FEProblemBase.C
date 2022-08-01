@@ -3273,7 +3273,14 @@ void
 FEProblemBase::setActiveMaterials(SubdomainID blk_id, THREAD_ID tid)
 {
   // find all materials that provide the required properties
-  const auto & needed_mat_props = getActiveMaterialProperties(tid);
+  auto needed_mat_props = getActiveMaterialProperties(tid);
+
+  if (_materials.hasActiveBlockObjects(blk_id, tid))
+    _active_materials[tid] = MooseUtils::buildRequiredMaterials(
+        needed_mat_props, _materials.getActiveBlockObjects(blk_id, tid), true);
+  else
+    _active_materials[tid].clear();
+
   _active_materials[tid].clear();
   _console << "setActiveMaterials(" << blk_id << ", " << tid << ")" << std::endl;
   if (_materials.hasActiveBlockObjects(blk_id, tid))

@@ -33,6 +33,6 @@ ResolveOptionalMaterialPropertiesAction::act()
 {
   mooseAssert(_problem, "Problem doesn't exist");
 
-  for (auto mpi : _app.getInterfaceObjects<MaterialPropertyInterface>())
-    mpi->resolveOptionalProperties();
+  for (auto mpi : _app.getInterfaceObjects<DeferredMaterialPropertyResolutionInterfaceBase>())
+    mpi->resolveAllProperties();
 }
