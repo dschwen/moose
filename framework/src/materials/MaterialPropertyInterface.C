@@ -29,7 +29,8 @@ MaterialPropertyInterface::validParams()
 MaterialPropertyInterface::MaterialPropertyInterface(const MooseObject * moose_object,
                                                      const std::set<SubdomainID> & block_ids,
                                                      const std::set<BoundaryID> & boundary_ids)
-  : _mi_params(moose_object->parameters()),
+  : DeferredMaterialPropertyResolutionInterface(moose_object),
+    _mi_params(moose_object->parameters()),
     _mi_name(_mi_params.get<std::string>("_object_name")),
     _mi_moose_object_name(_mi_params.get<std::string>("_moose_base"), _mi_name, "::"),
     _mi_feproblem(*_mi_params.getCheckedPointerParam<FEProblemBase *>("_fe_problem_base")),
@@ -314,4 +315,12 @@ MaterialPropertyInterface::checkExecutionStage()
   if (_mi_feproblem.startedInitialSetup())
     mooseError("Material properties must be retrieved during object construction. This is a code "
                "problem.");
+}
+
+void
+MaterialPropertyInterface::resolveDeferredProperties()
+{
+  // resolve all deferred properties (optional and zero properties)
+  for (auto & proxy : _deferred_property_proxies)
+    proxy->resolve(*this);
 }

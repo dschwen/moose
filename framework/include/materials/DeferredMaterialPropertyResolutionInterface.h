@@ -10,79 +10,69 @@
 #pragma once
 
 #include "MooseTypes.h"
+#include "MaterialProperty.h"
 
 /**
- * Inteface class for MaterialProperty consumers to support deferred resolution of optional material
- * properties.
- */
-class DeferredMaterialPropertyResolutionInterfaceBase
-{
-public:
-  DeferredMaterialPropertyResolutionInterfaceBase() {}
-
-  virtual void resolveAllProperties() = 0;
-};
-
-/**
- * Inteface class for MaterialProperty consumers to support deferred resolution of optional material
- * properties.
+ * Helper class for deferred getting of material properties after the construction
+ * phase for materials. This enables "optional material properties" in materials.
+ * It works by returning a reference to a pointer to a material property (rather
+ * than a reference to the property value). The pointer will be set to point to
+ * either an existing material property or to nullptr if the requested property
+ * does not exist.
  */
 template <class M>
-class DeferredMaterialPropertyResolutionInterface
-  : public DeferredMaterialPropertyResolutionInterfaceBase
+class DeferredMaterialPropertyProxyBase
 {
-  /**
-   * Helper class for deferred getting of material properties after the construction
-   * phase for materials. This enables "optional material properties" in materials.
-   * It works by returning a reference to a pointer to a material property (rather
-   * than a reference to the property value). The pointer will be set to point to
-   * either an existing material property or to nullptr if the requested property
-   * does not exist.
-   */
-  class DeferredMaterialPropertyProxyBase
-  {
-  public:
-    DeferredMaterialPropertyProxyBase(const std::string & name, MaterialPropState state)
-      : _name(name), _state(state)
-    {
-    }
-    virtual ~DeferredMaterialPropertyProxyBase() {}
-    virtual void resolve(M & material) = 0;
-
-  private:
-    const std::string _name;
-    const MaterialPropState _state;
-  };
-
-  template <typename T, bool is_ad>
-  class DeferredMaterialPropertyProxy : public DeferredMaterialPropertyProxyBase
-  {
-  public:
-    DeferredMaterialPropertyProxy(const std::string & name, MaterialPropState state)
-      : DeferredMaterialPropertyProxyBase(name, state)
-    {
-    }
-    const GenericOptionalMaterialProperty<T, is_ad> & value() const { return _value; }
-    void resolve(M & mpi) override;
-
-  private:
-    GenericOptionalMaterialProperty<T, is_ad> _value;
-  };
-
 public:
-  DeferredMaterialPropertyResolutionInterface() {}
-  virtual void resolveAllProperties();
+  DeferredMaterialPropertyProxyBase(const std::string & name, MaterialPropState state)
+    : _name(name), _state(state)
+  {
+  }
+  virtual ~DeferredMaterialPropertyProxyBase() {}
+  virtual void resolve(M & material) = 0;
 
 protected:
-  /// optional material properties (and zero material properties)
-  std::vector<std::unique_ptr<DeferredMaterialPropertyProxyBase>> _deferred_property_proxies;
+  const std::string _name;
+  const MaterialPropState _state;
 };
 
-template <typename M>
-template <typename T, bool is_ad>
+/**
+ * property type specific derived proxy object
+ */
+
+template <class M, typename T, bool is_ad>
+class DeferredMaterialPropertyProxy : public DeferredMaterialPropertyProxyBase<M>
+{
+public:
+  DeferredMaterialPropertyProxy(const std::string & name, MaterialPropState state)
+    : DeferredMaterialPropertyProxyBase<M>(name, state)
+  {
+  }
+  const GenericOptionalMaterialProperty<T, is_ad> & value() const { return _value; }
+  void resolve(M & mpi) override;
+
+protected:
+  GenericOptionalMaterialProperty<T, is_ad> _value;
+};
+
+/**
+ * Inteface class for MaterialProperty consumers to support deferred resolution of optional material
+ * properties.
+ */
+class DeferredMaterialPropertyResolutionInterface
+{
+public:
+  DeferredMaterialPropertyResolutionInterface(const MooseObject * moose_object)
+  {
+    moose_object->getMooseApp().registerInterfaceObject(*this);
+  }
+
+  virtual void resolveDeferredProperties() = 0;
+};
+
+template <class M, typename T, bool is_ad>
 void
-DeferredMaterialPropertyResolutionInterface<M>::DeferredMaterialPropertyProxy<T, is_ad>::resolve(
-    M & mpi)
+DeferredMaterialPropertyProxy<M, T, is_ad>::resolve(M & mpi)
 {
   if (mpi.template hasGenericMaterialProperty<T, is_ad>(this->_name))
     switch (this->_state)
@@ -105,13 +95,4 @@ DeferredMaterialPropertyResolutionInterface<M>::DeferredMaterialPropertyProxy<T,
           _value.set(&mpi.template getMaterialPropertyOlder<T>(this->_name));
         break;
     }
-}
-
-template <typename M>
-void
-DeferredMaterialPropertyResolutionInterface<M>::resolveAllProperties()
-{
-  // deal with all fetched optional properties
-  for (auto & proxy : _deferred_property_proxies)
-    proxy->resolve(*this);
 }

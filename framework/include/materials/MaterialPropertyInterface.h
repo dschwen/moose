@@ -34,8 +34,7 @@ class MaterialPropertyInterface;
  * must be inherited following these two classes for the material property checks
  * to operate correctly.
  */
-class MaterialPropertyInterface
-  : public DeferredMaterialPropertyResolutionInterface<MaterialPropertyInterface>
+class MaterialPropertyInterface : public DeferredMaterialPropertyResolutionInterface
 {
 public:
   MaterialPropertyInterface(const MooseObject * moose_object,
@@ -328,6 +327,9 @@ public:
   const MaterialProperty<T> & getMaterialPropertyOlderByName(const MaterialPropertyName & name,
                                                              MaterialData & material_data);
 
+  /// resolve all deferred properties (optional and zero properties)
+  virtual void resolveDeferredProperties();
+
 protected:
   /// Parameters of the object with this interface
   const InputParameters & _mi_params;
@@ -450,6 +452,10 @@ private:
 
   /// Storage for the boundary ids created by BoundaryRestrictable
   const std::set<BoundaryID> & _mi_boundary_ids;
+
+  /// deferred resolution material properties
+  std::vector<std::unique_ptr<DeferredMaterialPropertyProxyBase<MaterialPropertyInterface>>>
+      _deferred_property_proxies;
 };
 
 template <typename T>
@@ -635,8 +641,9 @@ MaterialPropertyInterface::getGenericZeroMaterialPropertyByName(const std::strin
     MathUtils::mooseSetToZero(zero[qp]);
 
   // mark this property as potentially needed by the current object
-  _deferred_property_proxies.push_back(std::make_unique<DeferredMaterialPropertyProxy<T, is_ad>>(
-      prop_name, MaterialPropState::CURRENT));
+  _deferred_property_proxies.push_back(
+      std::make_unique<DeferredMaterialPropertyProxy<MaterialPropertyInterface, T, is_ad>>(
+          prop_name, MaterialPropState::CURRENT));
 
   return zero;
 }
@@ -685,7 +692,8 @@ const GenericOptionalMaterialProperty<T, is_ad> &
 MaterialPropertyInterface::genericOptionalMaterialPropertyHelper(const std::string & name,
                                                                  MaterialPropState state)
 {
-  auto proxy = std::make_unique<DeferredMaterialPropertyProxy<T, is_ad>>(name, state);
+  auto proxy = std::make_unique<DeferredMaterialPropertyProxy<MaterialPropertyInterface, T, is_ad>>(
+      name, state);
   auto & optional_property = proxy->value();
   _deferred_property_proxies.push_back(std::move(proxy));
   return optional_property;

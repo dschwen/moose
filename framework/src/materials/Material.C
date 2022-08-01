@@ -167,11 +167,9 @@ Material::getMaterialByName(const std::string & name, bool no_warn, bool no_dep)
 }
 
 void
-Material::resolveOptionalProperties()
+Material::resolveDeferredProperties()
 {
-  // deal with all fetched optional properties
-  for (auto & proxy : _optional_property_proxies)
+  // resolve all deferred properties (optional and zero properties)
+  for (auto & proxy : _deferred_property_proxies)
     proxy->resolve(*this);
-
-  resolveZeroMaterialPropertyDependencies();
 }

@@ -3333,6 +3333,7 @@ FEProblemBase::prepareMaterials(SubdomainID blk_id, THREAD_ID tid)
 
   setActiveElementalMooseVariables(needed_moose_vars, tid);
   setActiveMaterialProperties(needed_mat_props, tid);
+  setActiveMaterials(blk_id, tid);
 }
 
 void
