@@ -35,17 +35,53 @@ StressUpdateBaseTempl<is_ad, R2, R4>::validParams()
 template <bool is_ad, typename R2, typename R4>
 StressUpdateBaseTempl<is_ad, R2, R4>::StressUpdateBaseTempl(const InputParameters & parameters)
   : Material(parameters),
+    // base name for this inelastic model
     _base_name(this->isParamValid("base_name")
                    ? this->template getParam<std::string>("base_name") + "_"
-                   : "")
+                   : ""),
+    // base name for the ComputeMultipleInelasticStress class using this model
+    _primary_base_name(this->isParamValid("primary_base_name")
+                           ? this->template getParam<std::string>("primary_base_name") + "_"
+                           : ""),
+
+    // properties for transferring data from ComputeMultipleInelasticStress
+    // stress for regular models, and the undamaged old stress if a damage model is used
+    _effective_stress_old(
+        this->template getGenericMaterialPropertyByName<is_ad, RankTwoTensor>("effective_stress")),
+    _stress(this->template getGenericMaterialPropertyByName<is_ad, RankTwoTensor>(
+        _primary_base_name + "stress")),
+    _rotation_increment(this->template getGenericMaterialPropertyByName<is_ad, RankTwoTensor>(
+        _primary_base_name + "rotation_increment")),
+    _elasticity_tensor(this->template getGenericMaterialPropertyByName<is_ad, RankFourTensor>(
+        _primary_base_name + "elasticity_tensor")),
+    _elastic_strain_old(this->template getMaterialPropertyOldByName<RankTwoTensor>(
+        _primary_base_name + "elastic_strain")),
+
+    // properties for transferring data back to ComputeMultipleInelasticStress
+    _model_strain_increment(this->template declareGenericProperty<is_ad, RankTwoTensor>(
+        name() + "_model_strain_increment")),
+    _model_inelastic_strain_increment(this->template declareGenericProperty<is_ad, RankTwoTensor>(
+        name() + "_model_inelastic_strain_increment")),
+    _model_stress_new(
+        this->template declareGenericProperty<is_ad, RankTwoTensor>(name() + "_model_stress_new"))
 {
 }
 
+// template <bool is_ad, typename R2, typename R4>
+// void
+// StressUpdateBaseTempl<is_ad, R2, R4>::setQp(unsigned int qp)
+// {
+//   _qp = qp;
+// }
+
 template <bool is_ad, typename R2, typename R4>
 void
-StressUpdateBaseTempl<is_ad, R2, R4>::setQp(unsigned int qp)
+StressUpdateBaseTempl<is_ad, R2, R4>::computeQpProperties()
 {
-  _qp = qp;
+  // TODO: new
+  resetIncrementalMaterialProperties();
+  // updateState or
+  // updateStateSubstep
 }
 
 template <bool is_ad, typename R2, typename R4>

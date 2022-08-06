@@ -189,6 +189,8 @@ public:
 protected:
   /// Name used as a prefix for all material properties related to the stress update model.
   const std::string _base_name;
+  /// Name used as a prefix by teh ComputeMultipleInelasticStress class managing this model.
+  const std::string _primary_base_name;
 
   static RankFourTensor _identityTensor;
 };

@@ -10,8 +10,15 @@
 #pragma once
 
 #include "ComputeFiniteStrainElasticStress.h"
+#include "ADComputeFiniteStrainElasticStress.h"
+#include "ADRankTwoTensorForward.h"
+#include "ADRankFourTensorForward.h"
 #include "DamageBase.h"
 #include "StressUpdateBase.h"
+
+template <bool is_ad>
+using ComputeMultipleInelasticStressParent = typename std::
+    conditional<is_ad, ADComputeFiniteStrainElasticStress, ComputeFiniteStrainElasticStress>::type;
 
 /**
  * ComputeMultipleInelasticStress computes the stress, the consistent tangent
@@ -29,12 +36,13 @@
  * tangent operator and the elastic and inelastic strains for the time increment.
  */
 
-class ComputeMultipleInelasticStress : public ComputeFiniteStrainElasticStress
+template <bool is_ad>
+class ComputeMultipleInelasticStressTempl : public ComputeMultipleInelasticStressParent<is_ad>
 {
 public:
   static InputParameters validParams();
 
-  ComputeMultipleInelasticStress(const InputParameters & parameters);
+  ComputeMultipleInelasticStressTempl(const InputParameters & parameters);
 
   virtual void initialSetup() override;
 
@@ -69,8 +77,8 @@ protected:
    * computed by all the plastic models during the Picard iterative scheme.  The weights are
    * dictated by the user using _inelastic_weights
    */
-  virtual void updateQpState(RankTwoTensor & elastic_strain_increment,
-                             RankTwoTensor & combined_inelastic_strain_increment);
+  virtual void updateQpState(/(GenericRankTwoTensor<is_ad> & elastic_strain_increment,
+                             GenericRankTwoTensor<is_ad> & combined_inelastic_strain_increment*/);
 
   /**
    * An optimised version of updateQpState that gets used when the number
@@ -82,9 +90,9 @@ protected:
    * @param elastic_strain_increment The elastic part of _strain_increment[_qp]
    * @param combined_inelastic_strain_increment The inelastic part of _strain_increment[_qp]
    */
-  virtual void updateQpStateSingleModel(unsigned model_number,
-                                        RankTwoTensor & elastic_strain_increment,
-                                        RankTwoTensor & combined_inelastic_strain_increment);
+  virtual void updateQpStateSingleModel/*(unsigned model_number,
+                                        GenericRankTwoTensor<is_ad> & elastic_strain_increment,
+                                        GenericRankTwoTensor<is_ad> & combined_inelastic_strain_increment*/);
 
   /**
    * Using _elasticity_tensor[_qp] and the consistent tangent operators,
@@ -107,10 +115,10 @@ protected:
    * corresponding to the supplied strain increment
    * @param consistent_tangent_operator The consistent tangent operator
    */
-  virtual void computeAdmissibleState(unsigned model_number,
+  virtual void computeAdmissibleState(/*unsigned model_number,
                                       RankTwoTensor & elastic_strain_increment,
                                       RankTwoTensor & inelastic_strain_increment,
-                                      RankFourTensor & consistent_tangent_operator);
+                                      RankFourTensor & consistent_tangent_operator*/);
 
   ///@{Input parameters associated with the recompute iteration to return the stress state to the yield surface
   const unsigned int _max_iterations;
@@ -128,7 +136,7 @@ protected:
   ///@}
 
   /// The sum of the inelastic strains that come from the plastic models
-  MaterialProperty<RankTwoTensor> & _inelastic_strain;
+  GenericMaterialProperty<is_ad, RankTwoTensor> & _inelastic_strain;
 
   /// old value of inelastic strain
   const MaterialProperty<RankTwoTensor> & _inelastic_strain_old;
@@ -137,7 +145,7 @@ protected:
   const enum class TangentOperatorEnum { elastic, nonlinear } _tangent_operator_type;
 
   /// number of plastic models
-  const unsigned _num_models;
+  const std::string<MaterialName> _models;
 
   /// Flags to compute tangent during updateState call
   std::vector<bool> _tangent_computation_flag;
@@ -168,7 +176,7 @@ protected:
    * models last to allow for the case when a creep model relaxes the stress state
    * inside of the yield surface in an iteration.
    */
-  std::vector<StressUpdateBase *> _models;
+  std::vector<StressUpdateBaseTempl<is_ad> *> _models;
 
   /// is the elasticity tensor guaranteed to be isotropic?
   bool _is_elasticity_tensor_guaranteed_isotropic;
@@ -177,7 +185,27 @@ protected:
   bool _all_models_isotropic;
 
   /// Pointer to the damage model
-  DamageBaseTempl<false> * _damage_model;
+  DamageBaseTempl<is_ad> * _damage_model;
 
-  RankTwoTensor _undamaged_stress_old;
+  /// property fetched by the inelastic models (either stress old or undamaged stress old)
+  MaterialProperty<RankTwoTensor> & _effective_stress_old;
+
+  ///@{ properties computed by the inelastic models
+  std::vector<const GenericMaterialProperty<is_ad, RankTwoTensor> *> _model_strain_increment;
+  std::vector<const GenericMaterialProperty<is_ad, RankTwoTensor> *>
+      _model_inelastic_strain_increment;
+  std::vector<const GenericMaterialProperty<is_ad, RankTwoTensor> *> _model_stress_new;
+  ///@}
 };
+
+class ComputeMultipleInelasticStress : public ComputeMultipleInelasticStressTempl<false>
+{
+public:
+  using ComputeMultipleInelasticStressTempl<false>::ComputeMultipleInelasticStressTempl;
+
+protected:
+  /// properties computed by the inelastic models
+  std::vector<const MaterialProperty<RankFourTensor> *> _model_tangent_operator;
+};
+
+typedef ComputeMultipleInelasticStressTempl<true> ADComputeMultipleInelasticStress;

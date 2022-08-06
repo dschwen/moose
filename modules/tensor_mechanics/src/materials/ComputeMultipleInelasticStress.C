@@ -86,7 +86,7 @@ ComputeMultipleInelasticStress::ComputeMultipleInelasticStress(const InputParame
     _inelastic_strain_old(
         getMaterialPropertyOld<RankTwoTensor>(_base_name + "combined_inelastic_strain")),
     _tangent_operator_type(getParam<MooseEnum>("tangent_operator").getEnum<TangentOperatorEnum>()),
-    _num_models(getParam<std::vector<MaterialName>>("inelastic_models").size()),
+    _models(getParam<std::vector<MaterialName>>("inelastic_models")),
     _tangent_computation_flag(_num_models, false),
     _tangent_calculation_method(TangentCalculationMethod::ELASTIC),
     _inelastic_weights(isParamValid("combined_inelastic_strain_weights")
@@ -96,15 +96,26 @@ ComputeMultipleInelasticStress::ComputeMultipleInelasticStress(const InputParame
     _cycle_models(getParam<bool>("cycle_models")),
     _material_timestep_limit(declareProperty<Real>(_base_name + "material_timestep_limit")),
     _identity_symmetric_four(RankFourTensor::initIdentitySymmetricFour),
-    _all_models_isotropic(true)
+    _all_models_isotropic(true),
+    _model_strain_increment(_num_models),
+    _model_inelastic_strain_increment(_num_models),
+    _model_stress_new(_num_models),
 {
-  if (_inelastic_weights.size() != _num_models)
-    mooseError(
-        "ComputeMultipleInelasticStress: combined_inelastic_strain_weights must contain the same "
-        "number of entries as inelastic_models ",
-        _inelastic_weights.size(),
-        " ",
-        _num_models);
+  if (_inelastic_weights.size() != _models.size())
+    paramError("combined_inelastic_strain_weights",
+               "must contain the same number of entries as inelastic_models");
+
+  // get properties provided by the inelastic models
+  for (const auto i : index_range(_models))
+  {
+    _model_strain_increment[i] = &this->template getGenericMaterialProperty<is_ad, RankTwoTensor>(
+        _model[i] + "_model_strain_increment");
+    _model_inelastic_strain_increment[i] =
+        &this->template getGenericMaterialProperty<is_ad, RankTwoTensor>(
+            _model[i] + "_model_inelastic_strain_increment");
+    _model_stress_new[i] = &this->template getGenericMaterialProperty<is_ad, RankTwoTensor>(
+        _model[i] + "_model_stress_new");
+  }
 }
 
 void
@@ -144,11 +155,11 @@ ComputeMultipleInelasticStress::initialSetup()
   }
 
   // Check if tangent calculation methods are consistent. If all models have
-  // TangentOperatorEnum::ELASTIC or tangent_operator is set by the user as elasic, then the tangent
-  // is never calculated: J_tot = C. If PARTIAL and NONE models are present, utilize PARTIAL
-  // formulation: J_tot = (I + J_1 + ... J_N)^-1 C. If FULL and NONE models are present, utilize
-  // FULL formulation: J_tot = J_1 * C^-1 * J_2 * C^-1 * ... J_N * C. If PARTIAL and FULL models are
-  // present, error out.
+  // TangentOperatorEnum::ELASTIC or tangent_operator is set by the user as elasic, then the
+  // tangent is never calculated: J_tot = C. If PARTIAL and NONE models are present, utilize
+  // PARTIAL formulation: J_tot = (I + J_1 + ... J_N)^-1 C. If FULL and NONE models are present,
+  // utilize FULL formulation: J_tot = J_1 * C^-1 * J_2 * C^-1 * ... J_N * C. If PARTIAL and FULL
+  // models are present, error out.
 
   if (_tangent_operator_type != TangentOperatorEnum::elastic)
   {
@@ -182,7 +193,8 @@ ComputeMultipleInelasticStress::initialSetup()
                "Damage Model " + _damage_model->name() +
                    " is not compatible with ComputeMultipleInelasticStress");
 
-  // This check prevents the hierarchy from silently skipping substepping without informing the user
+  // This check prevents the hierarchy from silently skipping substepping without informing the
+  // user
   for (const auto model_number : index_range(_models))
   {
     const bool use_substep = _models[model_number]->substeppingCapabilityRequested();
@@ -281,8 +293,8 @@ ComputeMultipleInelasticStress::finiteStrainRotation(const bool force_elasticity
 }
 
 void
-ComputeMultipleInelasticStress::updateQpState(RankTwoTensor & elastic_strain_increment,
-                                              RankTwoTensor & combined_inelastic_strain_increment)
+ComputeMultipleInelasticStress::updateQpState(/*RankTwoTensor & elastic_strain_increment,
+                                              RankTwoTensor & combined_inelastic_strain_increment*/)
 {
   if (_internal_solve_full_iteration_history == true)
   {
@@ -306,7 +318,7 @@ ComputeMultipleInelasticStress::updateQpState(RankTwoTensor & elastic_strain_inc
   {
     for (const auto i_rmm : index_range(_models))
     {
-      _models[i_rmm]->setQp(_qp);
+      // _models[i_rmm]->setQp(_qp);
 
       // initially assume the strain is completely elastic
       elastic_strain_increment = _strain_increment[_qp];
@@ -332,10 +344,11 @@ ComputeMultipleInelasticStress::updateQpState(RankTwoTensor & elastic_strain_inc
       // let the i^th model produce an admissible stress (as _stress[_qp]), and decompose
       // the strain increment into an elastic part (elastic_strain_increment) and an
       // inelastic part (inelastic_strain_increment[i_rmm])
-      computeAdmissibleState(i_rmm,
-                             elastic_strain_increment,
-                             inelastic_strain_increment[i_rmm],
-                             _consistent_tangent_operator[i_rmm]);
+      // computeAdmissibleState(i_rmm,
+      //                        elastic_strain_increment,
+      //                        inelastic_strain_increment[i_rmm],
+      //                        _consistent_tangent_operator[i_rmm]);
+      _models[i_rmm]->computePropertiesAtQp(_qp);
 
       if (i_rmm == 0)
       {
@@ -422,9 +435,9 @@ ComputeMultipleInelasticStress::computeQpJacobianMult()
 
 void
 ComputeMultipleInelasticStress::updateQpStateSingleModel(
-    unsigned model_number,
+    /*unsigned model_number,
     RankTwoTensor & elastic_strain_increment,
-    RankTwoTensor & combined_inelastic_strain_increment)
+    RankTwoTensor & combined_inelastic_strain_increment*/)
 {
   for (auto model : _models)
     model->setQp(_qp);
@@ -471,53 +484,55 @@ ComputeMultipleInelasticStress::updateQpStateSingleModel(
       _models[i_rmm]->propagateQpStatefulProperties();
 }
 
-void
-ComputeMultipleInelasticStress::computeAdmissibleState(unsigned model_number,
-                                                       RankTwoTensor & elastic_strain_increment,
-                                                       RankTwoTensor & inelastic_strain_increment,
-                                                       RankFourTensor & consistent_tangent_operator)
-{
-  // Reset properties to the beginning of the time step (necessary if substepping is employed).
-  _models[model_number]->resetIncrementalMaterialProperties();
+// void
+// ComputeMultipleInelasticStress::computeAdmissibleState(/* unsigned model_number,
+//                                                        RankTwoTensor &
+//                                                        elastic_strain_increment, RankTwoTensor
+//                                                        & inelastic_strain_increment,
+//                                                        RankFourTensor &
+//                                                        consistent_tangent_operator*/)
+// {
+//   // Reset properties to the beginning of the time step (necessary if substepping is employed).
+//   _models[model_number]->resetIncrementalMaterialProperties();
 
-  const bool jac = _fe_problem.currentlyComputingJacobian();
-  if (_damage_model)
-    _models[model_number]->updateState(elastic_strain_increment,
-                                       inelastic_strain_increment,
-                                       _rotation_increment[_qp],
-                                       _stress[_qp],
-                                       _undamaged_stress_old,
-                                       _elasticity_tensor[_qp],
-                                       _elastic_strain_old[_qp],
-                                       (jac && _tangent_computation_flag[model_number]),
-                                       consistent_tangent_operator);
-  else if (_models[model_number]->substeppingCapabilityEnabled() &&
-           (_is_elasticity_tensor_guaranteed_isotropic || !_perform_finite_strain_rotations))
-    _models[model_number]->updateStateSubstep(elastic_strain_increment,
-                                              inelastic_strain_increment,
-                                              _rotation_increment[_qp],
-                                              _stress[_qp],
-                                              _stress_old[_qp],
-                                              _elasticity_tensor[_qp],
-                                              _elastic_strain_old[_qp],
-                                              (jac && _tangent_computation_flag[model_number]),
-                                              consistent_tangent_operator);
-  else
-    _models[model_number]->updateState(elastic_strain_increment,
-                                       inelastic_strain_increment,
-                                       _rotation_increment[_qp],
-                                       _stress[_qp],
-                                       _stress_old[_qp],
-                                       _elasticity_tensor[_qp],
-                                       _elastic_strain_old[_qp],
-                                       (jac && _tangent_computation_flag[model_number]),
-                                       consistent_tangent_operator);
+//   const bool jac = _fe_problem.currentlyComputingJacobian();
+//   if (_damage_model)
+//     _models[model_number]->updateState(elastic_strain_increment,
+//                                        inelastic_strain_increment,
+//                                        _rotation_increment[_qp],
+//                                        _stress[_qp],
+//                                        _undamaged_stress_old,
+//                                        _elasticity_tensor[_qp],
+//                                        _elastic_strain_old[_qp],
+//                                        (jac && _tangent_computation_flag[model_number]),
+//                                        consistent_tangent_operator);
+//   else if (_models[model_number]->substeppingCapabilityEnabled() &&
+//            (_is_elasticity_tensor_guaranteed_isotropic || !_perform_finite_strain_rotations))
+//     _models[model_number]->updateStateSubstep(elastic_strain_increment,
+//                                               inelastic_strain_increment,
+//                                               _rotation_increment[_qp],
+//                                               _stress[_qp],
+//                                               _stress_old[_qp],
+//                                               _elasticity_tensor[_qp],
+//                                               _elastic_strain_old[_qp],
+//                                               (jac && _tangent_computation_flag[model_number]),
+//                                               consistent_tangent_operator);
+//   else
+//     _models[model_number]->updateState(elastic_strain_increment,
+//                                        inelastic_strain_increment,
+//                                        _rotation_increment[_qp],
+//                                        _stress[_qp],
+//                                        _stress_old[_qp],
+//                                        _elasticity_tensor[_qp],
+//                                        _elastic_strain_old[_qp],
+//                                        (jac && _tangent_computation_flag[model_number]),
+//                                        consistent_tangent_operator);
 
-  if (jac && !_tangent_computation_flag[model_number])
-  {
-    if (_tangent_calculation_method == TangentCalculationMethod::PARTIAL)
-      consistent_tangent_operator.zero();
-    else
-      consistent_tangent_operator = _elasticity_tensor[_qp];
-  }
-}
+//   if (jac && !_tangent_computation_flag[model_number])
+//   {
+//     if (_tangent_calculation_method == TangentCalculationMethod::PARTIAL)
+//       consistent_tangent_operator.zero();
+//     else
+//       consistent_tangent_operator = _elasticity_tensor[_qp];
+//   }
+// }
