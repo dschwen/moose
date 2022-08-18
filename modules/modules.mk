@@ -26,6 +26,7 @@ ifeq ($(ALL_MODULES),yes)
         HEAT_CONDUCTION             := yes
         LEVEL_SET                   := yes
         MISC                        := yes
+        OPTIMIZATION                := yes
         NAVIER_STOKES               := yes
         PERIDYNAMICS                := yes
         PHASE_FIELD                 := yes
@@ -72,12 +73,17 @@ ifeq ($(CONTACT),yes)
         TENSOR_MECHANICS            := yes
 endif
 
+ifeq ($(OPTIMIZATION),yes)
+        HEAT_CONDUCTION             := yes
+        STOCHASTIC_TOOLS            := yes
+endif
+
 ifeq ($(HEAT_CONDUCTION),yes)
         RAY_TRACING                 := yes
 endif
 
 ifeq ($(PERIDYNAMICS),yes)
-        TENSOR_MECHANICS           := yes
+        TENSOR_MECHANICS            := yes
 endif
 
 ifeq ($(PHASE_FIELD),yes)
@@ -95,7 +101,7 @@ ifeq ($(XFEM),yes)
 endif
 
 # The master list of all moose modules
-MODULE_NAMES := "chemical_reactions contact electromagnetics external_petsc_solver fluid_properties fsi functional_expansion_tools geochemistry heat_conduction level_set misc navier_stokes peridynamics phase_field porous_flow ray_tracing rdg reactor richards solid_properties stochastic_tools tensor_mechanics thermal_hydraulics xfem"
+MODULE_NAMES := "chemical_reactions contact electromagnetics external_petsc_solver fluid_properties fsi functional_expansion_tools geochemistry heat_conduction level_set misc navier_stokes optimization peridynamics phase_field porous_flow ray_tracing rdg reactor richards solid_properties stochastic_tools tensor_mechanics thermal_hydraulics xfem"
 
 ################################################################################
 ########################## MODULE REGISTRATION #################################
@@ -186,6 +192,7 @@ ifeq ($(RICHARDS),yes)
   include $(FRAMEWORK_DIR)/app.mk
 endif
 
+# Depended on by optimization
 ifeq ($(STOCHASTIC_TOOLS),yes)
   APPLICATION_DIR    := $(MOOSE_DIR)/modules/stochastic_tools
   APPLICATION_NAME   := stochastic_tools
@@ -196,7 +203,7 @@ endif
 # The modules that follow are purposefully ordered such that all of their
 # dependencies are defined first
 
-# Depended on by navier_stokes and fsi (through navier_stokes)
+# Depended on by navier_stokes, fsi (through navier_stokes), and optimization
 ifeq ($(HEAT_CONDUCTION),yes)
   APPLICATION_DIR    := $(MOOSE_DIR)/modules/heat_conduction
   APPLICATION_NAME   := heat_conduction
@@ -253,6 +260,13 @@ ifeq ($(MISC),yes)
   APPLICATION_DIR    := $(MOOSE_DIR)/modules/misc
   APPLICATION_NAME   := misc
   SUFFIX             := misc
+  include $(FRAMEWORK_DIR)/app.mk
+endif
+
+ifeq ($(OPTIMIZATION),yes)
+  APPLICATION_DIR    := $(MOOSE_DIR)/modules/optimization
+  APPLICATION_NAME   := optimization
+  SUFFIX             := opt
   include $(FRAMEWORK_DIR)/app.mk
 endif
 
