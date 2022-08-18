@@ -9,7 +9,7 @@
 
 #include "PiecewiseMulticonstantFromReporter.h"
 
-registerMooseObject("isopodApp", PiecewiseMulticonstantFromReporter);
+registerMooseObject("OptimizationApp", PiecewiseMulticonstantFromReporter);
 
 InputParameters
 PiecewiseMulticonstantFromReporter::validParams()
