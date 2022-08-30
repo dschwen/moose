@@ -103,9 +103,9 @@ GeneralizedReturnMappingSolutionTempl<is_ad>::internalSolve(
     const GenericDenseVector<is_ad> & stress_new,
     GenericReal<is_ad> & delta_gamma)
 {
-  auto residualFunctor = [&](const ADReal & guess, ADReal & residual)
+  auto residualFunctor = [&](const GenericReal<is_ad> & guess, GenericReal<is_ad> & residual)
   { residual = computeResidual(stress_dev, stress_new, guess); };
-  auto jacobianFunctor = [&](const ADReal & guess, ADReal & jacobian)
+  auto jacobianFunctor = [&](const GenericReal<is_ad> & guess, GenericReal<is_ad> & jacobian)
   { jacobian = computeDerivative(stress_dev, stress_new, guess); };
   auto boundsFunctor = [&]()
   {
@@ -123,7 +123,7 @@ GeneralizedReturnMappingSolutionTempl<is_ad>::internalSolve(
   if (std::isnan(delta_gamma) || std::isinf(MetaPhysicL::raw_value(delta_gamma)))
     return SolveState::NAN_INF;
 
-  if (_solver.getState() == ADNestedSolve::State::NOT_CONVERGED)
+  if (_solver.getState() == NestedSolveTempl<is_ad>::State::NOT_CONVERGED)
     return SolveState::EXCEEDED_ITERATIONS;
 
   return SolveState::SUCCESS;

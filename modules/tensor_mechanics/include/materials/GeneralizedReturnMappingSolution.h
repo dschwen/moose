@@ -137,7 +137,7 @@ private:
                            GenericReal<is_ad> & scalar);
 
   /// Solver helper object
-  ADNestedSolve _solver;
+  NestedSolveTempl<is_ad> _solver;
 };
 
 typedef GeneralizedReturnMappingSolutionTempl<false> GeneralizedReturnMappingSolution;
