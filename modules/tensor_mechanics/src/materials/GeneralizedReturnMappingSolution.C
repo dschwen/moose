@@ -29,6 +29,8 @@ GeneralizedReturnMappingSolutionTempl<is_ad>::validParams()
 {
   InputParameters params = ADNestedSolve::validParams();
   params.set<unsigned int>("min_iterations") = 1;
+  params.set<Real>("absolute_tolerance") = 1e-11;
+  params.set<unsigned int>("max_iterations") = 50;
   return params;
 }
 template <bool is_ad>
