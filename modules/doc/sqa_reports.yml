@@ -398,7 +398,7 @@ Requirements:
 
     optimization:
         directories:
-            - modules/navier_stokes
+            - modules/optimization
 
     phase_field:
         directories:

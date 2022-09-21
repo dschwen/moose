@@ -1,5 +1,6 @@
 [Tests]
   issues = 'idaholab/isopod#47'
+  design = 'PiecewiseMultilinearFromReporter.md'
   [interp]
     requirement = "The PiecewiseMultilinearFromReporter object shall perform"
     [except1]
