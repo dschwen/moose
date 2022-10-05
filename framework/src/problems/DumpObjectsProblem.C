@@ -9,6 +9,7 @@
 
 #include "DumpObjectsProblem.h"
 #include "DumpObjectsAction.h"
+#include "ReferenceResidualProblem.h"
 #include "DumpObjectsNonlinearSystem.h"
 #include "DumpObjectsLinearSystem.h"
 #include "AuxiliarySystem.h"
@@ -25,11 +26,15 @@ InputParameters
 DumpObjectsProblem::validParams()
 {
   InputParameters params = FEProblemBase::validParams();
+
+  // add (but never use) parameters from ReferenceRedidualProblem to avoid unused parameter errors
+  params += ReferenceResidualProblem::validParams();
+
   params.addClassDescription("Single purpose problem object that does not run the given input but "
                              "allows deconstructing actions into their series of underlying Moose "
                              "objects and variables.");
-  params.addParam<std::string>(
-      "dump_path", "all", "Syntax path of the action of which to dump the generated syntax");
+  params.addRequiredParam<std::vector<std::string>>(
+      "dump_path", "Syntax path of the action of which to dump the generated syntax");
   params.addParam<bool>(
       "include_all_user_specified_params",
       true,
@@ -175,7 +180,6 @@ DumpObjectsProblem::dumpVariableHelper(const std::string & system,
         "  [" + var_name + "]\n"
       +      param_text
       + "  []\n";
-  // clang-format on
 }
 
 void
@@ -186,18 +190,21 @@ DumpObjectsProblem::printObjects()
     dumpGeneratedSyntax(path);
   else
     dumpAllGeneratedSyntax();
+  terminateSolve();
 }
 
 void
-DumpObjectsProblem::dumpGeneratedSyntax(const std::string path)
+DumpObjectsProblem::dumpGeneratedSyntax(const std::vector<std::string> & paths)
 {
-  auto pathit = _generated_syntax.find(path);
-  if (pathit == _generated_syntax.end())
-    return;
-
   Moose::out << "**START DUMP DATA**\n";
-  for (const auto & system_pair : pathit->second)
-    Moose::out << '[' << system_pair.first << "]\n" << system_pair.second << "[]\n\n";
+  for (const auto & path : paths)
+  {
+    auto it = _generated_syntax.find(path);
+    if (it == _generated_syntax.end())
+      continue;
+    for (const auto & system_pair : it->second)
+      Moose::out << '[' << system_pair.first << "]\n" << system_pair.second << "[]\n\n";
+  }
   Moose::out << "**END DUMP DATA**\n";
   Moose::out << std::flush;
 }
