@@ -1,0 +1,12 @@
+[Tests]
+  [kks_example_stoichiometric]
+    type = RunApp
+    input = 'kks_example_stoichiometric.i'
+    check_input = True
+  []
+  [kks_example_nonstoichiometric]
+    type = RunApp
+    input = 'kks_example_nonstoichiometric.i'
+    check_input = True
+  []
+[]

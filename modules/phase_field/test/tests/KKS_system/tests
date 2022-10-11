@@ -5,8 +5,7 @@
     exodiff = 'derivative_parsed_material.e'
     issues = '#4835'
     design = 'DerivativeParsedMaterial.md'
-    requirement = 'The Kim-Kim-Suzuki model implementation shall use free energy densities provided '
-                  'by DerivativeParsedMaterials'
+    requirement = 'The Kim-Kim-Suzuki model implementation shall use free energy densities provided by DerivativeParsedMaterials'
   []
 
   [kks_example]
@@ -33,8 +32,25 @@
     exodiff = 'kks_example_offset.e'
     issues = '#10315'
     design = 'KKSSplitCHCRes.md'
-    requirement = 'The split version of the Kim-Kim-Suzuki shall be yield the correct results with '
-                  'asymmetric free energies'
+    requirement = 'The split version of the Kim-Kim-Suzuki shall be yield the correct results with asymmetric free energies'
+  []
+
+  [kks_phase_concentration]
+    type = 'Exodiff'
+    input = 'kks_phase_concentration.i'
+    exodiff = 'kks_phase_concentration_out.e'
+    design = 'KKSPhaseConcentration.md'
+    issues = '#4879'
+    requirement = 'The parallel tangent and total phase concentration conditions shall be enforced'
+  []
+
+  [kks_phase_concentration_reverse]
+    type = 'Exodiff'
+    input = 'kks_phase_concentration_reverse.i'
+    exodiff = 'kks_phase_concentration_reverse_out.e'
+    design = 'KKSPhaseConcentration.md'
+    issues = '#4879'
+    requirement = 'The parallel tangent and total phase concentration conditions shall be enforced with reversed variable assignment om the equations'
   []
 
   [kks_xevac]
@@ -70,22 +86,19 @@
       type = CSVDiff
       input = lagrange_multiplier.i
       csvdiff = lagrange_multiplier_out_c_0036.csv
-      detail = 'the general Lagrange multiplier enforced multiphase formulation with two order '
-               'parameters.'
+      detail = 'the general Lagrange multiplier enforced multiphase formulation with two order parameters.'
     []
     [auxkernel]
       type = CSVDiff
       input = auxkernel.i
       csvdiff = auxkernel_out_c_0036.csv
-      detail = 'a two order parameter system, where the second order parameter is an auxiliary '
-               'variable.'
+      detail = 'a two order parameter system, where the second order parameter is an auxiliary variable.'
     []
     [nonlinear]
       type = CSVDiff
       input = nonlinear.i
       csvdiff = nonlinear_out_c_0036.csv
-      detail = 'a two order parameter system, where the second order parameter is an prescribed '
-               'nonlinear variable.'
+      detail = 'a two order parameter system, where the second order parameter is an prescribed nonlinear variable.'
     []
   []
 []

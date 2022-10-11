@@ -18,7 +18,8 @@ KKSPhaseConcentration::validParams()
   params.addClassDescription("KKS model kernel to enforce the decomposition of concentration into "
                              "phase concentration  $(1-h(\\eta))c_a + h(\\eta)c_b - c = 0$. The "
                              "non-linear variable of this kernel is $c_b$.");
-  params.addRequiredCoupledVar("ca", "Phase a concentration");
+  params.addCoupledVar("ca", "Phase a concentration (specify either this or cb)");
+  params.addCoupledVar("cb", "Phase b concentration (specify either this or ca)");
   params.addRequiredCoupledVar("c", "Real concentration");
   params.addRequiredCoupledVar("eta", "Phase a/b order parameter");
   params.addParam<MaterialPropertyName>(
@@ -29,8 +30,9 @@ KKSPhaseConcentration::validParams()
 // Phase interpolation func
 KKSPhaseConcentration::KKSPhaseConcentration(const InputParameters & parameters)
   : DerivativeMaterialInterface<Kernel>(parameters),
-    _ca(coupledValue("ca")),
-    _ca_var(coupled("ca")),
+    _use_ca(isCoupled("ca")),
+    _cx(_use_ca ? coupledValue("ca") : coupledValue("cb")),
+    _cx_var(_use_ca ? coupled("ca") : coupled("cb")),
     _c(coupledValue("c")),
     _c_var(coupled("c")),
     _eta(coupledValue("eta")),
@@ -38,32 +40,50 @@ KKSPhaseConcentration::KKSPhaseConcentration(const InputParameters & parameters)
     _prop_h(getMaterialProperty<Real>("h_name")),
     _prop_dh(getMaterialPropertyDerivative<Real>("h_name", coupledName("eta", 0)))
 {
+  if (isCoupled("ca") == isCoupled("cb"))
+    paramError("ca", "Specify either `ca` or `cb`!");
 }
 
 Real
 KKSPhaseConcentration::computeQpResidual()
 {
   // R = (1-h(eta))*ca + h(eta)*cb - c
-  return _test[_i][_qp] * ((1.0 - _prop_h[_qp]) * _ca[_qp] + _prop_h[_qp] * _u[_qp] - _c[_qp]);
+  if (_use_ca)
+    return _test[_i][_qp] * ((1.0 - _prop_h[_qp]) * _cx[_qp] + _prop_h[_qp] * _u[_qp] - _c[_qp]);
+  else
+    return _test[_i][_qp] * ((1.0 - _prop_h[_qp]) * _u[_qp] + _prop_h[_qp] * _cx[_qp] - _c[_qp]);
 }
 
 Real
 KKSPhaseConcentration::computeQpJacobian()
 {
-  return _test[_i][_qp] * _prop_h[_qp] * _phi[_j][_qp];
+  if (_use_ca)
+    return _test[_i][_qp] * _prop_h[_qp] * _phi[_j][_qp];
+  else
+    return _test[_i][_qp] * (1.0 - _prop_h[_qp]) * _phi[_j][_qp];
 }
 
 Real
 KKSPhaseConcentration::computeQpOffDiagJacobian(unsigned int jvar)
 {
-  if (jvar == _ca_var)
-    return _test[_i][_qp] * (1.0 - _prop_h[_qp]) * _phi[_j][_qp];
+  if (jvar == _cx_var)
+  {
+    if (_use_ca)
+      return _test[_i][_qp] * (1.0 - _prop_h[_qp]) * _phi[_j][_qp];
+    else
+      return _test[_i][_qp] * _prop_h[_qp] * _phi[_j][_qp];
+  }
 
   else if (jvar == _c_var)
     return -_test[_i][_qp] * _phi[_j][_qp];
 
   else if (jvar == _eta_var)
-    return _test[_i][_qp] * (_u[_qp] - _ca[_qp]) * _prop_dh[_qp] * _phi[_j][_qp];
+  {
+    if (_use_ca)
+      return _test[_i][_qp] * (_u[_qp] - _cx[_qp]) * _prop_dh[_qp] * _phi[_j][_qp];
+    else
+      return _test[_i][_qp] * (_cx[_qp] - _u[_qp]) * _prop_dh[_qp] * _phi[_j][_qp];
+  }
 
   return 0.0;
 }

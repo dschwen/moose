@@ -40,14 +40,15 @@ protected:
   virtual Real computeQpOffDiagJacobian(unsigned int jvar);
 
 private:
-  const VariableValue & _ca;
-  unsigned int _ca_var;
+  const bool _use_ca;
+  const VariableValue & _cx;
+  const unsigned int _cx_var;
 
   const VariableValue & _c;
-  unsigned int _c_var;
+  const unsigned int _c_var;
 
   const VariableValue & _eta;
-  unsigned int _eta_var;
+  const unsigned int _eta_var;
 
   /// Switching function \f$ h(\eta) \f$
   const MaterialProperty<Real> & _prop_h;
