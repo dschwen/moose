@@ -199,6 +199,17 @@ Coupleable::checkFuncType(const std::string var_name, VarType t, FuncAge age) co
   coupledCallback(var_name, age == FuncAge::Old || age == FuncAge::Older);
 }
 
+void
+Coupleable::checkDefaultComponent(const std::string var_name, unsigned int & comp) const
+{
+  if (comp == libMesh::invalid_uint)
+  {
+    if (coupledComponents(var_name) > 1)
+      _obj->paramError(var_name, "Supply only one variable.");
+    comp = 0;
+  }
+}
+
 bool
 Coupleable::checkVar(const std::string & var_name_in,
                      unsigned int comp,
@@ -428,6 +439,7 @@ Coupleable::getDefaultNodalValue<RealEigenVector>(const std::string & var_name, 
 unsigned int
 Coupleable::coupled(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   const auto * var = getFieldVar(var_name, comp);
   if (!var)
   {
@@ -469,13 +481,7 @@ Coupleable::coupledGenericValue<true>(const std::string & var_name, unsigned int
 const VariableValue &
 Coupleable::coupledValue(const std::string & var_name, unsigned int comp) const
 {
-  if (comp == libMesh::invalid_uint)
-  {
-    if (coupledComponents(var_name) > 1)
-      _obj->paramError(var_name, "Supply only one variable.");
-    comp = 0;
-  }
-
+  checkDefaultComponent(var_name, comp);
   const auto * const var = getVarHelper<MooseVariableField<Real>>(var_name, comp);
   if (!var)
     return *getDefaultValue(var_name, comp);
@@ -579,8 +585,9 @@ Coupleable::coupledGenericDofValue<true>(const std::string & var_name, unsigned 
 }
 
 const VariableValue &
-Coupleable::coupledValueLower(const std::string & var_name, const unsigned int comp) const
+Coupleable::coupledValueLower(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   const auto * var = getVar(var_name, comp);
   if (!var)
     return *getDefaultValue(var_name, comp);
@@ -748,6 +755,7 @@ Coupleable::coupledVectorTagDofValue(const std::string & var_name,
                                      TagID tag,
                                      unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   return vectorTagDofValueHelper<Real>(var_name, tag, comp);
 }
 
@@ -756,6 +764,7 @@ Coupleable::coupledVectorTagDofValue(const std::string & var_name,
                                      const std::string & tag_name,
                                      unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   return vectorTagDofValueHelper<Real>(var_name, tag_name, comp);
 }
 
@@ -923,6 +932,7 @@ Coupleable::writableCoupledValue(const std::string & var_name, unsigned int comp
   // make sure only one object can access a variable
   checkWritableVar(var);
 
+  checkDefaultComponent(var_name, comp);
   return const_cast<VariableValue &>(coupledValue(var_name, comp));
 }
 
@@ -966,6 +976,7 @@ Coupleable::checkWritableVar(MooseVariable * var)
 const VariableValue &
 Coupleable::coupledValueOld(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   const auto * var = getVar(var_name, comp);
   if (!var)
     return *getDefaultValue(var_name, comp);
@@ -988,6 +999,7 @@ Coupleable::coupledValueOld(const std::string & var_name, unsigned int comp) con
 const VariableValue &
 Coupleable::coupledValueOlder(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   const auto * var = getVar(var_name, comp);
   if (!var)
     return *getDefaultValue(var_name, comp);
@@ -1010,6 +1022,7 @@ Coupleable::coupledValueOlder(const std::string & var_name, unsigned int comp) c
 const VariableValue &
 Coupleable::coupledValuePreviousNL(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   const auto * var = getVar(var_name, comp);
   if (!var)
     return *getDefaultValue(var_name, comp);
@@ -1103,6 +1116,7 @@ Coupleable::coupledArrayValueOlder(const std::string & var_name, unsigned int co
 const VariableValue &
 Coupleable::coupledDot(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   const auto * var = getVar(var_name, comp);
   if (!var)
   {
@@ -1128,6 +1142,7 @@ Coupleable::coupledDot(const std::string & var_name, unsigned int comp) const
 const VariableValue &
 Coupleable::coupledDotDot(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   const auto * var = getVar(var_name, comp);
   if (!var)
   {
@@ -1153,6 +1168,7 @@ Coupleable::coupledDotDot(const std::string & var_name, unsigned int comp) const
 const VariableValue &
 Coupleable::coupledDotOld(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   const auto * var = getVar(var_name, comp);
   if (!var)
   {
@@ -1178,6 +1194,7 @@ Coupleable::coupledDotOld(const std::string & var_name, unsigned int comp) const
 const VariableValue &
 Coupleable::coupledDotDotOld(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   const auto * var = getVar(var_name, comp);
   if (!var)
   {
@@ -1267,6 +1284,7 @@ Coupleable::coupledVectorDotDotOld(const std::string & var_name, unsigned int co
 const VariableValue &
 Coupleable::coupledVectorDotDu(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   const auto * var = getVectorVar(var_name, comp);
   if (!var)
   {
@@ -1283,6 +1301,7 @@ Coupleable::coupledVectorDotDu(const std::string & var_name, unsigned int comp) 
 const VariableValue &
 Coupleable::coupledVectorDotDotDu(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   const auto * var = getVectorVar(var_name, comp);
   if (!var)
   {
@@ -1387,6 +1406,7 @@ Coupleable::coupledArrayDotDotOld(const std::string & var_name, unsigned int com
 const VariableValue &
 Coupleable::coupledDotDu(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   const auto * var = getVar(var_name, comp);
   if (!var)
   {
@@ -1412,6 +1432,7 @@ Coupleable::coupledDotDu(const std::string & var_name, unsigned int comp) const
 const VariableValue &
 Coupleable::coupledDotDotDu(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   const auto * var = getVar(var_name, comp);
   if (!var)
   {
@@ -1669,6 +1690,7 @@ Coupleable::coupledCurlOlder(const std::string & var_name, unsigned int comp) co
 const VariableSecond &
 Coupleable::coupledSecond(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   const auto * var = getVar(var_name, comp);
   if (!var)
   {
@@ -1685,6 +1707,7 @@ Coupleable::coupledSecond(const std::string & var_name, unsigned int comp) const
 const VariableSecond &
 Coupleable::coupledSecondOld(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   const auto * var = getVar(var_name, comp);
   if (!var)
   {
@@ -1701,6 +1724,7 @@ Coupleable::coupledSecondOld(const std::string & var_name, unsigned int comp) co
 const VariableSecond &
 Coupleable::coupledSecondOlder(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   const auto * var = getVar(var_name, comp);
   if (!var)
   {
@@ -1717,6 +1741,7 @@ Coupleable::coupledSecondOlder(const std::string & var_name, unsigned int comp) 
 const VariableSecond &
 Coupleable::coupledSecondPreviousNL(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   const auto * var = getVar(var_name, comp);
   _c_fe_problem.needsPreviousNewtonIteration(true);
   if (!var)
@@ -1735,6 +1760,7 @@ template <typename T>
 const T &
 Coupleable::coupledNodalValue(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   const auto * var = getVarHelper<MooseVariableFE<T>>(var_name, comp);
   if (!var)
     return getDefaultNodalValue<T>(var_name, comp);
@@ -1755,6 +1781,7 @@ template <typename T>
 const T &
 Coupleable::coupledNodalValueOld(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   const auto * var = getVarHelper<MooseVariableFE<T>>(var_name, comp);
   if (!var)
     return getDefaultNodalValue<T>(var_name, comp);
@@ -1775,6 +1802,7 @@ template <typename T>
 const T &
 Coupleable::coupledNodalValueOlder(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   const auto * var = getVarHelper<MooseVariableFE<T>>(var_name, comp);
   if (!var)
     return getDefaultNodalValue<T>(var_name, comp);
@@ -1795,6 +1823,7 @@ template <typename T>
 const T &
 Coupleable::coupledNodalValuePreviousNL(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   const auto * var = getVarHelper<MooseVariableFE<T>>(var_name, comp);
   if (!var)
     return getDefaultNodalValue<T>(var_name, comp);
@@ -1811,6 +1840,7 @@ template <typename T>
 const T &
 Coupleable::coupledNodalDot(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   static const T zero = 0;
   const auto * var = getVarHelper<MooseVariableFE<T>>(var_name, comp);
   if (!var)
@@ -1825,6 +1855,7 @@ Coupleable::coupledNodalDot(const std::string & var_name, unsigned int comp) con
 const VariableValue &
 Coupleable::coupledNodalDotDot(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   const auto * var = getVar(var_name, comp);
   if (!var)
   {
@@ -1841,6 +1872,7 @@ Coupleable::coupledNodalDotDot(const std::string & var_name, unsigned int comp) 
 const VariableValue &
 Coupleable::coupledNodalDotOld(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   const auto * var = getVar(var_name, comp);
   if (!var)
   {
@@ -1857,6 +1889,7 @@ Coupleable::coupledNodalDotOld(const std::string & var_name, unsigned int comp) 
 const VariableValue &
 Coupleable::coupledNodalDotDotOld(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   const auto * var = getVar(var_name, comp);
   if (!var)
   {
@@ -1873,6 +1906,7 @@ Coupleable::coupledNodalDotDotOld(const std::string & var_name, unsigned int com
 const VariableValue &
 Coupleable::coupledDofValues(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   const auto * var = getVarHelper<MooseVariableField<Real>>(var_name, comp);
   if (!var)
     return *getDefaultValue(var_name, comp);
@@ -1893,6 +1927,7 @@ Coupleable::coupledAllDofValues(const std::string & var_name) const
 const VariableValue &
 Coupleable::coupledDofValuesOld(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   const auto * var = getVar(var_name, comp);
   if (!var)
     return *getDefaultValue(var_name, comp);
@@ -1913,6 +1948,7 @@ Coupleable::coupledAllDofValuesOld(const std::string & var_name) const
 const VariableValue &
 Coupleable::coupledDofValuesOlder(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   const auto * var = getVar(var_name, comp);
   if (!var)
     return *getDefaultValue(var_name, comp);
@@ -1978,6 +2014,7 @@ template <typename T>
 const typename Moose::ADType<T>::type &
 Coupleable::adCoupledNodalValue(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   static const typename Moose::ADType<T>::type zero = 0;
   if (!isCoupled(var_name))
     return zero;
@@ -2000,6 +2037,7 @@ Coupleable::adCoupledNodalValue(const std::string & var_name, unsigned int comp)
 const ADVariableValue &
 Coupleable::adCoupledValue(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   const auto * const var = getVarHelper<MooseVariableField<Real>>(var_name, comp);
 
   if (!var)
@@ -2020,6 +2058,7 @@ Coupleable::adCoupledValue(const std::string & var_name, unsigned int comp) cons
 const ADVariableValue &
 Coupleable::adCoupledLowerValue(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   auto var = getVarHelper<MooseVariableFE<Real>>(var_name, comp);
 
   if (!var)
@@ -2097,6 +2136,7 @@ adCoupledVectorSecond(const std::string & /*var_name*/, unsigned int /*comp = 0*
 const ADVariableValue &
 Coupleable::adCoupledDot(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   const auto * var = getVarHelper<MooseVariableField<Real>>(var_name, comp);
 
   if (!var)
@@ -2114,6 +2154,7 @@ Coupleable::adCoupledDot(const std::string & var_name, unsigned int comp) const
 const ADVariableValue &
 Coupleable::adCoupledDotDot(const std::string & var_name, unsigned int comp) const
 {
+  checkDefaultComponent(var_name, comp);
   const auto * const var = getVarHelper<MooseVariableField<Real>>(var_name, comp);
 
   if (!var)

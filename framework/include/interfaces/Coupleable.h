@@ -214,8 +214,9 @@ protected:
    * @return Reference to a GenericVariableValue for the coupled variable
    */
   template <bool is_ad>
-  const GenericVariableValue<is_ad> & coupledGenericValue(const std::string & var_name,
-                                                          unsigned int comp = 0) const;
+  const GenericVariableValue<is_ad> &
+  coupledGenericValue(const std::string & var_name,
+                      unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Returns the values for all of a coupled variable's components for use in templated automatic
@@ -244,7 +245,7 @@ protected:
    * @return Reference to a VariableValue for the coupled variable
    */
   virtual const VariableValue & coupledValueLower(const std::string & var_name,
-                                                  unsigned int comp = 0) const;
+                                                  unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Returns value of a coupled variable for use in Automatic Differentiation
@@ -252,7 +253,8 @@ protected:
    * @param comp Component number for vector of coupled variables
    * @return Reference to a ADVariableValue for the coupled variable
    */
-  const ADVariableValue & adCoupledValue(const std::string & var_name, unsigned int comp = 0) const;
+  const ADVariableValue & adCoupledValue(const std::string & var_name,
+                                         unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Returns the values for all of a coupled variable's components for use in Automatic
@@ -269,7 +271,7 @@ protected:
    * @return Reference to a ADVariableValue for the coupled variable
    */
   const ADVariableValue & adCoupledLowerValue(const std::string & var_name,
-                                              unsigned int comp = 0) const;
+                                              unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Returns value of a coupled vector variable for use in Automatic Differentiation
@@ -513,7 +515,8 @@ protected:
    * @return Reference to a VariableValue for the coupled variable
    * @see Kernel::value
    */
-  virtual VariableValue & writableCoupledValue(const std::string & var_name, unsigned int comp = 0);
+  virtual VariableValue & writableCoupledValue(const std::string & var_name,
+                                               unsigned int comp = libMesh::invalid_uint);
 
   /**
    * Checks that the passed in variable is only accessed writable by one object in a given subdomain
@@ -528,7 +531,7 @@ protected:
    * @see Kernel::valueOld
    */
   virtual const VariableValue & coupledValueOld(const std::string & var_name,
-                                                unsigned int comp = 0) const;
+                                                unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Returns the old values for all of a coupled variable's components
@@ -545,7 +548,7 @@ protected:
    * @see Kernel::valueOlder
    */
   virtual const VariableValue & coupledValueOlder(const std::string & var_name,
-                                                  unsigned int comp = 0) const;
+                                                  unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Returns value of previous Newton iterate of a coupled variable
@@ -553,8 +556,9 @@ protected:
    * @param comp Component number for vector of coupled variables
    * @return Reference to a VariableValue containing the older value of the coupled variable
    */
-  virtual const VariableValue & coupledValuePreviousNL(const std::string & var_name,
-                                                       unsigned int comp = 0) const;
+  virtual const VariableValue &
+  coupledValuePreviousNL(const std::string & var_name,
+                         unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Returns an old value from previous time step  of a coupled vector variable
@@ -679,7 +683,7 @@ protected:
    * @return Reference to a VariableSecond containing the second derivatives of the coupled variable
    */
   const ADVariableSecond & adCoupledSecond(const std::string & var_name,
-                                           unsigned int comp = 0) const;
+                                           unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Returns second derivatives of a coupled vector variable for use in Automatic Differentiation
@@ -688,8 +692,9 @@ protected:
    * @return Reference to a VectorVariableSecond containing the second derivatives of the coupled
    * variable
    */
-  const ADVectorVariableSecond & adCoupledVectorSecond(const std::string & var_name,
-                                                       unsigned int comp = 0) const;
+  const ADVectorVariableSecond &
+  adCoupledVectorSecond(const std::string & var_name,
+                        unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Returns an old gradient from previous time step of a coupled variable
@@ -845,7 +850,7 @@ protected:
    * @see Kernel::second
    */
   virtual const VariableSecond & coupledSecond(const std::string & var_name,
-                                               unsigned int comp = 0) const;
+                                               unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Returns an old second derivative from previous time step of a coupled variable
@@ -856,7 +861,7 @@ protected:
    * @see Kernel::secondOld
    */
   virtual const VariableSecond & coupledSecondOld(const std::string & var_name,
-                                                  unsigned int comp = 0) const;
+                                                  unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Returns an old second derivative from two time steps previous of a coupled variable
@@ -866,8 +871,8 @@ protected:
    * variable
    * @see Kernel::secondOlder
    */
-  virtual const VariableSecond & coupledSecondOlder(const std::string & var_name,
-                                                    unsigned int comp = 0) const;
+  virtual const VariableSecond &
+  coupledSecondOlder(const std::string & var_name, unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Returns second derivative of a coupled variable for the previous Newton iterate
@@ -875,8 +880,9 @@ protected:
    * @param comp Component number for vector of coupled variables
    * @return Reference to a VariableSecond containing the second derivative of the coupled variable
    */
-  virtual const VariableSecond & coupledSecondPreviousNL(const std::string & var_name,
-                                                         unsigned int comp = 0) const;
+  virtual const VariableSecond &
+  coupledSecondPreviousNL(const std::string & var_name,
+                          unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Time derivative of a coupled variable
@@ -885,7 +891,7 @@ protected:
    * @return Reference to a VariableValue containing the time derivative of the coupled variable
    */
   virtual const VariableValue & coupledDot(const std::string & var_name,
-                                           unsigned int comp = 0) const;
+                                           unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Returns the time derivatives for all of a coupled variable's components
@@ -902,7 +908,7 @@ protected:
    * variable
    */
   virtual const VariableValue & coupledDotDot(const std::string & var_name,
-                                              unsigned int comp = 0) const;
+                                              unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Old time derivative of a coupled variable
@@ -911,7 +917,7 @@ protected:
    * @return Reference to a VariableValue containing the old time derivative of the coupled variable
    */
   virtual const VariableValue & coupledDotOld(const std::string & var_name,
-                                              unsigned int comp = 0) const;
+                                              unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Old second time derivative of a coupled variable
@@ -921,7 +927,7 @@ protected:
    * variable
    */
   virtual const VariableValue & coupledDotDotOld(const std::string & var_name,
-                                                 unsigned int comp = 0) const;
+                                                 unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Time derivative of a coupled variable for ad simulations
@@ -930,7 +936,8 @@ protected:
    * @return Reference to a VariableValue containing the time derivative of the coupled variable
    * @see Kernel::dot
    */
-  const ADVariableValue & adCoupledDot(const std::string & var_name, unsigned int comp = 0) const;
+  const ADVariableValue & adCoupledDot(const std::string & var_name,
+                                       unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Returns the time derivatives for all of a coupled variable's components for ad simulations
@@ -947,7 +954,7 @@ protected:
    * variable
    */
   const ADVariableValue & adCoupledDotDot(const std::string & var_name,
-                                          unsigned int comp = 0) const;
+                                          unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Time derivative of a vector coupled variable for ad simulations
@@ -1008,7 +1015,7 @@ protected:
    * vector variable with respect to the coefficients
    */
   virtual const VariableValue & coupledVectorDotDu(const std::string & var_name,
-                                                   unsigned int comp = 0) const;
+                                                   unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Second time derivative of a coupled vector variable with respect to the coefficients
@@ -1017,8 +1024,9 @@ protected:
    * @return Reference to a VariableValue containing the time derivative of the coupled vector
    * variable with respect to the coefficients
    */
-  virtual const VariableValue & coupledVectorDotDotDu(const std::string & var_name,
-                                                      unsigned int comp = 0) const;
+  virtual const VariableValue &
+  coupledVectorDotDotDu(const std::string & var_name,
+                        unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Time derivative of a coupled array variable
@@ -1068,7 +1076,7 @@ protected:
    * with respect to the coefficients
    */
   virtual const VariableValue & coupledDotDu(const std::string & var_name,
-                                             unsigned int comp = 0) const;
+                                             unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Second time derivative of a coupled variable with respect to the coefficients
@@ -1078,7 +1086,7 @@ protected:
    * with respect to the coefficients
    */
   virtual const VariableValue & coupledDotDotDu(const std::string & var_name,
-                                                unsigned int comp = 0) const;
+                                                unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Returns nodal values of a coupled variable
@@ -1087,7 +1095,8 @@ protected:
    * @return Reference to a VariableValue for the coupled variable
    */
   template <typename T>
-  const T & coupledNodalValue(const std::string & var_name, unsigned int comp = 0) const;
+  const T & coupledNodalValue(const std::string & var_name,
+                              unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Returns AD nodal values of a coupled variable
@@ -1096,8 +1105,9 @@ protected:
    * @return Reference to a VariableValue for the coupled variable
    */
   template <typename T>
-  const typename Moose::ADType<T>::type & adCoupledNodalValue(const std::string & var_name,
-                                                              unsigned int comp = 0) const;
+  const typename Moose::ADType<T>::type &
+  adCoupledNodalValue(const std::string & var_name,
+                      unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Returns an old nodal value from previous time step  of a coupled variable
@@ -1106,7 +1116,8 @@ protected:
    * @return Reference to a VariableValue containing the old value of the coupled variable
    */
   template <typename T>
-  const T & coupledNodalValueOld(const std::string & var_name, unsigned int comp = 0) const;
+  const T & coupledNodalValueOld(const std::string & var_name,
+                                 unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Returns an old nodal value from two time steps previous of a coupled variable
@@ -1115,7 +1126,8 @@ protected:
    * @return Reference to a VariableValue containing the older value of the coupled variable
    */
   template <typename T>
-  const T & coupledNodalValueOlder(const std::string & var_name, unsigned int comp = 0) const;
+  const T & coupledNodalValueOlder(const std::string & var_name,
+                                   unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Returns nodal values of a coupled variable for previous Newton iterate
@@ -1124,7 +1136,8 @@ protected:
    * @return Reference to a VariableValue for the coupled variable
    */
   template <typename T>
-  const T & coupledNodalValuePreviousNL(const std::string & var_name, unsigned int comp = 0) const;
+  const T & coupledNodalValuePreviousNL(const std::string & var_name,
+                                        unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Nodal values of time derivative of a coupled variable
@@ -1134,7 +1147,8 @@ protected:
    * coupled variable
    */
   template <typename T>
-  const T & coupledNodalDot(const std::string & var_name, unsigned int comp = 0) const;
+  const T & coupledNodalDot(const std::string & var_name,
+                            unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Nodal values of second time derivative of a coupled variable
@@ -1144,7 +1158,7 @@ protected:
    * the coupled variable
    */
   virtual const VariableValue & coupledNodalDotDot(const std::string & var_name,
-                                                   unsigned int comp = 0) const;
+                                                   unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Nodal values of old time derivative of a coupled variable
@@ -1154,7 +1168,7 @@ protected:
    * coupled variable
    */
   virtual const VariableValue & coupledNodalDotOld(const std::string & var_name,
-                                                   unsigned int comp = 0) const;
+                                                   unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Nodal values of old second time derivative of a coupled variable
@@ -1163,8 +1177,9 @@ protected:
    * @return Reference to a VariableValue containing the nodal values of second time derivative of
    * the coupled variable
    */
-  virtual const VariableValue & coupledNodalDotDotOld(const std::string & var_name,
-                                                      unsigned int comp = 0) const;
+  virtual const VariableValue &
+  coupledNodalDotDotOld(const std::string & var_name,
+                        unsigned int comp = libMesh::invalid_uint) const;
   // coupled-dof-values-begin
   /**
    * Returns DoFs in the current solution vector of a coupled variable for the local element
@@ -1173,7 +1188,7 @@ protected:
    * @return Reference to a VariableValue for the DoFs of the coupled variable
    */
   virtual const VariableValue & coupledDofValues(const std::string & var_name,
-                                                 unsigned int comp = 0) const;
+                                                 unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Returns DoFs in the current solution vector of all of a coupled variable's components for the
@@ -1189,8 +1204,9 @@ protected:
    * @param comp Component number for vector of coupled variables
    * @return Reference to a VariableValue for the old DoFs of the coupled variable
    */
-  virtual const VariableValue & coupledDofValuesOld(const std::string & var_name,
-                                                    unsigned int comp = 0) const;
+  virtual const VariableValue &
+  coupledDofValuesOld(const std::string & var_name,
+                      unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Returns DoFs in the old solution vector of all of a coupled variable's components for the local
@@ -1206,8 +1222,9 @@ protected:
    * @param comp Component number for vector of coupled variables
    * @return Reference to a VariableValue for the older DoFs of the coupled variable
    */
-  virtual const VariableValue & coupledDofValuesOlder(const std::string & var_name,
-                                                      unsigned int comp = 0) const;
+  virtual const VariableValue &
+  coupledDofValuesOlder(const std::string & var_name,
+                        unsigned int comp = libMesh::invalid_uint) const;
 
   /**
    * Returns DoFs in the older solution vector of all of a coupled variable's components for the
@@ -1471,6 +1488,8 @@ private:
   };
 
   void checkFuncType(const std::string var_name, VarType t, FuncAge age) const;
+
+  void checkDefaultComponent(const std::string var_name, unsigned int & comp) const;
 
 protected:
   /**
