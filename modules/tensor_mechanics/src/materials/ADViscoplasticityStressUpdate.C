@@ -23,6 +23,8 @@ ADViscoplasticityStressUpdate::validParams()
       "viscoplastic responce due to creep in porous materials. This material must be used in "
       "conjunction with ADComputeMultiplePorousInelasticStress");
   MooseEnum viscoplasticity_model("LPS GTN", "LPS");
+  viscoplasticity_model.addDocumentationm("LPS", "Leblond-Perrin-Suqeut model");
+  viscoplasticity_model.addDocumentationm("GTN", "Gurson-Tvergaard-Needleman model");
   params.addParam<MooseEnum>(
       "viscoplasticity_model", viscoplasticity_model, "Which viscoplastic model to use");
   MooseEnum pore_shape_model("spherical cylindrical", "spherical");

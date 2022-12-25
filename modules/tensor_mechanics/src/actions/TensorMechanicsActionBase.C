@@ -142,6 +142,14 @@ TensorMechanicsActionBase::validParams()
   params.addParam<std::vector<VariableName>>("temperature", "The temperature");
 
   MooseEnum strainType("SMALL FINITE", "SMALL");
+  strainType.addDocumentation(
+      "SMALL",
+      "Use linearized small strain, which assumes the gradient of "
+      "displacement with respect to position is much smaller than unity. Only valid for "
+      "deformations that do not change the geometry of the mesh significantly.");
+  strainType.addDocumentation("FINITE",
+                              "Use finite (large) strain formulation, suitable for large "
+                              "deformations of the mesh geometry.");
   params.addParam<MooseEnum>("strain", strainType, "Strain formulation");
   params.addParam<bool>("incremental",
                         "Use incremental or total strain (if not explicitly specified this "
@@ -177,6 +185,15 @@ TensorMechanicsActionBase::validParams()
   // Planar Formulation
   MooseEnum planarFormulationType("NONE WEAK_PLANE_STRESS PLANE_STRAIN GENERALIZED_PLANE_STRAIN",
                                   "NONE");
+  planarFormulationType.addDocumentation("NONE", "");
+  planarFormulationType.addDocumentation(
+      "WEAK_PLANE_STRESS",
+      "Solves for an out of plane strain field variable through "
+      "locally minimizing the diagonal out of plane stress tensor component.");
+  planarFormulationType.addDocumentation("PLANE_STRAIN", "");
+  planarFormulationType.addDocumentation(
+      "GENERALIZED_PLANE_STRAIN",
+      "Solves for a single scalar out of plane strain quantity in an integral way.");
   params.addParam<MooseEnum>(
       "planar_formulation", planarFormulationType, "Out-of-plane stress/strain formulation");
   params.addParam<VariableName>("scalar_out_of_plane_strain",

@@ -19,6 +19,9 @@ BarrierFunctionMaterial::validParams()
                              "polynomial.\nSIMPLE: $\\eta^2(1-\\eta)^2$\nLOW: $\\eta(1-\\eta)$"
                              "\nHIGH: $\\eta^2(1-\\eta^2)^2$");
   MooseEnum g_order("SIMPLE=0 LOW HIGH", "SIMPLE");
+  g_order.addDocumentation("SIMPLE", "Fourth order polynomial eta^2(1-eta)^2");
+  g_order.addDocumentation("LOW", "Second order polynomial eta(1-eta)");
+  g_order.addDocumentation("HIGH", "Sixth order polynomial eta^2(1-eta^2)^2");
   params.addParam<MooseEnum>("g_order", g_order, "Polynomial order of the barrier function g(eta)");
   params.addParam<bool>("well_only",
                         false,

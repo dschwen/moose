@@ -65,11 +65,10 @@ TensorMechanicsAction::validParams()
                         "LagrangianStressDiverence kernels.");
 
   MooseEnum formulationType("TOTAL UPDATED", "TOTAL");
-  params.addParam<MooseEnum>("formulation",
-                             formulationType,
-                             "Select between the total Lagrangian (TOTAL) "
-                             "and updated Lagrangian (UPDATED) formulations "
-                             "for the new kernel system.");
+  formulationType.addDocumentation("TOTAL", "Total Lagrangian");
+  formulationType.addDocumentation("UPDATED", "Updated Lagrangian");
+  params.addParam<MooseEnum>(
+      "formulation", formulationType, "Select formulation for the new kernel system.");
 
   params.addParam<MultiMooseEnum>("additional_generate_output",
                                   TensorMechanicsActionBase::outputPropertiesType(),
