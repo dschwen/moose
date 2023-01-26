@@ -146,7 +146,7 @@ UnitsConversionEvaler::eval(hit::Field * n,
   }
 
   // parse number
-  Real num = MooseUtils::convert<Real>(argv[0]);
+  Real num = MooseUtils::convert<Real>(exp.expand(n, argv[0]));
 
   // convert units
   std::stringstream ss;
