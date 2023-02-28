@@ -276,6 +276,7 @@ ThreadedElementLoopBase<RangeType>::operator()(const RangeType & range, bool byp
     }
     catch (libMesh::LogicError & e)
     {
+      print_trace(std::cerr);
       mooseException("We caught a libMesh error in ThreadedElementLoopBase:", e.what());
     }
     catch (MetaPhysicL::LogicError & e)
