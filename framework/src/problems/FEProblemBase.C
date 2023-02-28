@@ -1457,7 +1457,7 @@ FEProblemBase::prepare(const Elem * elem, THREAD_ID tid)
   }
   _aux->prepare(tid);
 
-  if (_displaced_problem &&
+  if (_displaced_problem && elem->subdomain_id() != 9999 &&
       // _reinit_displaced_neighbor applies to interface type objects which will do computations
       // based on both elem and neighbor. Consequently, despite what you might think by its name, we
       // must make sure we prepare the displaced elem
