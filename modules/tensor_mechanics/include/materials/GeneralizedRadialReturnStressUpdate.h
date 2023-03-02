@@ -192,20 +192,6 @@ protected:
     return TangentCalculationMethod::ELASTIC;
   }
 
-  void outputIterationSummary(std::stringstream * iter_output,
-                              const unsigned int total_it) override;
-
-  /**
-   * Calculate the tangent_operator.
-   */
-  void computeTangentOperator(Real /*effective_trial_stress*/,
-                              RankTwoTensor & /*stress_new*/,
-                              bool /*compute_full_tangent_operator*/,
-                              RankFourTensor & /*tangent_operator*/);
-
-  /// 3 * shear modulus
-  GenericReal<is_ad> _three_shear_modulus;
-
   /// Equivalent creep/plastic strain
   GenericMaterialProperty<Real, is_ad> & _effective_inelastic_strain;
   const MaterialProperty<Real> & _effective_inelastic_strain_old;

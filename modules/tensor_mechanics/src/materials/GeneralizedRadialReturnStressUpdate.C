@@ -183,19 +183,6 @@ GeneralizedRadialReturnStressUpdateTempl<is_ad>::computeTimeStepLimit()
 }
 
 template <bool is_ad>
-void
-GeneralizedRadialReturnStressUpdateTempl<is_ad>::outputIterationSummary(
-    std::stringstream * iter_output, const unsigned int total_it)
-{
-  if (iter_output)
-  {
-    *iter_output << "At element " << _current_elem->id() << " _qp=" << _qp << " Coordinates "
-                 << _q_point[_qp] << " block=" << _current_elem->subdomain_id() << '\n';
-  }
-  GeneralizedReturnMappingSolutionTempl<is_ad>::outputIterationSummary(iter_output, total_it);
-}
-
-template <bool is_ad>
 bool
 GeneralizedRadialReturnStressUpdateTempl<is_ad>::isBlockDiagonal(const AnisotropyMatrixReal & A)
 {
