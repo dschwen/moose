@@ -231,7 +231,7 @@ PenaltyWeightedGapUserObject::augmentedLagrangianSetup()
     const auto lagrange_multiplier = findValue(_dof_to_lagrange_multiplier, dof_object);
     std::cout << lagrange_multiplier << '\n';
     // positive contact pressure (sic. sign) means wee add the node to the active set
-    if (lagrange_multiplier + gap * penalty < 0)
+    if (lagrange_multiplier + gap * penalty < 0 || gap < 0)
       _active_set.insert(dof_object);
 
     // store previous augmented lagrange iteration gap
