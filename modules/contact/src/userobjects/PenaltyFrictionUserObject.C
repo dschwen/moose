@@ -217,7 +217,8 @@ PenaltyFrictionUserObject::reinit()
     auto & [tangential_traction, old_tangential_traction] = _dof_to_tangential_traction[node];
     auto & [accumulated_slip, old_accumulated_slip] = _dof_to_accumulated_slip[node];
 
-    if (normal_pressure > 0.0)
+    // if (normal_pressure > 0.0)
+    if (_active_set.count(node))
     {
       using namespace std;
 

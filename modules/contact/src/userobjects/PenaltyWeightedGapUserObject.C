@@ -226,12 +226,10 @@ PenaltyWeightedGapUserObject::augmentedLagrangianSetup()
   // loop over all nodes for which a gap has been computed
   for (auto & [dof_object, wgap] : _dof_to_weighted_gap)
   {
-    const auto penalty = findValue(_dof_to_local_penalty, dof_object, _penalty);
     const Real gap = physicalGap(wgap);
-    const auto lagrange_multiplier = findValue(_dof_to_lagrange_multiplier, dof_object);
-    std::cout << lagrange_multiplier << '\n';
-    // positive contact pressure (sic. sign) means wee add the node to the active set
-    if (lagrange_multiplier + gap * penalty < 0 || gap < 0)
+
+    // positive contact pressure means wee add the node to the active set
+    if (_dof_to_normal_pressure[dof_object] > 0)
       _active_set.insert(dof_object);
 
     // store previous augmented lagrange iteration gap

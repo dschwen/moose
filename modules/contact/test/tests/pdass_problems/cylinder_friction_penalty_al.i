@@ -300,11 +300,11 @@
     secondary_subdomain = '10001'
     disp_x = disp_x
     disp_y = disp_y
-    friction_coefficient = 0.0 # with 2.0 works
+    friction_coefficient = 0.4 # with 2.0 works
     secondary_variable = disp_x
     penalty = 1e9
-    penalty_friction = 1e8
-    penetration_tolerance = 1e-10
+    penalty_friction = 1e6
+    penetration_tolerance = 1e-7
     slip_tolerance = 1e-8
   []
   [geo]
