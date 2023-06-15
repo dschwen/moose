@@ -237,7 +237,7 @@
   petsc_options_value = lu
   line_search = 'none'
 
-  nl_abs_tol = 1e-10
+  nl_abs_tol = 1e-12
   nl_rel_tol = 1e-8
   nl_max_its = 1300
   l_tol = 1e-05
@@ -267,9 +267,10 @@
   [surface]
     type = NodalValueSampler
     use_displaced_mesh = false
-    variable = 'disp_x disp_y penalty_normal_pressure penalty_frictional_pressure normal_gap'
+    variable = 'disp_x disp_y penalty_normal_pressure penalty_frictional_pressure normal_gap active'
     boundary = '3'
     sort_by = id
+    execute_on = 'INITIAL NONLINEAR LINEAR TIMESTEP_END'
   []
 []
 
@@ -287,7 +288,7 @@
     type = CSV
     create_final_symlink = true
     file_base = cylinder_friction_penalty_al
-    execute_on = 'INITIAL TIMESTEP_END FINAL'
+    execute_on = 'INITIAL TIMESTEP_END NONLINEAR LINEAR FINAL'
   []
 []
 
@@ -300,7 +301,7 @@
     secondary_subdomain = '10001'
     disp_x = disp_x
     disp_y = disp_y
-    friction_coefficient = 0.4 # with 2.0 works
+    friction_coefficient = 0.0 # with 2.0 works
     secondary_variable = disp_x
     penalty = 1e9
     penalty_friction = 1e6
@@ -324,7 +325,7 @@
     []
   []
   initial_marker = contact
-  initial_steps = 2
+  initial_steps = 1
 []
 
 [Constraints]

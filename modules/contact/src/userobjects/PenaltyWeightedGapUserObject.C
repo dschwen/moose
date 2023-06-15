@@ -252,7 +252,8 @@ PenaltyWeightedGapUserObject::updateAugmentedLagrangianMultipliers()
     auto & lagrange_multiplier = _dof_to_lagrange_multiplier[dof_object];
 
     // update lm
-    lagrange_multiplier += std::min(gap * penalty, lagrange_multiplier);
+    // lagrange_multiplier += std::min(gap * penalty, lagrange_multiplier);
+    lagrange_multiplier += gap * penalty;
 
     // update penalty
     const auto previous_gap = _dof_to_previous_gap[dof_object];
