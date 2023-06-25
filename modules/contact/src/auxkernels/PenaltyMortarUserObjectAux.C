@@ -37,7 +37,6 @@ PenaltyMortarUserObjectAux::validParams()
       "The penalty mortar user object to get values from.  Note that the user object "
       "must implement the corresponding getter function.");
   params.set<ExecFlagEnum>("execute_on") = {EXEC_TIMESTEP_END};
-  params.suppressParameter<ExecFlagEnum>("execute_on");
   return params;
 }
 

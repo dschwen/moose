@@ -84,8 +84,8 @@ PenaltyWeightedGapUserObject::contactPressure() const
 void
 PenaltyWeightedGapUserObject::selfInitialize()
 {
-  for (auto & dof_pn : _dof_to_normal_pressure)
-    dof_pn.second = 0.0;
+  // for (auto & dof_pn : _dof_to_normal_pressure)
+  //   dof_pn.second = 0.0;
 }
 
 void
@@ -93,6 +93,35 @@ PenaltyWeightedGapUserObject::initialize()
 {
   WeightedGapUserObject::initialize();
   selfInitialize();
+}
+
+void
+PenaltyWeightedGapUserObject::selfFinalize()
+{
+  // set normal pressure to zero everywhere
+  for (auto & dof_pn : _dof_to_normal_pressure)
+    dof_pn.second = 0.0;
+
+  // compute new normal pressure for each node
+  for (const auto & [dof_object, wgap] : _dof_to_weighted_gap)
+  {
+    auto penalty = findValue(_dof_to_local_penalty, dof_object, _penalty);
+    const auto & gap = adPhysicalGap(wgap);
+    const auto lagrange_multiplier =
+        _augmented_lagrange_problem ? _dof_to_lagrange_multiplier[dof_object] : 0.0;
+
+    auto normal_pressure = penalty * gap + lagrange_multiplier;
+    normal_pressure = normal_pressure < 0.0 ? normal_pressure : 0.0;
+
+    _dof_to_normal_pressure[dof_object] = -normal_pressure;
+  }
+}
+
+void
+PenaltyWeightedGapUserObject::finalize()
+{
+  WeightedGapUserObject::finalize();
+  selfFinalize();
 }
 
 Real
@@ -122,25 +151,13 @@ PenaltyWeightedGapUserObject::reinit()
 {
   _contact_force.resize(_qrule_msm->n_points());
   for (const auto qp : make_range(_qrule_msm->n_points()))
-    _contact_force[qp] = 0;
+    _contact_force[qp] = 0.0;
 
   for (const auto i : make_range(_test->size()))
   {
     const Node * const node = _lower_secondary_elem->node_ptr(i);
-
-    const auto penalty =
-        findValue(_dof_to_local_penalty, static_cast<const DofObject *>(node), _penalty);
-    const auto & gap = adPhysicalGap(libmesh_map_find(_dof_to_weighted_gap, node));
-    const auto lagrange_multiplier =
-        _augmented_lagrange_problem ? _dof_to_lagrange_multiplier[node] : 0.0;
-    const auto & test_i = (*_test)[i];
-
-    auto normal_pressure = penalty * gap + lagrange_multiplier;
-    normal_pressure = normal_pressure < 0.0 ? normal_pressure : 0.0;
-
-    _dof_to_normal_pressure[node] = -normal_pressure;
     for (const auto qp : make_range(_qrule_msm->n_points()))
-      _contact_force[qp] += -test_i[qp] * normal_pressure;
+      _contact_force[qp] += (*_test)[i][qp] * _dof_to_normal_pressure[node];
   }
 }
 
@@ -242,22 +259,30 @@ PenaltyWeightedGapUserObject::augmentedLagrangianSetup()
 void
 PenaltyWeightedGapUserObject::updateAugmentedLagrangianMultipliers()
 {
-  for (const auto & dof_object : _active_set)
+  for (auto & [dof_object, lagrange_multiplier] : _dof_to_lagrange_multiplier)
   {
-    auto & penalty = _dof_to_local_penalty[dof_object];
-    if (penalty == 0.0)
-      penalty = _penalty;
-
     const auto gap = getNormalGap(static_cast<const Node *>(dof_object));
-    auto & lagrange_multiplier = _dof_to_lagrange_multiplier[dof_object];
-
-    // update lm
-    // lagrange_multiplier += std::min(gap * penalty, lagrange_multiplier);
-    lagrange_multiplier += gap * penalty;
-
-    // update penalty
-    const auto previous_gap = _dof_to_previous_gap[dof_object];
-    if (std::abs(gap) > 0.25 * std::abs(previous_gap))
-      penalty *= 10.0;
+    lagrange_multiplier += gap * _penalty;
+    if (lagrange_multiplier > 0.0)
+      lagrange_multiplier = 0.0;
   }
+
+  // for (const auto & dof_object : _active_set)
+  // {
+  //   auto & penalty = _dof_to_local_penalty[dof_object];
+  //   if (penalty == 0.0)
+  //     penalty = _penalty;
+
+  //   const auto gap = getNormalGap(static_cast<const Node *>(dof_object));
+  //   auto & lagrange_multiplier = _dof_to_lagrange_multiplier[dof_object];
+
+  //   // update lm
+  //   // lagrange_multiplier += std::min(gap * penalty, lagrange_multiplier);
+  //   lagrange_multiplier += gap * penalty;
+
+  //   // update penalty
+  //   const auto previous_gap = _dof_to_previous_gap[dof_object];
+  //   if (std::abs(gap) > 0.25 * std::abs(previous_gap))
+  //     penalty *= 10.0;
+  // }
 }

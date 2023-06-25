@@ -83,6 +83,7 @@
     user_object = friction_uo
     contact_quantity = normal_pressure
     boundary = 3
+    execute_on = 'INITIAL NONLINEAR LINEAR TIMESTEP_END'
   []
   [penalty_frictional_pressure]
     type = PenaltyMortarUserObjectAux
@@ -90,6 +91,7 @@
     user_object = friction_uo
     contact_quantity = tangential_pressure_one
     boundary = 3
+    execute_on = 'INITIAL NONLINEAR LINEAR TIMESTEP_END'
   []
   [penalty_accumulated_slip]
     type = PenaltyMortarUserObjectAux
@@ -97,6 +99,7 @@
     user_object = friction_uo
     contact_quantity = accumulated_slip_one
     boundary = 3
+    execute_on = 'INITIAL NONLINEAR LINEAR TIMESTEP_END'
   []
   [penalty_tangential_vel]
     type = PenaltyMortarUserObjectAux
@@ -104,6 +107,7 @@
     user_object = friction_uo
     contact_quantity = tangential_velocity_one
     boundary = 3
+    execute_on = 'INITIAL NONLINEAR LINEAR TIMESTEP_END'
   []
   [penalty_gap]
     type = PenaltyMortarUserObjectAux
@@ -111,6 +115,7 @@
     user_object = friction_uo
     contact_quantity = normal_gap
     boundary = 3
+    execute_on = 'INITIAL NONLINEAR LINEAR TIMESTEP_END'
   []
   [normal_lm]
     type = PenaltyMortarUserObjectAux
@@ -118,6 +123,7 @@
     user_object = friction_uo
     contact_quantity = normal_lm
     boundary = 3
+    execute_on = 'INITIAL NONLINEAR LINEAR TIMESTEP_END'
   []
   [active]
     type = PenaltyMortarUserObjectAux
@@ -126,6 +132,7 @@
     contact_quantity = active_set
     # use_displaced_mesh = true
     boundary = 3
+    execute_on = 'INITIAL NONLINEAR LINEAR TIMESTEP_END'
   []
 []
 
