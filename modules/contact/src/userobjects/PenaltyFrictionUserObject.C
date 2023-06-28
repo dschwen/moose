@@ -274,6 +274,7 @@ PenaltyFrictionUserObject::reinit()
 void
 PenaltyFrictionUserObject::finalize()
 {
+  PenaltyWeightedGapUserObject::selfFinalize();
   WeightedVelocitiesUserObject::finalize();
 }
 

@@ -106,7 +106,8 @@ PenaltyWeightedGapUserObject::selfFinalize()
   for (const auto & [dof_object, wgap] : _dof_to_weighted_gap)
   {
     auto penalty = findValue(_dof_to_local_penalty, dof_object, _penalty);
-    const auto & gap = adPhysicalGap(wgap);
+    // const auto & gap = adPhysicalGap(wgap);
+    const auto & gap = wgap.first;
     const auto lagrange_multiplier =
         _augmented_lagrange_problem ? _dof_to_lagrange_multiplier[dof_object] : 0.0;
 

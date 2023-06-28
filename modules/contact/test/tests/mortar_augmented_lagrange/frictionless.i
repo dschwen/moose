@@ -158,7 +158,7 @@ offset = 0#1e-2
     type = PenaltyMortarUserObjectAux
     variable = gap
     user_object = weighted_gap_uo
-    contact_quantity = weighted_gap
+    contact_quantity = normal_gap
   []
 []
 
