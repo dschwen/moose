@@ -72,4 +72,10 @@
       detail = "an inaccessible material for non-existing non-AD properties"
     []
   []
+
+  [block_restrict]
+    type = RunApp
+    input = block_restrict.i
+    requirement = "Optional material properties should support block restrictions"
+  []
 []
