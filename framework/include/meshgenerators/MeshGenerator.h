@@ -128,6 +128,12 @@ public:
   }
 
   /**
+   * Check if all parents are of any of the listed types
+   */
+  template <typename T, typename... Ts>
+  bool checkParentMeshGeneratorTypes() const;
+
+  /**
    * @returns Whether or not the MeshGenerator with the name \p name is a parent of this
    * MeshGenerator.
    */
@@ -484,4 +490,18 @@ MeshGenerator::addMeshSubgenerator(const std::string & type,
   subgenerator_params.setParameters(extra_input_parameters...);
 
   addMeshSubgenerator(type, name, subgenerator_params);
+}
+
+template <typename T, typename... Ts>
+bool
+MeshGenerator::checkParentMeshGeneratorTypes() const
+{
+  bool all = true;
+  for (const auto parent : getParentMeshGenerators())
+    all = all && (dynamic_cast<const T *>(parent) != nullptr);
+
+  if constexpr (sizeof...(Ts) == 0)
+    return all;
+  else
+    return all && checkParentMeshGeneratorTypes<Ts...>();
 }
