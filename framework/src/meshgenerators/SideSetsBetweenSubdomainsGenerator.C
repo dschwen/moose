@@ -66,8 +66,9 @@ SideSetsBetweenSubdomainsGenerator::generate()
 
   std::unique_ptr<MeshBase> mesh = std::move(_input);
 
-  // Make sure that the mesh is prepared
-  if (!mesh->is_prepared())
+  // Make sure that the mesh is either prepared or the preceeding mesh generator was of teh same
+  // type and already called find_neighbors
+  if (!mesh->is_prepared() && !checkParentMeshGeneratorTypes<SideSetsBetweenSubdomainsGenerator>())
     mesh->find_neighbors();
 
   std::vector<subdomain_id_type> vec_primary_ids =
