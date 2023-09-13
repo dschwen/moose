@@ -34,6 +34,10 @@ MooseServer::MooseServer(MooseApp & moose_app)
   server_capabilities[wasp::lsp::m_text_doc_sync] = wasp::DataObject();
   server_capabilities[wasp::lsp::m_text_doc_sync][wasp::lsp::m_open_close] = true;
   server_capabilities[wasp::lsp::m_text_doc_sync][wasp::lsp::m_change] = wasp::lsp::m_change_full;
+  server_capabilities["completionProvider"] = true;
+  server_capabilities["hoverProvider"] = true;
+  server_capabilities["definitionProvider"] = true;
+  server_capabilities["documentSymbolProvider"] = true;
 }
 
 bool
@@ -41,8 +45,8 @@ MooseServer::parseDocumentForDiagnostics(wasp::DataArray & diagnosticsList)
 {
   // strip prefix from document uri if it exists to get parse file path
   std::string parse_file_path = document_path;
-  if (parse_file_path.rfind(wasp::lsp::m_uri_prefix, 0) == 0)
-    parse_file_path.erase(0, std::string(wasp::lsp::m_uri_prefix).size());
+  if (parse_file_path.rfind("file://", 0) == 0)
+    parse_file_path.erase(0, std::string("file://").size());
 
   // copy parent application parameters and modify to set up input check
   InputParameters app_params = _moose_app.parameters();
