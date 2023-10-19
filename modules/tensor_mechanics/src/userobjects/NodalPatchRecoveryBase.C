@@ -84,8 +84,7 @@ NodalPatchRecoveryBase::evaluateBasisFunctions(const Point & q_point) const
     polynomial = 1.0;
     mooseAssert(_multi_index[r].size() == _mesh.dimension(), "Wrong multi-index size.");
     for (unsigned int c = 0; c < _multi_index[r].size(); c++)
-      for (unsigned int p = 0; p < _multi_index[r][c]; p++)
-        polynomial *= q_point(c);
+      polynomial *= MathUtils::pow(q_point(c), _multi_index[r][c]);
     p(r) = polynomial;
   }
   return p;
