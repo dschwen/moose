@@ -84,8 +84,8 @@ ThermochimicaNodalData::ThermochimicaNodalData(const InputParameters & parameter
 {
   ThermochimicaUtils::checkLibraryAvailability(*this);
 
-  if (n_threads() > 1)
-    mooseError("Thermochimica does not support multi-threaded runs.");
+  // if (n_threads() > 1)
+  //   mooseError("Thermochimica does not support multi-threaded runs.");
 
   if (_el_ids.size() != _n_elements)
     mooseError("Element IDs size does not match number of elements.");
@@ -137,7 +137,23 @@ ThermochimicaNodalData::ThermochimicaNodalData(const InputParameters & parameter
     for (const auto i : make_range(_n_potentials))
       _el_pot[i] = &writableVariable("output_element_potentials", i);
   }
+
+  // set up shared memory for communication with child process
+  // open a pipe
+
+  // fork child process that will manage thermochimica calls
+  const auto p = fork();
+  if (p < 0)
+    mooseError("Fork failed in ThermochimicaNodalData object", name());
+  if (p == 0)
+  {
+    // here we are in the child process
+    // communication server
+  }
 }
+
+// add a shim for each thermochimica API call that we need to make
+// template <typename... T>
 
 void
 ThermochimicaNodalData::initialize()
