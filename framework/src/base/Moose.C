@@ -574,6 +574,8 @@ associateSyntaxInner(Syntax & syntax, ActionFactory & /*action_factory*/)
   registerSyntaxTask("EmptyAction", "Debug/MaterialDerivativeTest", "no_action"); // placeholder
   registerSyntax("MaterialDerivativeTestAction", "Debug/MaterialDerivativeTest/*");
 
+  registerSyntax("ProjectedStatefulMaterialStorageAction", "ProjectedStatefulMaterialStorage/*");
+
   addActionTypes(syntax);
 }
 
