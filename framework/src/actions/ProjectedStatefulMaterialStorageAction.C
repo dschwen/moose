@@ -192,8 +192,15 @@ ProjectedStatefulMaterialStorageAction::addMaterial(const std::string & prop_typ
 void
 ProjectedStatefulMaterialStorageAction::act()
 {
+  auto setup = [&](std::size_t size, const MaterialPropertyName & prop_name)
+  { mooseInfoRepeated(size, prop_name); };
+
+  const auto & data = _problem->getMaterialData(Moose::BLOCK_MATERIAL_DATA);
   for (const auto & prop_name : _prop_names)
   {
+    // loop over all supported property types
+    Moose::typeLoop<ProcessProperty>(SupportedTypes{}, &data, prop_name, setup);
+
     const auto prop_info = checkProperty(prop_name);
     std::vector<VariableName> vars;
 

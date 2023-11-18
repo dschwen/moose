@@ -13,6 +13,8 @@
 #include "Moose.h"
 #include "MooseTypes.h"
 
+#include <tuple>
+
 namespace Moose
 {
 
@@ -23,17 +25,7 @@ namespace Moose
 template <typename T>
 struct SerialAccess
 {
-  static typename T::value_type * data(T & obj)
-  {
-    static_assert(always_false<T>,
-                  "Specialize SerialAccess for this type and implement the data() method.");
-  }
-  constexpr std::size_t * size(T &)
-  {
-    static_assert(always_false<T>,
-                  "Specialize SerialAccess for this type and implement the size() method.");
-    return 0;
-  }
+  static_assert(always_false<T>, "Specialize SerialAccess for this type.");
 };
 
 /// simple Real specialization
@@ -42,12 +34,14 @@ struct SerialAccess<Real>
 {
   static Real * data(Real & obj) { return &obj; }
   static constexpr std::size_t size(Real &) { return 1u; }
+  static constexpr std::size_t size() { return 1u; }
 };
 template <>
 struct SerialAccess<ADReal>
 {
   static ADReal * data(ADReal & obj) { return &obj; }
   static constexpr std::size_t size(ADReal &) { return 1u; }
+  static constexpr std::size_t size() { return 1u; }
 };
 
 /// (AD)RealVectorValue etc. specialization
@@ -56,6 +50,7 @@ struct SerialAccess<VectorValue<T>>
 {
   static T * data(VectorValue<T> & obj) { return &obj(0u); }
   static constexpr std::size_t size(VectorValue<T> &) { return Moose::dim; }
+  static constexpr std::size_t size() { return Moose::dim; }
 };
 
 /// DenseVector specialization
@@ -144,16 +139,27 @@ serialAccess(T & obj)
 template <typename... Ts>
 struct TypeList
 {
+  typedef std::tuple<Ts...> Tuple;
+  typedef std::tuple<Ts *...> PointerTuple;
+  static constexpr std::size_t size = sizeof...(Ts);
 };
 
 /// Type loop
-template <template <typename> class L, typename T, typename... Ts, typename... As>
+template <template <typename, int> class L, int I, typename T, typename... Ts, typename... As>
 void
-typeLoop(TypeList<T, Ts...>, As... args)
+typeLoopInternal(TypeList<T, Ts...>, As... args)
 {
-  L<T>::apply(args...);
+  L<T, I>::apply(args...);
   if constexpr (sizeof...(Ts) > 0)
-    typeLoop<L>(TypeList<Ts...>{}, args...);
+    typeLoopInternal<L, I + 1>(TypeList<Ts...>{}, args...);
+}
+
+/// Type loop
+template <template <typename, int> class L, typename... Ts, typename... As>
+void
+typeLoop(TypeList<Ts...>, As... args)
+{
+  typeLoopInternal<L, 0>(TypeList<Ts...>{}, args...);
 }
 
 } // namespace Moose;

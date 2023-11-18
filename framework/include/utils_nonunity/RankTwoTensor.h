@@ -78,6 +78,7 @@ struct SerialAccess<RankTwoTensorTempl<T>>
   {
     return RankTwoTensorTempl<T>::N2;
   }
+  static constexpr std::size_t size() { return RankTwoTensorTempl<T>::N2; }
 };
 }
 

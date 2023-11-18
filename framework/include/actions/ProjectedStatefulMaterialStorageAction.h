@@ -10,6 +10,7 @@
 #pragma once
 
 #include "Action.h"
+#include "SerialAccess.h"
 #include "libmesh/fe_type.h"
 
 /**
@@ -47,6 +48,17 @@ protected:
   void addMaterial(const std::string & prop_type,
                    const std::string & prop_name,
                    std::vector<VariableName> & vars);
+
+  template <typename T, int I>
+  struct ProcessProperty
+  {
+    template <typename L>
+    static void apply(const MaterialData * data, const MaterialPropertyName & prop_name, L lambda)
+    {
+      if (data->haveProperty<T>(prop_name))
+        lambda(Moose::SerialAccess<T>::size(), prop_name);
+    }
+  };
 
   enum class PropertyType
   {

@@ -65,6 +65,7 @@ struct SerialAccess<RankFourTensorTempl<T>>
 {
   static T * data(RankFourTensorTempl<T> & obj) { return &obj(0, 0, 0, 0); }
   static constexpr std::size_t size(RankFourTensorTempl<T> &) { return RankFourTensorTempl<T>::N4; }
+  static constexpr std::size_t size() { return RankFourTensorTempl<T>::N4; }
 };
 }
 
