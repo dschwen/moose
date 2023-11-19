@@ -58,10 +58,10 @@ private:
     template <typename L>
     static void apply(const PropertyValue * prop_base, unsigned int qp, L lambda)
     {
-      if (auto prop = dynamic_cast<MaterialProperty<T> *>(prop_base); prop)
+      if (auto prop = dynamic_cast<const MaterialProperty<T> *>(prop_base); prop)
       {
         std::size_t i = 0;
-        for (const auto & v : (*prop)[_qp])
+        for (const auto & v : (*prop)[qp])
           lambda(v, i++);
       }
     }
