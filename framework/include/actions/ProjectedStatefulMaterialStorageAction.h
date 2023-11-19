@@ -53,9 +53,9 @@ protected:
     static void apply(const MaterialData * data, const MaterialPropertyName & prop_name, L lambda)
     {
       if (data->haveProperty<T>(prop_name))
-        lambda(Moose::SerialAccess<T>::size(), prop_name, TypeName<T>::value, false);
+        lambda(Moose::SerialAccess<T>::size(), prop_name, false);
       if (data->haveADProperty<T>(prop_name))
-        lambda(Moose::SerialAccess<T>::size(), prop_name, TypeName<T>::value, true);
+        lambda(Moose::SerialAccess<T>::size(), prop_name, true);
     }
   };
 

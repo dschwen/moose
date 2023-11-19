@@ -19,15 +19,21 @@ InputParameters
 ProjectedStatefulMaterialNodalPatchRecovery::validParams()
 {
   InputParameters params = ElementUserObject::validParams();
+  params.addRequiredParam<MaterialPropertyName>(
+      "property", "Name of the material property to perform nodal patch recovery on");
   return params;
 }
 
 ProjectedStatefulMaterialNodalPatchRecovery::ProjectedStatefulMaterialNodalPatchRecovery(
     const InputParameters & parameters)
-  : NodalPatchRecoveryMaterialProperty(parameters),
+  : ElementUserObject(parameters),
+    _qp(0),
+    _patch_polynomial_order(
+        static_cast<unsigned int>(getParam<MooseEnum>("patch_polynomial_order"))),
+    _multi_index(MathUtils::multiIndex(_mesh.dimension(), _patch_polynomial_order)),
+    _q(_multi_index.size()),
     _current_subdomain_id(_assembly.currentSubdomainID())
 {
-  const auto & data = _problem->getMaterialData(Moose::BLOCK_MATERIAL_DATA);
   Moose::typeLoop<FetchProperty>(ProjectedStatefulMaterialStorageAction::SupportedTypes{}, this);
 }
 
@@ -36,15 +42,6 @@ ProjectedStatefulMaterialNodalPatchRecovery::initialSetup()
 {
   // get all material classes that provide properties for this object
   _required_materials = buildRequiredMaterials();
-}
-
-Real
-ProjectedStatefulMaterialNodalPatchRecovery::execute()
-{
-
-  // auto setup = []() {};
-  // // Moose::typeLoop<ProcessProperty>(ProjectedStatefulMaterialStorageAction::SupportedTypes{}, );
-  return 0; //_prop[_qp];
 }
 
 Real
@@ -59,11 +56,11 @@ ProjectedStatefulMaterialNodalPatchRecovery::nodalPatchRecovery(
   // Assemble the least squares problem over the patch
   RealEigenMatrix A = RealEigenMatrix::Zero(_q, _q);
   RealEigenVector b = RealEigenVector::Zero(_q);
-  for (auto elem_id : elem_ids)
-  {
-    A += libmesh_map_find(_Ae, elem_id);
-    b += libmesh_map_find(_be, elem_id);
-  }
+  // for (auto elem_id : elem_ids)
+  // {
+  //   A += libmesh_map_find(_Ae, elem_id);
+  //   b += libmesh_map_find(_be, elem_id);
+  // }
 
   // Solve the least squares fitting
   RealEigenVector coef = A.completeOrthogonalDecomposition().solve(b);
@@ -111,27 +108,24 @@ ProjectedStatefulMaterialNodalPatchRecovery::execute()
     RealEigenVector p = evaluateBasisFunctions(_q_point[_qp]);
     Ae += p * p.transpose();
 
-    std::size_t i = 0;
     auto compute = [&](const Real & v, std::size_t i) { bs[i] += v * p; };
     Moose::typeLoop<ProcessProperty>(
         ProjectedStatefulMaterialStorageAction::SupportedTypes{}, _prop, _qp, compute);
   }
 
   dof_id_type elem_id = _current_elem->id();
-  _Ae[elem_id] = Ae;
-  _be[elem_id] = be;
+  _abs[elem_id] = {Ae, bs};
 }
 
 void
-NodalPatchRecoveryBase::threadJoin(const UserObject & uo)
+ProjectedStatefulMaterialNodalPatchRecovery::threadJoin(const UserObject & uo)
 {
-  const auto & npr = static_cast<const NodalPatchRecoveryBase &>(uo);
-  _Ae.insert(npr._Ae.begin(), npr._Ae.end());
-  _be.insert(npr._be.begin(), npr._be.end());
+  const auto & npr = static_cast<const ProjectedStatefulMaterialNodalPatchRecovery &>(uo);
+  _abs.insert(npr._abs.begin(), npr._abs.end());
 }
 
 void
-NodalPatchRecoveryBase::finalize()
+ProjectedStatefulMaterialNodalPatchRecovery::finalize()
 {
   // When calling nodalPatchRecovery, we may need to know _Ae and _be on algebraically ghosted
   // elements. However, this userobject is only run on local elements, so we need to query those
@@ -144,34 +138,24 @@ NodalPatchRecoveryBase::finalize()
     if (elem->processor_id() != processor_id())
       query_ids[elem->processor_id()].push_back(elem->id());
 
-  typedef std::pair<RealEigenMatrix, RealEigenVector> AbPair;
-
   // Answer queries received from other processors
   auto gather_data = [this](const processor_id_type /*pid*/,
                             const std::vector<dof_id_type> & elem_ids,
-                            std::vector<AbPair> & ab_pairs)
+                            std::vector<ElementData> & abs_data)
   {
     for (const auto i : index_range(elem_ids))
-    {
-      const auto elem_id = elem_ids[i];
-      ab_pairs.emplace_back(libmesh_map_find(_Ae, elem_id), libmesh_map_find(_be, elem_id));
-    }
+      abs_data.emplace_back(libmesh_map_find(_abs, elem_ids[i]));
   };
 
   // Gather answers received from other processors
   auto act_on_data = [this](const processor_id_type /*pid*/,
                             const std::vector<dof_id_type> & elem_ids,
-                            const std::vector<AbPair> & ab_pairs)
+                            const std::vector<ElementData> & abs_data)
   {
     for (const auto i : index_range(elem_ids))
-    {
-      const auto elem_id = elem_ids[i];
-      const auto & [Ae, be] = ab_pairs[i];
-      _Ae[elem_id] = Ae;
-      _be[elem_id] = be;
-    }
+      _abs[elem_ids[i]] = abs_data[i];
   };
 
-  libMesh::Parallel::pull_parallel_vector_data<AbPair>(
+  libMesh::Parallel::pull_parallel_vector_data<ElementData>(
       _communicator, query_ids, gather_data, act_on_data, 0);
 }

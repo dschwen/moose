@@ -73,10 +73,7 @@ ProjectedStatefulMaterialStorageAction::addRelationshipManagers(
 void
 ProjectedStatefulMaterialStorageAction::act()
 {
-  auto setup = [&](std::size_t size,
-                   const MaterialPropertyName & prop_name,
-                   const std::string & prop_type,
-                   bool is_ad)
+  auto setup = [&](std::size_t size, const MaterialPropertyName & prop_name, bool is_ad)
   {
     // create variables
     std::vector<VariableName> vars;
@@ -90,7 +87,6 @@ ProjectedStatefulMaterialStorageAction::act()
         auto params = _factory.getValidParams("InterpolatedStatefulMaterial");
         params.applySpecificParameters(parameters(), {"block"});
         params.set<std::vector<VariableName>>("old_state") = vars;
-        params.set<MooseEnum>("prop_type") = prop_type;
         params.set<MaterialPropertyName>("prop_name") = prop_name;
         _problem->addMaterial("InterpolatedStatefulMaterial", "_mat_" + prop_name, params);
       }

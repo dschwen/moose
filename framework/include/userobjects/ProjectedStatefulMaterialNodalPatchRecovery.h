@@ -11,13 +11,14 @@
 
 // MOOSE includes
 #include "ElementUserObject.h"
+#include "SerialAccess.h"
 
 class ProjectedStatefulMaterialNodalPatchRecovery : public ElementUserObject
 {
 public:
   static InputParameters validParams();
 
-  NodalPatchRecoveryBase(const InputParameters & parameters);
+  ProjectedStatefulMaterialNodalPatchRecovery(const InputParameters & parameters);
 
   /**
    * Solve the least-squares problem. Use the fitted coefficients to calculate  the value at the
@@ -29,6 +30,8 @@ public:
    */
   virtual Real nodalPatchRecovery(const Point & p, const std::vector<dof_id_type> & elem_ids) const;
 
+  virtual void initialSetup() override;
+
   virtual void initialize() override;
   virtual void execute() override;
   virtual void threadJoin(const UserObject &) override;
@@ -37,9 +40,11 @@ public:
   template <typename T>
   void getProperty()
   {
-    if (data->haveProperty<T>(prop_name))
-      _prop = static_cast<PropertyValue *>(getMaterialProperty<T>(_prop_name));
-    _components = SerialAccess<T>::size();
+    if (hasMaterialProperty<T>("property"))
+    {
+      _prop = static_cast<const PropertyValue *>(&getMaterialProperty<T>("property"));
+      _components = Moose::SerialAccess<T>::size();
+    }
   }
 
 private:
@@ -61,7 +66,7 @@ private:
       if (auto prop = dynamic_cast<const MaterialProperty<T> *>(prop_base); prop)
       {
         std::size_t i = 0;
-        for (const auto & v : (*prop)[qp])
+        for (const auto & v : Moose::serialAccess((*prop)[qp]))
           lambda(v, i++);
       }
     }
@@ -80,6 +85,9 @@ private:
    * @param q_point point at which to evaluate the polynomial basis
    */
   RealEigenVector evaluateBasisFunctions(const Point & q_point) const;
+
+  /// data type stored for each element
+  typedef std::pair<RealEigenMatrix, std::vector<RealEigenVector>> ElementData;
 
   /// current quadrature point
   unsigned int _qp;
@@ -100,7 +108,7 @@ private:
   const PropertyValue * _prop;
 
   /// The element-level A matrix and the element-level b vectors for each component
-  std::map < dof_id_type, std::pair<RealEigenMatrix, std::vector<RealEigenVector>> _abs;
+  std::map<dof_id_type, ElementData> _abs;
 
   /// Current subdomain
   const SubdomainID & _current_subdomain_id;

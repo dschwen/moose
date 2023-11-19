@@ -80,6 +80,11 @@ struct SerialAccessVlaueTypeHelper<Real>
 {
   typedef Real value_type;
 };
+template <>
+struct SerialAccessVlaueTypeHelper<const Real>
+{
+  typedef const Real value_type;
+};
 
 template <typename T>
 class SerialAccessRange
