@@ -12,6 +12,8 @@
 // MOOSE includes
 #include "Moose.h"
 #include "MooseTypes.h"
+#include "RankTwoTensorForward.h"
+#include "RankFourTensorForward.h"
 
 #include <tuple>
 
@@ -28,38 +30,50 @@ struct SerialAccess
   static_assert(always_false<T>, "Specialize SerialAccess for this type.");
 };
 
-/// simple Real specialization
-template <>
-struct SerialAccess<Real>
-{
-  static Real * data(Real & obj) { return &obj; }
-  static constexpr std::size_t size(Real &) { return 1u; }
-  static constexpr std::size_t size() { return 1u; }
-};
-template <>
-struct SerialAccess<ADReal>
-{
-  static ADReal * data(ADReal & obj) { return &obj; }
-  static constexpr std::size_t size(ADReal &) { return 1u; }
-  static constexpr std::size_t size() { return 1u; }
-};
+// Specializations for scalar types
+#define SERIAL_ACCESS_SCALAR(type)                                                                 \
+  template <>                                                                                      \
+  struct SerialAccess<type>                                                                        \
+  {                                                                                                \
+    static type * data(type & obj) { return &obj; }                                                \
+    static constexpr std::size_t size(type &) { return 1u; }                                       \
+    static constexpr std::size_t size() { return 1u; }                                             \
+  }
 
-/// (AD)RealVectorValue etc. specialization
-template <typename T>
-struct SerialAccess<VectorValue<T>>
-{
-  static T * data(VectorValue<T> & obj) { return &obj(0u); }
-  static constexpr std::size_t size(VectorValue<T> &) { return Moose::dim; }
-  static constexpr std::size_t size() { return Moose::dim; }
-};
+SERIAL_ACCESS_SCALAR(Real);
+SERIAL_ACCESS_SCALAR(const Real);
+SERIAL_ACCESS_SCALAR(ADReal);
+SERIAL_ACCESS_SCALAR(const ADReal);
 
-/// DenseVector specialization
-template <typename T>
-struct SerialAccess<DenseVector<T>>
-{
-  static T * data(DenseVector<T> & obj) { return &obj(0u); }
-  static std::size_t size(DenseVector<T> & obj) { return obj.size(); }
-};
+// constant size containers
+#define SERIAL_ACCESS_CONST_SIZE(type, dataptr, sizeval)                                           \
+  template <typename T>                                                                            \
+  struct SerialAccess<type<T>>                                                                     \
+  {                                                                                                \
+    static auto * data(type<T> & obj) { return dataptr; }                                             \
+    static constexpr std::size_t size(type<T> &) { return sizeval; }                               \
+    static constexpr std::size_t size() { return sizeval; }                                        \
+  }
+
+SERIAL_ACCESS_CONST_SIZE(VectorValue, &obj(0u), Moose::dim);
+SERIAL_ACCESS_CONST_SIZE(const VectorValue, &obj(0u), Moose::dim);
+SERIAL_ACCESS_CONST_SIZE(RankTwoTensorTempl, &obj(0u, 0u), RankTwoTensorTempl<T>::N2);
+SERIAL_ACCESS_CONST_SIZE(const RankTwoTensorTempl, &obj(0u, 0u), RankTwoTensorTempl<T>::N2);
+SERIAL_ACCESS_CONST_SIZE(RankFourTensorTempl, &obj(0u, 0u, 0u, 0u), RankFourTensorTempl<T>::N4);
+SERIAL_ACCESS_CONST_SIZE(const RankFourTensorTempl,
+                         &obj(0u, 0u, 0u, 0u),
+                         RankFourTensorTempl<T>::N4);
+
+// dynamic size containers (determining size requires an object instance)
+#define SERIAL_ACCESS_DYNAMIC_SIZE(type, dataptr, sizeval)                                         \
+  template <typename T>                                                                            \
+  struct SerialAccess<type<T>>                                                                     \
+  {                                                                                                \
+    static auto * data(type<T> & obj) { return dataptr; }                                             \
+    static constexpr std::size_t size(type<T> & obj) { return sizeval; }                           \
+  }
+
+SERIAL_ACCESS_DYNAMIC_SIZE(DenseVector, &obj(0u), obj.size());
 
 /**
  * Value type helper (necessary for any type that does not have a value_type
@@ -89,7 +103,8 @@ struct SerialAccessVlaueTypeHelper<const Real>
 template <typename T>
 class SerialAccessRange
 {
-  typedef typename SerialAccessVlaueTypeHelper<T>::value_type V;
+  typedef typename SerialAccessVlaueTypeHelper<T>::value_type R;
+  typedef typename std::conditional<std::is_const_v<T>, const R, R>::type V;
 
 public:
   class iterator
