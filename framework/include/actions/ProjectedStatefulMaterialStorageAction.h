@@ -11,6 +11,8 @@
 
 #include "Action.h"
 #include "SerialAccess.h"
+#include "RankTwoTensorForward.h"
+#include "RankFourTensorForward.h"
 #include "libmesh/fe_type.h"
 
 /**
@@ -31,16 +33,11 @@ public:
   /// List of supported types
   typedef Moose::TypeList<Real, RealVectorValue, RankTwoTensor, RankFourTensor> SupportedTypes;
 
-protected:
-  /**
-   * Perform setup for a single scalar component of the material property prop_name, and gather the
-   * names of teh AuxVariables used to represent each component in `vars`.
-   */
-  void processComponent(const std::string & prop_name,
-                        std::vector<unsigned int> idx,
-                        std::vector<VariableName> & vars,
-                        bool is_ad);
+  /// look up property type MooseNum values
+  template <typename T>
+  struct TypeName;
 
+protected:
   /**
    * Add the material object to obtain the interpolated old state (for use with
    * InterpolatedStatefulMaterialPropertyInterface)
@@ -56,24 +53,11 @@ protected:
     static void apply(const MaterialData * data, const MaterialPropertyName & prop_name, L lambda)
     {
       if (data->haveProperty<T>(prop_name))
-        lambda(Moose::SerialAccess<T>::size(), prop_name);
+        lambda(Moose::SerialAccess<T>::size(), prop_name, TypeName<T>::value, false);
+      if (data->haveADProperty<T>(prop_name))
+        lambda(Moose::SerialAccess<T>::size(), prop_name, TypeName<T>::value, true);
     }
   };
-
-  enum class PropertyType
-  {
-    REAL,
-    REALVECTORVALUE,
-    RANKTWOTENSOR,
-    RANKFOURTENSOR
-  };
-  typedef std::pair<PropertyType, bool> PropertyInfo;
-
-  /**
-   * Return the property type and whether to use AD or not. If no property with a supported type is
-   * found, throw an error.
-   */
-  PropertyInfo checkProperty(const std::string & prop_name);
 
   const std::vector<MaterialPropertyName> & _prop_names;
 
@@ -81,4 +65,28 @@ protected:
   FEType _fe_type;
   const std::string _var_type;
   const std::string _pomps_prefix;
+};
+
+template <>
+struct ProjectedStatefulMaterialStorageAction::TypeName<Real>
+{
+  static std::string value = "Real";
+};
+
+template <>
+struct ProjectedStatefulMaterialStorageAction::TypeName<RealVectorValue>
+{
+  static std::string value = "RealVectorValue";
+};
+
+template <>
+struct ProjectedStatefulMaterialStorageAction::TypeName<RankTwoTensor>
+{
+  static std::string value = "RankTwoTensor";
+};
+
+template <>
+struct ProjectedStatefulMaterialStorageAction::TypeName<RankFourTensor>
+{
+  static std::string value = "RankFourTensor";
 };
