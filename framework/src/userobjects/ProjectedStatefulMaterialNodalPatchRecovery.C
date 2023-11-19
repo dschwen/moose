@@ -7,7 +7,8 @@
 //* Licensed under LGPL 2.1, please see LICENSE for details
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
-#include "ProjectedStatefulMaterialNodalPatchRecovery.h"
+#include "ProjectedStatefulMaterialStorageAction.h"
+#include "ElementUserObject.h"
 #include "MaterialBase.h"
 #include "Assembly.h"
 

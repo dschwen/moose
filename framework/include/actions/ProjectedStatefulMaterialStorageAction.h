@@ -70,23 +70,23 @@ protected:
 template <>
 struct ProjectedStatefulMaterialStorageAction::TypeName<Real>
 {
-  static std::string value = "Real";
+  static const std::string value = "Real";
 };
 
 template <>
 struct ProjectedStatefulMaterialStorageAction::TypeName<RealVectorValue>
 {
-  static std::string value = "RealVectorValue";
+  static const std::string value = "RealVectorValue";
 };
 
 template <>
 struct ProjectedStatefulMaterialStorageAction::TypeName<RankTwoTensor>
 {
-  static std::string value = "RankTwoTensor";
+  static const std::string value = "RankTwoTensor";
 };
 
 template <>
 struct ProjectedStatefulMaterialStorageAction::TypeName<RankFourTensor>
 {
-  static std::string value = "RankFourTensor";
+  static const std::string value = "RankFourTensor";
 };

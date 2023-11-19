@@ -10,28 +10,69 @@
 #pragma once
 
 // MOOSE includes
-#include "NodalPatchRecoveryMaterialProperty.h"
+#include "ElementUserObject.h"
 
-#include <deque>
-
-class MaterialBase;
-
-/**
- * Nodal patch recovery for material property components for projected stateful properties
- */
-class ProjectedStatefulMaterialNodalPatchRecovery : public NodalPatchRecoveryMaterialProperty
+class ProjectedStatefulMaterialNodalPatchRecovery : public ElementUserObject
 {
 public:
   static InputParameters validParams();
 
-  ProjectedStatefulMaterialNodalPatchRecovery(const InputParameters & parameters);
+  NodalPatchRecoveryBase(const InputParameters & parameters);
 
-  virtual void initialSetup() override;
+  /**
+   * Solve the least-squares problem. Use the fitted coefficients to calculate  the value at the
+   * requested point.
+   *
+   * @param p           Point at which to compute the fitted value
+   * @param elem_ids    Ids of the elements in the patch
+   * @return The fitted value
+   */
+  virtual Real nodalPatchRecovery(const Point & p, const std::vector<dof_id_type> & elem_ids) const;
+
+  virtual void initialize() override;
+  virtual void execute() override;
+  virtual void threadJoin(const UserObject &) override;
+  virtual void finalize() override;
 
 protected:
-  virtual Real computeValue() override;
+  /// Compute the quantity to recover using nodal patch recovery
+  virtual Real computeValue() = 0;
 
+  unsigned int _qp;
+
+private:
+  /**
+   * Compute the P vector at a given point
+   * i.e. given dim = 2, order = 2, polynomial P has the following terms:
+   * 1
+   * x
+   * y
+   * x^2
+   * xy
+   * y^2
+   *
+   * @param q_point point at which to evaluate the polynomial basis
+   */
+  RealEigenVector evaluateBasisFunctions(const Point & q_point) const;
+
+  /// The polynomial order, default is variable order
+  const unsigned int _patch_polynomial_order;
+
+  /// The multi-index table
+  const std::vector<std::vector<unsigned int>> _multi_index;
+
+  /// Number of basis functions
+  const unsigned int _q;
+
+  /// stored property
+  const PropertyValue * _prop;
+
+  /// The element-level A matrix and the element-level b vectors for each component
+  std::map < dof_id_type, std::pair<RealEigenMatrix, std::vector<RealEigenVector>> _Abs;
+
+  /// Current subdomain
   const SubdomainID & _current_subdomain_id;
 
+  /// list of require materials that need to be explicityly initialized at step zero
   std::map<SubdomainID, std::vector<MaterialBase *>> _required_materials;
 };

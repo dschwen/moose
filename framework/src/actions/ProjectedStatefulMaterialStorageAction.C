@@ -118,7 +118,7 @@ ProjectedStatefulMaterialStorageAction::act()
         params.set<MooseEnum>("patch_polynomial_order") = _order;
         params.set<ExecFlagEnum>("execute_on") = {EXEC_INITIAL, EXEC_TIMESTEP_END};
         params.set<bool>("force_preaux") = true;
-        _problem->addUserObject(type_name, uo_name, params);
+        _problem->addUserObject(type_name, "_npruo_" + prop_name, params);
       }
     }
 
@@ -133,7 +133,7 @@ ProjectedStatefulMaterialStorageAction::act()
           auto params = _factory.getValidParams("NodalPatchRecoveryAux");
           params.applySpecificParameters(parameters(), {"block"});
           params.set<AuxVariableName>("variable") = var;
-          // params.set<UserObjectName>("nodal_patch_recovery_uo") = uo_name;
+          params.set<UserObjectName>("nodal_patch_recovery_uo") = "_npruo_" + prop_name;
           params.set<ExecFlagEnum>("execute_on") = {EXEC_INITIAL, EXEC_TIMESTEP_END};
           _problem->addAuxKernel("NodalPatchRecoveryAux", "_aux_" + prop_name, params);
         }
