@@ -66,27 +66,3 @@ protected:
   const std::string _var_type;
   const std::string _pomps_prefix;
 };
-
-template <>
-struct ProjectedStatefulMaterialStorageAction::TypeName<Real>
-{
-  static const std::string value = "Real";
-};
-
-template <>
-struct ProjectedStatefulMaterialStorageAction::TypeName<RealVectorValue>
-{
-  static const std::string value = "RealVectorValue";
-};
-
-template <>
-struct ProjectedStatefulMaterialStorageAction::TypeName<RankTwoTensor>
-{
-  static const std::string value = "RankTwoTensor";
-};
-
-template <>
-struct ProjectedStatefulMaterialStorageAction::TypeName<RankFourTensor>
-{
-  static const std::string value = "RankFourTensor";
-};

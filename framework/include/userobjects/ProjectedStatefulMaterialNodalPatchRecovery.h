@@ -34,13 +34,39 @@ public:
   virtual void threadJoin(const UserObject &) override;
   virtual void finalize() override;
 
-protected:
-  /// Compute the quantity to recover using nodal patch recovery
-  virtual Real computeValue() = 0;
-
-  unsigned int _qp;
+  template <typename T>
+  void getProperty()
+  {
+    if (data->haveProperty<T>(prop_name))
+      _prop = static_cast<PropertyValue *>(getMaterialProperty<T>(_prop_name));
+    _components = SerialAccess<T>::size();
+  }
 
 private:
+  template <typename T, int I>
+  struct FetchProperty
+  {
+    static void apply(ProjectedStatefulMaterialNodalPatchRecovery * self)
+    {
+      self->getProperty<T>();
+    }
+  };
+
+  template <typename T, int I>
+  struct ProcessProperty
+  {
+    template <typename L>
+    static void apply(const PropertyValue * prop_base, unsigned int qp, L lambda)
+    {
+      if (auto prop = dynamic_cast<MaterialProperty<T> *>(prop_base); prop)
+      {
+        std::size_t i = 0;
+        for (const auto & v : (*prop)[_qp])
+          lambda(v, i++);
+      }
+    }
+  };
+
   /**
    * Compute the P vector at a given point
    * i.e. given dim = 2, order = 2, polynomial P has the following terms:
@@ -55,6 +81,12 @@ private:
    */
   RealEigenVector evaluateBasisFunctions(const Point & q_point) const;
 
+  /// current quadrature point
+  unsigned int _qp;
+
+  /// number of scalar components in the recovered type
+  std::size_t _components;
+
   /// The polynomial order, default is variable order
   const unsigned int _patch_polynomial_order;
 
@@ -68,7 +100,7 @@ private:
   const PropertyValue * _prop;
 
   /// The element-level A matrix and the element-level b vectors for each component
-  std::map < dof_id_type, std::pair<RealEigenMatrix, std::vector<RealEigenVector>> _Abs;
+  std::map < dof_id_type, std::pair<RealEigenMatrix, std::vector<RealEigenVector>> _abs;
 
   /// Current subdomain
   const SubdomainID & _current_subdomain_id;
