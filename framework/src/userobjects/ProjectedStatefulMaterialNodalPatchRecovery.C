@@ -13,6 +13,11 @@
 #include "MaterialBase.h"
 #include "Assembly.h"
 
+// TIMPI includes
+#include "timpi/communicator.h"
+#include "timpi/parallel_sync.h"
+#include "libmesh/parallel_eigen.h"
+
 registerMooseObject("MooseApp", ProjectedStatefulMaterialNodalPatchRecovery);
 
 InputParameters
@@ -46,7 +51,7 @@ ProjectedStatefulMaterialNodalPatchRecovery::initialSetup()
 
 Real
 ProjectedStatefulMaterialNodalPatchRecovery::nodalPatchRecovery(
-    const Point & x, const std::vector<dof_id_type> & elem_ids) const
+    const Point & x, const std::vector<dof_id_type> & elem_ids, std::size_t component) const
 {
   // Before we go, check if we have enough sample points for solving the least square fitting
   if (_q_point.size() * elem_ids.size() < _q)
@@ -56,11 +61,12 @@ ProjectedStatefulMaterialNodalPatchRecovery::nodalPatchRecovery(
   // Assemble the least squares problem over the patch
   RealEigenMatrix A = RealEigenMatrix::Zero(_q, _q);
   RealEigenVector b = RealEigenVector::Zero(_q);
-  // for (auto elem_id : elem_ids)
-  // {
-  //   A += libmesh_map_find(_Ae, elem_id);
-  //   b += libmesh_map_find(_be, elem_id);
-  // }
+  for (auto elem_id : elem_ids)
+  {
+    const auto abs = libmesh_map_find(_abs, elem_id);
+    A += abs.first;
+    b += abs.second[component];
+  }
 
   // Solve the least squares fitting
   RealEigenVector coef = A.completeOrthogonalDecomposition().solve(b);
@@ -100,7 +106,7 @@ ProjectedStatefulMaterialNodalPatchRecovery::execute()
     for (const auto & mat : _required_materials[_current_subdomain_id])
       mat->initStatefulProperties(_qrule->size());
 
-  std::vector<RealEigenVector> bs(_components);
+  std::vector<RealEigenVector> bs(_n_components);
   RealEigenMatrix Ae = RealEigenMatrix::Zero(_q, _q);
 
   for (_qp = 0; _qp < _qrule->n_points(); _qp++)

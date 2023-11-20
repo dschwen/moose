@@ -26,9 +26,12 @@ public:
    *
    * @param p           Point at which to compute the fitted value
    * @param elem_ids    Ids of the elements in the patch
+   * @param component   Index of the component to compute the fitted value of
    * @return The fitted value
    */
-  virtual Real nodalPatchRecovery(const Point & p, const std::vector<dof_id_type> & elem_ids) const;
+  virtual Real nodalPatchRecovery(const Point & p,
+                                  const std::vector<dof_id_type> & elem_ids,
+                                  std::size_t component) const;
 
   virtual void initialSetup() override;
 
@@ -43,7 +46,7 @@ public:
     if (hasMaterialProperty<T>("property"))
     {
       _prop = static_cast<const PropertyValue *>(&getMaterialProperty<T>("property"));
-      _components = Moose::SerialAccess<T>::size();
+      _n_components = Moose::SerialAccess<T>::size();
     }
   }
 
@@ -93,7 +96,7 @@ private:
   unsigned int _qp;
 
   /// number of scalar components in the recovered type
-  std::size_t _components;
+  std::size_t _n_components;
 
   /// The polynomial order, default is variable order
   const unsigned int _patch_polynomial_order;

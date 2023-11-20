@@ -7,8 +7,8 @@
 //* Licensed under LGPL 2.1, please see LICENSE for details
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
-#include "NodalPatchRecoveryAux.h"
-#include "NodalPatchRecoveryBase.h"
+#include "NodalPatchRecoveryAux.h"  // <-- make this NodalPatchRecoveryAuxBase
+#include "NodalPatchRecoveryBase.h" // <- only neede din the derived class
 
 registerMooseObject("MooseApp", NodalPatchRecoveryAux);
 
@@ -67,6 +67,7 @@ NodalPatchRecoveryAux::computeValue()
     }
   }
 
+  // here we call a virtual method to get the value from a userobject
   return _npr.nodalPatchRecovery(*_current_node, elem_ids);
 }
 
