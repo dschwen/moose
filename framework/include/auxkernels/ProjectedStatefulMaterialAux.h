@@ -33,16 +33,22 @@ protected:
 
   std::map<SubdomainID, std::vector<MaterialBase *>> _required_materials;
 
-  const GenericMaterialProperty<T, is_ad> _prop;
+  const GenericMaterialProperty<T, is_ad> & _prop;
 
   const unsigned int _component;
 };
 
-typedef ProjectedStatefulMaterialAuxTempl<false> ProjectedStatefulMaterialRealAux;
-typedef ProjectedStatefulMaterialAuxTempl<true> ADProjectedStatefulMaterialRealAux;
-typedef ProjectedStatefulMaterialAuxTempl<false> ProjectedStatefulMaterialRealVectorValueAux;
-typedef ProjectedStatefulMaterialAuxTempl<true> ADProjectedStatefulMaterialRealVectorValueAux;
-typedef ProjectedStatefulMaterialAuxTempl<false> ProjectedStatefulMaterialRankTwoTensorAux;
-typedef ProjectedStatefulMaterialAuxTempl<true> ADProjectedStatefulMaterialRankTwoTensorAux;
-typedef ProjectedStatefulMaterialAuxTempl<false> ProjectedStatefulMaterialRankFourTensorAux;
-typedef ProjectedStatefulMaterialAuxTempl<true> ADProjectedStatefulMaterialRankFourTensorAux;
+typedef ProjectedStatefulMaterialAuxTempl<Real, false> ProjectedStatefulMaterialRealAux;
+typedef ProjectedStatefulMaterialAuxTempl<Real, true> ADProjectedStatefulMaterialRealAux;
+typedef ProjectedStatefulMaterialAuxTempl<RealVectorValue, false>
+    ProjectedStatefulMaterialRealVectorValueAux;
+typedef ProjectedStatefulMaterialAuxTempl<RealVectorValue, true>
+    ADProjectedStatefulMaterialRealVectorValueAux;
+typedef ProjectedStatefulMaterialAuxTempl<RankTwoTensor, false>
+    ProjectedStatefulMaterialRankTwoTensorAux;
+typedef ProjectedStatefulMaterialAuxTempl<RankTwoTensor, true>
+    ADProjectedStatefulMaterialRankTwoTensorAux;
+typedef ProjectedStatefulMaterialAuxTempl<RankFourTensor, false>
+    ProjectedStatefulMaterialRankFourTensorAux;
+typedef ProjectedStatefulMaterialAuxTempl<RankFourTensor, true>
+    ADProjectedStatefulMaterialRankFourTensorAux;

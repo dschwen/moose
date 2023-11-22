@@ -28,3 +28,17 @@ TEST(RegistryTest, getClassName)
   // This tests the lookup of an action class name
   EXPECT_EQ(Registry::getClassName<CheckOutputAction>(), "CheckOutputAction");
 }
+
+TEST(RegistryTest, getRegisteredName)
+{
+  // This is a simple non-templated case
+  EXPECT_EQ(Registry::getRegisteredName<Diffusion>(), "Diffusion");
+
+  // This is a templated case that would not work with demangle, as
+  // demangle(typeid(ADMaterialRealAux).name()) returns
+  // "MaterialRealAuxTempl<true>"
+  EXPECT_EQ(Registry::getRegisteredName<ADMaterialRealAux>(), "ADMaterialRealAux");
+
+  // This tests the lookup of an action class name
+  EXPECT_EQ(Registry::getRegisteredName<CheckOutputAction>(), "CheckOutputAction");
+}

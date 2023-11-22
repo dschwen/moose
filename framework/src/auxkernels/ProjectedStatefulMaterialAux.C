@@ -66,5 +66,11 @@ ProjectedStatefulMaterialAuxTempl<T, is_ad>::computeValue()
   return MetaPhysicL::raw_value(Moose::serialAccess(_prop[_qp])[_component]);
 }
 
-template class ProjectedStatefulMaterialAuxTempl<false>;
-template class ProjectedStatefulMaterialAuxTempl<true>;
+template class ProjectedStatefulMaterialAuxTempl<Real, false>;
+template class ProjectedStatefulMaterialAuxTempl<Real, true>;
+template class ProjectedStatefulMaterialAuxTempl<RealVectorValue, false>;
+template class ProjectedStatefulMaterialAuxTempl<RealVectorValue, true>;
+template class ProjectedStatefulMaterialAuxTempl<RankTwoTensor, false>;
+template class ProjectedStatefulMaterialAuxTempl<RankTwoTensor, true>;
+template class ProjectedStatefulMaterialAuxTempl<RankFourTensor, false>;
+template class ProjectedStatefulMaterialAuxTempl<RankFourTensor, true>;

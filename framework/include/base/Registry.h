@@ -136,6 +136,7 @@ struct RegistryEntry : public RegistryEntryBase
   virtual std::shared_ptr<MooseObject> build(const InputParameters & parameters) override;
   virtual std::shared_ptr<Action> buildAction(const InputParameters & parameters) override;
   virtual InputParameters buildParameters() override;
+  static const auto type_hash = typeid(T).hash_code();
 };
 
 /// The registry is used as a global singleton to collect information on all available MooseObject

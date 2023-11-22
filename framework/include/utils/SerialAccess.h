@@ -94,16 +94,11 @@ struct SerialAccessVlaueTypeHelper<Real>
 {
   typedef Real value_type;
 };
-template <>
-struct SerialAccessVlaueTypeHelper<const Real>
-{
-  typedef const Real value_type;
-};
 
 template <typename T>
 class SerialAccessRange
 {
-  typedef typename SerialAccessVlaueTypeHelper<T>::value_type R;
+  typedef typename SerialAccessVlaueTypeHelper<std::remove_const<T>>::value_type R;
   typedef typename std::conditional<std::is_const_v<T>, const R, R>::type V;
 
 public:
@@ -143,7 +138,7 @@ public:
   iterator begin() const { return _begin; }
   iterator end() const { return _end; }
 
-  V & operator[](int i) { return *(SerialAccess<T>::data(obj) + i); }
+  V & operator[](int i) { return *(&*_begin + i); }
 
 private:
   iterator _begin, _end;
