@@ -50,7 +50,7 @@ SERIAL_ACCESS_SCALAR(const ADReal);
   template <typename T>                                                                            \
   struct SerialAccess<type<T>>                                                                     \
   {                                                                                                \
-    static auto * data(type<T> & obj) { return dataptr; }                                             \
+    static auto * data(type<T> & obj) { return dataptr; }                                          \
     static constexpr std::size_t size(type<T> &) { return sizeval; }                               \
     static constexpr std::size_t size() { return sizeval; }                                        \
   }
@@ -69,7 +69,7 @@ SERIAL_ACCESS_CONST_SIZE(const RankFourTensorTempl,
   template <typename T>                                                                            \
   struct SerialAccess<type<T>>                                                                     \
   {                                                                                                \
-    static auto * data(type<T> & obj) { return dataptr; }                                             \
+    static auto * data(type<T> & obj) { return dataptr; }                                          \
     static constexpr std::size_t size(type<T> & obj) { return sizeval; }                           \
   }
 
@@ -141,8 +141,9 @@ public:
   }
 
   iterator begin() const { return _begin; }
-
   iterator end() const { return _end; }
+
+  V & operator[](int i) { return *(SerialAccess<T>::data(obj) + i); }
 
 private:
   iterator _begin, _end;

@@ -24,8 +24,22 @@ InputParameters
 ProjectedStatefulMaterialNodalPatchRecovery::validParams()
 {
   InputParameters params = ElementUserObject::validParams();
+  MooseEnum orders("CONSTANT FIRST SECOND THIRD FOURTH");
   params.addRequiredParam<MaterialPropertyName>(
       "property", "Name of the material property to perform nodal patch recovery on");
+  params.addRequiredParam<MooseEnum>(
+      "patch_polynomial_order",
+      orders,
+      "Polynomial order used in least squares fitting of material property "
+      "over the local patch of elements connected to a given node");
+
+  params.addRelationshipManager("ElementSideNeighborLayers",
+                                Moose::RelationshipManagerType::ALGEBRAIC,
+                                [](const InputParameters &, InputParameters & rm_params)
+                                { rm_params.set<unsigned short>("layers") = 2; });
+
+  params.addParamNamesToGroup("patch_polynomial_order", "Advanced");
+
   return params;
 }
 
@@ -106,7 +120,7 @@ ProjectedStatefulMaterialNodalPatchRecovery::execute()
     for (const auto & mat : _required_materials[_current_subdomain_id])
       mat->initStatefulProperties(_qrule->size());
 
-  std::vector<RealEigenVector> bs(_n_components);
+  std::vector<RealEigenVector> bs(_n_components, RealEigenVector::Zero(_q));
   RealEigenMatrix Ae = RealEigenMatrix::Zero(_q, _q);
 
   for (_qp = 0; _qp < _qrule->n_points(); _qp++)

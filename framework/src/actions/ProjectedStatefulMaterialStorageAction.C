@@ -13,7 +13,6 @@
 #include "RankTwoTensorForward.h"
 #include "AddAuxVariableAction.h"
 #include "AddVariableAction.h"
-#include "Conversion.h"
 #include "FEProblemBase.h"
 #include "Factory.h"
 
@@ -73,7 +72,10 @@ ProjectedStatefulMaterialStorageAction::addRelationshipManagers(
 void
 ProjectedStatefulMaterialStorageAction::act()
 {
-  auto setup = [&](std::size_t size, const MaterialPropertyName & prop_name, bool is_ad)
+  auto setup = [&](std::size_t size,
+                   const MaterialPropertyName & prop_name,
+                   std::string prop_type,
+                   bool is_ad)
   {
     // create variables
     std::vector<VariableName> vars;
@@ -82,15 +84,6 @@ ProjectedStatefulMaterialStorageAction::act()
 
     if (_current_task == "setup_projected_properties")
     {
-      // add material
-      {
-        auto params = _factory.getValidParams("InterpolatedStatefulMaterial");
-        params.applySpecificParameters(parameters(), {"block"});
-        params.set<std::vector<VariableName>>("old_state") = vars;
-        params.set<MaterialPropertyName>("prop_name") = prop_name;
-        _problem->addMaterial("InterpolatedStatefulMaterial", "_mat_" + prop_name, params);
-      }
-
       // add the AuxVars for storage
       for (const auto & var : vars)
       {
@@ -98,6 +91,16 @@ ProjectedStatefulMaterialStorageAction::act()
         params.applyParameters(parameters());
         params.set<std::vector<OutputName>>("outputs") = {"none"};
         _problem->addAuxVariable(_var_type, var, params);
+      }
+
+      // add material
+      {
+        auto params = _factory.getValidParams("InterpolatedStatefulMaterial");
+        params.applySpecificParameters(parameters(), {"block"});
+        params.set<std::vector<VariableName>>("old_state") = vars;
+        params.set<MaterialPropertyName>("prop_name") = prop_name;
+        params.set<MooseEnum>("prop_type") = prop_type;
+        _problem->addMaterial("InterpolatedStatefulMaterial", "_mat_" + prop_name, params);
       }
 
       // use nodal patch recovery for lagrange
@@ -108,8 +111,6 @@ ProjectedStatefulMaterialStorageAction::act()
                                        : "ProjectedStatefulMaterialNodalPatchRecovery";
         auto params = _factory.getValidParams(type_name);
         params.applySpecificParameters(parameters(), {"block"});
-        // params.set<std::vector<unsigned int>>("component") = idx; // todo patch recover all
-        // components at the same time
         params.set<MaterialPropertyName>("property") = prop_name;
         params.set<MooseEnum>("patch_polynomial_order") = _order;
         params.set<ExecFlagEnum>("execute_on") = {EXEC_INITIAL, EXEC_TIMESTEP_END};
@@ -120,36 +121,41 @@ ProjectedStatefulMaterialStorageAction::act()
 
     if (_current_task == "add_aux_kernel")
     {
+      // create variables
+      std::vector<std::string> auxnames;
+      for (const auto i : make_range(size))
+        auxnames.push_back("_aux_" + prop_name + '_' + Moose::stringify(i));
+
       // use nodal patch recovery for lagrange
       if (_fe_type.family == LAGRANGE)
       {
         // nodal variables require patch recovery (add aux kernel)
-        for (const auto & var : vars)
+        const auto & type_name = "ProjectedMaterialPropertyNodalPatchRecoveryAux";
+        for (const auto i : make_range(size))
         {
-          auto params = _factory.getValidParams("NodalPatchRecoveryAux");
+          auto params = _factory.getValidParams(type_name);
           params.applySpecificParameters(parameters(), {"block"});
-          params.set<AuxVariableName>("variable") = var;
+          params.set<AuxVariableName>("variable") = vars[i];
+          params.set<unsigned int>("component") = i;
           params.set<UserObjectName>("nodal_patch_recovery_uo") = "_npruo_" + prop_name;
           params.set<ExecFlagEnum>("execute_on") = {EXEC_INITIAL, EXEC_TIMESTEP_END};
-          _problem->addAuxKernel("NodalPatchRecoveryAux", "_aux_" + prop_name, params);
+          _problem->addAuxKernel(type_name, auxnames[i], params);
         }
       }
       else
       {
         // elemental variables
+        const auto & type_name =
+            is_ad ? "ADProjectedStatefulMaterialAux" : "ProjectedStatefulMaterialAux";
+        for (const auto i : make_range(size))
         {
-          const auto & type_name =
-              is_ad ? "ADProjectedStatefulMaterialAux" : "ProjectedStatefulMaterialAux";
-          for (const auto i : index_range(vars))
-          {
-            auto params = _factory.getValidParams(type_name);
-            params.applySpecificParameters(parameters(), {"block"});
-            params.set<AuxVariableName>("variable") = vars[i];
-            params.set<unsigned int>("component") = i;
-            params.set<MaterialPropertyName>("property") = prop_name;
-            params.set<ExecFlagEnum>("execute_on") = {EXEC_INITIAL, EXEC_TIMESTEP_END};
-            _problem->addAuxKernel(type_name, "_aux_" + prop_name, params);
-          }
+          auto params = _factory.getValidParams(type_name);
+          params.applySpecificParameters(parameters(), {"block"});
+          params.set<AuxVariableName>("variable") = vars[i];
+          params.set<unsigned int>("component") = i;
+          params.set<MaterialPropertyName>("property") = prop_name;
+          params.set<ExecFlagEnum>("execute_on") = {EXEC_INITIAL, EXEC_TIMESTEP_END};
+          _problem->addAuxKernel(type_name, auxnames[i], params);
         }
       }
     }
@@ -161,4 +167,10 @@ ProjectedStatefulMaterialStorageAction::act()
     // loop over all supported property types
     Moose::typeLoop<ProcessProperty>(SupportedTypes{}, &data, prop_name, setup);
   }
+}
+
+MooseEnum
+ProjectedStatefulMaterialStorageAction::getTypeEnum()
+{
+  return getTypeEnum(SupportedTypes{});
 }

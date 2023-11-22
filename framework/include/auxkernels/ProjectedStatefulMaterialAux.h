@@ -16,7 +16,7 @@
 
 class MaterialBase;
 
-template <bool is_ad>
+template <typename T, bool is_ad>
 class ProjectedStatefulMaterialAuxTempl : public AuxKernel
 {
 public:
@@ -29,11 +29,20 @@ public:
 protected:
   virtual Real computeValue() override;
 
-  const IndexableProperty<AuxKernel, is_ad> _prop;
   const SubdomainID & _current_subdomain_id;
 
   std::map<SubdomainID, std::vector<MaterialBase *>> _required_materials;
+
+  const GenericMaterialProperty<T, is_ad> _prop;
+
+  const unsigned int _component;
 };
 
-typedef ProjectedStatefulMaterialAuxTempl<false> ProjectedStatefulMaterialAux;
-typedef ProjectedStatefulMaterialAuxTempl<true> ADProjectedStatefulMaterialAux;
+typedef ProjectedStatefulMaterialAuxTempl<false> ProjectedStatefulMaterialRealAux;
+typedef ProjectedStatefulMaterialAuxTempl<true> ADProjectedStatefulMaterialRealAux;
+typedef ProjectedStatefulMaterialAuxTempl<false> ProjectedStatefulMaterialRealVectorValueAux;
+typedef ProjectedStatefulMaterialAuxTempl<true> ADProjectedStatefulMaterialRealVectorValueAux;
+typedef ProjectedStatefulMaterialAuxTempl<false> ProjectedStatefulMaterialRankTwoTensorAux;
+typedef ProjectedStatefulMaterialAuxTempl<true> ADProjectedStatefulMaterialRankTwoTensorAux;
+typedef ProjectedStatefulMaterialAuxTempl<false> ProjectedStatefulMaterialRankFourTensorAux;
+typedef ProjectedStatefulMaterialAuxTempl<true> ADProjectedStatefulMaterialRankFourTensorAux;

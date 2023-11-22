@@ -10,6 +10,7 @@
 #pragma once
 
 #include "Action.h"
+#include "Conversion.h"
 #include "SerialAccess.h"
 #include "RankTwoTensorForward.h"
 #include "RankFourTensorForward.h"
@@ -33,19 +34,10 @@ public:
   /// List of supported types
   typedef Moose::TypeList<Real, RealVectorValue, RankTwoTensor, RankFourTensor> SupportedTypes;
 
-  /// look up property type MooseNum values
-  template <typename T>
-  struct TypeName;
+  /// get an enum with all supported types
+  static MooseEnum getTypeEnum();
 
 protected:
-  /**
-   * Add the material object to obtain the interpolated old state (for use with
-   * InterpolatedStatefulMaterialPropertyInterface)
-   */
-  void addMaterial(const std::string & prop_type,
-                   const std::string & prop_name,
-                   std::vector<VariableName> & vars);
-
   template <typename T, int I>
   struct ProcessProperty
   {
@@ -53,11 +45,14 @@ protected:
     static void apply(const MaterialData * data, const MaterialPropertyName & prop_name, L lambda)
     {
       if (data->haveProperty<T>(prop_name))
-        lambda(Moose::SerialAccess<T>::size(), prop_name, false);
+        lambda(Moose::SerialAccess<T>::size(), prop_name, typeid(T).name(), false);
       if (data->haveADProperty<T>(prop_name))
-        lambda(Moose::SerialAccess<T>::size(), prop_name, true);
+        lambda(Moose::SerialAccess<T>::size(), prop_name, typeid(T).name(), true);
     }
   };
+
+  template <typename... Ts>
+  static MooseEnum getTypeEnum(typename Moose::TypeList<Ts...>);
 
   const std::vector<MaterialPropertyName> & _prop_names;
 
@@ -66,3 +61,10 @@ protected:
   const std::string _var_type;
   const std::string _pomps_prefix;
 };
+
+template <typename... Ts>
+MooseEnum
+ProjectedStatefulMaterialStorageAction::getTypeEnum(Moose::TypeList<Ts...>)
+{
+  return MooseEnum(Moose::stringify(std::vector<std::string>{typeid(Ts).name()...}, " "));
+}

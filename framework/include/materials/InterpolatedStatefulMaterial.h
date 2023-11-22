@@ -10,6 +10,7 @@
 #pragma once
 
 #include "Material.h"
+#include "SerialAccess.h"
 #include "RankTwoTensorForward.h"
 #include "RankFourTensorForward.h"
 
@@ -27,6 +28,12 @@ public:
 
   virtual void computeQpProperties() override;
 
+  template <typename T>
+  void declareProperties();
+
+  template <typename T>
+  void computeValues();
+
 protected:
   /// Old projected state
   const std::vector<const VariableValue *> _old_state;
@@ -37,26 +44,52 @@ protected:
   /// emitted property name
   const MaterialPropertyName _prop_name;
 
-  /// Property type
-  enum class PropType
+  /// property type
+  const MooseEnum _prop_type;
+
+  template <typename T, int I>
+  struct DeclareProperty
   {
-    REAL,
-    REALVECTORVALUE,
-    RANKTWOTENSOR,
-    RANKFOURTENSOR
-  } _prop_type;
+    static void apply(InterpolatedStatefulMaterial * self) { self->declareProperties<T>(); }
+  };
 
-  ///@{ Old interpolated properties
-  MaterialProperty<Real> * _prop_old_real;
-  MaterialProperty<RealVectorValue> * _prop_old_realvectorvalue;
-  MaterialProperty<RankTwoTensor> * _prop_old_ranktwotensor;
-  MaterialProperty<RankFourTensor> * _prop_old_rankfourtensor;
-  ///@}
+  template <typename T, int I>
+  struct ProcessProperty
+  {
+    static void apply(InterpolatedStatefulMaterial * self) { self->computeValues<T>(); }
+  };
 
-  ///@{ Older interpolated properties
-  MaterialProperty<Real> * _prop_older_real;
-  MaterialProperty<RealVectorValue> * _prop_older_realvectorvalue;
-  MaterialProperty<RankTwoTensor> * _prop_older_ranktwotensor;
-  MaterialProperty<RankFourTensor> * _prop_older_rankfourtensor;
-  ///@}
+  /// Old interpolated property
+  PropertyValue * _prop_old;
+
+  /// Older interpolated properties
+  PropertyValue * _prop_older;
 };
+
+template <typename T>
+void
+InterpolatedStatefulMaterial::declareProperties()
+{
+  if (_prop_type != typeid(T).name())
+    return;
+  _prop_old = &declareProperty<T>(_prop_name + "_interpolated_old");
+  _prop_older = &declareProperty<T>(_prop_name + "_interpolated_older");
+}
+
+template <typename T>
+void
+InterpolatedStatefulMaterial::computeValues()
+{
+  auto * prop_old = dynamic_cast<MaterialProperty<T>*>(_prop_old);
+  if (!prop_old)
+    return;
+  auto * prop_older = static_cast<MaterialProperty<T>*>(_prop_older);
+
+  std::size_t index = 0;
+  for (auto & v : Moose::serialAccess((*prop_old)[_qp]))
+    v = (*_old_state[index++])[_qp];
+
+  index = 0;
+  for (auto & v : Moose::serialAccess((*prop_older)[_qp]))
+    v = (*_older_state[index++])[_qp];
+}
