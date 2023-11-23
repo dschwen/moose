@@ -98,7 +98,7 @@ struct SerialAccessVlaueTypeHelper<Real>
 template <typename T>
 class SerialAccessRange
 {
-  typedef typename SerialAccessVlaueTypeHelper<std::remove_const<T>>::value_type R;
+  typedef typename SerialAccessVlaueTypeHelper<typename std::remove_const<T>::type>::value_type R;
   typedef typename std::conditional<std::is_const_v<T>, const R, R>::type V;
 
 public:

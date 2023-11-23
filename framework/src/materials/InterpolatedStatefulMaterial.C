@@ -8,34 +8,53 @@
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "InterpolatedStatefulMaterial.h"
-#include "ProjectedStatefulMaterialStorageAction.h"
+#include "SerialAccess.h"
 
-registerMooseObject("MooseApp", InterpolatedStatefulMaterial);
+registerMooseObject("MooseApp", InterpolatedStatefulMaterialReal);
+registerMooseObject("MooseApp", InterpolatedStatefulMaterialRealVectorValue);
+registerMooseObject("MooseApp", InterpolatedStatefulMaterialRankTwoTensor);
+registerMooseObject("MooseApp", InterpolatedStatefulMaterialRankFourTensor);
 
+template <typename T>
 InputParameters
-InterpolatedStatefulMaterial::validParams()
+InterpolatedStatefulMaterialTempl<T>::validParams()
 {
   InputParameters params = Material::validParams();
   params.addClassDescription("Access old state from projected data.");
   params.addRequiredCoupledVar("old_state", "The AuxVars for the coupled components");
-  params.addParam<MooseEnum>(
-      "prop_type", ProjectedStatefulMaterialStorageAction::getTypeEnum(), "Property type");
   params.addRequiredParam<MaterialPropertyName>("prop_name", "Name to emit");
   return params;
 }
 
-InterpolatedStatefulMaterial::InterpolatedStatefulMaterial(const InputParameters & parameters)
+template <typename T>
+InterpolatedStatefulMaterialTempl<T>::InterpolatedStatefulMaterialTempl(
+    const InputParameters & parameters)
   : Material(parameters),
     _old_state(coupledValuesOld("old_state")),
-    _older_state(coupledValuesOld("old_state")),
+    _older_state(coupledValuesOld("old_state")), // older is missing
+    _size(Moose::SerialAccess<T>::size()),
     _prop_name(getParam<MaterialPropertyName>("prop_name")),
-    _prop_type(getParam<MooseEnum>("prop_type"))
+    _prop_old(declareProperty<T>(_prop_name + "_interpolated_old")),
+    _prop_older(declareProperty<T>(_prop_name + "_interpolated_older"))
 {
-  Moose::typeLoop<DeclareProperty>(ProjectedStatefulMaterialStorageAction::SupportedTypes{}, this);
+  if (_old_state.size() != _size)
+    paramError("old_state", "Wrong number of compoet AuxVariables passed in.");
 }
 
+template <typename T>
 void
-InterpolatedStatefulMaterial::computeQpProperties()
+InterpolatedStatefulMaterialTempl<T>::computeQpProperties()
 {
-  Moose::typeLoop<ProcessProperty>(ProjectedStatefulMaterialStorageAction::SupportedTypes{}, this);
+  std::size_t index = 0;
+  for (auto & v : Moose::serialAccess(_prop_old[_qp]))
+    v = (*_old_state[index++])[_qp];
+
+  index = 0;
+  for (auto & v : Moose::serialAccess(_prop_older[_qp]))
+    v = (*_older_state[index++])[_qp];
 }
+
+template class InterpolatedStatefulMaterialTempl<Real>;
+template class InterpolatedStatefulMaterialTempl<RealVectorValue>;
+template class InterpolatedStatefulMaterialTempl<RankTwoTensor>;
+template class InterpolatedStatefulMaterialTempl<RankFourTensor>;

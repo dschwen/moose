@@ -13,12 +13,13 @@
 #include "ElementUserObject.h"
 #include "SerialAccess.h"
 
-class ProjectedStatefulMaterialNodalPatchRecovery : public ElementUserObject
+template <typename T, bool is_ad>
+class ProjectedStatefulMaterialNodalPatchRecoveryTempl : public ElementUserObject
 {
 public:
   static InputParameters validParams();
 
-  ProjectedStatefulMaterialNodalPatchRecovery(const InputParameters & parameters);
+  ProjectedStatefulMaterialNodalPatchRecoveryTempl(const InputParameters & parameters);
 
   /**
    * Solve the least-squares problem. Use the fitted coefficients to calculate  the value at the
@@ -40,41 +41,7 @@ public:
   virtual void threadJoin(const UserObject &) override;
   virtual void finalize() override;
 
-  template <typename T>
-  void getProperty()
-  {
-    if (hasMaterialProperty<T>("property"))
-    {
-      _prop = static_cast<const PropertyValue *>(&getMaterialProperty<T>("property"));
-      _n_components = Moose::SerialAccess<T>::size();
-    }
-  }
-
 private:
-  template <typename T, int I>
-  struct FetchProperty
-  {
-    static void apply(ProjectedStatefulMaterialNodalPatchRecovery * self)
-    {
-      self->getProperty<T>();
-    }
-  };
-
-  template <typename T, int I>
-  struct ProcessProperty
-  {
-    template <typename L>
-    static void apply(const PropertyValue * prop_base, unsigned int qp, L lambda)
-    {
-      if (auto prop = dynamic_cast<const MaterialProperty<T> *>(prop_base); prop)
-      {
-        std::size_t i = 0;
-        for (const auto & v : Moose::serialAccess((*prop)[qp]))
-          lambda(v, i++);
-      }
-    }
-  };
-
   /**
    * Compute the P vector at a given point
    * i.e. given dim = 2, order = 2, polynomial P has the following terms:
@@ -108,7 +75,7 @@ private:
   const unsigned int _q;
 
   /// stored property
-  const PropertyValue * _prop;
+  const MaterialProperty<T> & _prop;
 
   /// The element-level A matrix and the element-level b vectors for each component
   std::map<dof_id_type, ElementData> _abs;
@@ -119,3 +86,20 @@ private:
   /// list of require materials that need to be explicityly initialized at step zero
   std::map<SubdomainID, std::vector<MaterialBase *>> _required_materials;
 };
+
+typedef ProjectedStatefulMaterialNodalPatchRecoveryTempl<Real, false>
+    ProjectedStatefulMaterialNodalPatchRecoveryReal;
+typedef ProjectedStatefulMaterialNodalPatchRecoveryTempl<Real, true>
+    ADProjectedStatefulMaterialNodalPatchRecoveryReal;
+typedef ProjectedStatefulMaterialNodalPatchRecoveryTempl<RealVectorValue, false>
+    ProjectedStatefulMaterialNodalPatchRecoveryRealVectorValue;
+typedef ProjectedStatefulMaterialNodalPatchRecoveryTempl<RealVectorValue, true>
+    ADProjectedStatefulMaterialNodalPatchRecoveryRealVectorValue;
+typedef ProjectedStatefulMaterialNodalPatchRecoveryTempl<RankTwoTensor, false>
+    ProjectedStatefulMaterialNodalPatchRecoveryRankTwoTensor;
+typedef ProjectedStatefulMaterialNodalPatchRecoveryTempl<RankTwoTensor, true>
+    ADProjectedStatefulMaterialNodalPatchRecoveryRankTwoTensor;
+typedef ProjectedStatefulMaterialNodalPatchRecoveryTempl<RankFourTensor, false>
+    ProjectedStatefulMaterialNodalPatchRecoveryRankFourTensor;
+typedef ProjectedStatefulMaterialNodalPatchRecoveryTempl<RankFourTensor, true>
+    ADProjectedStatefulMaterialNodalPatchRecoveryRankFourTensor;

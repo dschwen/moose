@@ -72,100 +72,10 @@ ProjectedStatefulMaterialStorageAction::addRelationshipManagers(
 void
 ProjectedStatefulMaterialStorageAction::act()
 {
-  auto setup = [&](std::size_t size,
-                   const MaterialPropertyName & prop_name,
-                   std::string prop_type,
-                   bool is_ad)
-  {
-    // create variables
-    std::vector<VariableName> vars;
-    for (const auto i : make_range(size))
-      vars.push_back("_var_" + prop_name + '_' + Moose::stringify(i));
-
-    if (_current_task == "setup_projected_properties")
-    {
-      // add the AuxVars for storage
-      for (const auto & var : vars)
-      {
-        auto params = _factory.getValidParams(_var_type);
-        params.applyParameters(parameters());
-        params.set<std::vector<OutputName>>("outputs") = {"none"};
-        _problem->addAuxVariable(_var_type, var, params);
-      }
-
-      // add material
-      {
-        auto params = _factory.getValidParams("InterpolatedStatefulMaterial");
-        params.applySpecificParameters(parameters(), {"block"});
-        params.set<std::vector<VariableName>>("old_state") = vars;
-        params.set<MaterialPropertyName>("prop_name") = prop_name;
-        params.set<MooseEnum>("prop_type") = prop_type;
-        _problem->addMaterial("InterpolatedStatefulMaterial", "_mat_" + prop_name, params);
-      }
-
-      // use nodal patch recovery for lagrange
-      if (_fe_type.family == LAGRANGE)
-      {
-        // nodal variables require patch recovery (add user object)
-        const auto & type_name = is_ad ? "ADProjectedStatefulMaterialNodalPatchRecovery"
-                                       : "ProjectedStatefulMaterialNodalPatchRecovery";
-        auto params = _factory.getValidParams(type_name);
-        params.applySpecificParameters(parameters(), {"block"});
-        params.set<MaterialPropertyName>("property") = prop_name;
-        params.set<MooseEnum>("patch_polynomial_order") = _order;
-        params.set<ExecFlagEnum>("execute_on") = {EXEC_INITIAL, EXEC_TIMESTEP_END};
-        params.set<bool>("force_preaux") = true;
-        _problem->addUserObject(type_name, "_npruo_" + prop_name, params);
-      }
-    }
-
-    if (_current_task == "add_aux_kernel")
-    {
-      // create variables
-      std::vector<std::string> auxnames;
-      for (const auto i : make_range(size))
-        auxnames.push_back("_aux_" + prop_name + '_' + Moose::stringify(i));
-
-      // use nodal patch recovery for lagrange
-      if (_fe_type.family == LAGRANGE)
-      {
-        // nodal variables require patch recovery (add aux kernel)
-        const auto & type_name = "ProjectedMaterialPropertyNodalPatchRecoveryAux";
-        for (const auto i : make_range(size))
-        {
-          auto params = _factory.getValidParams(type_name);
-          params.applySpecificParameters(parameters(), {"block"});
-          params.set<AuxVariableName>("variable") = vars[i];
-          params.set<unsigned int>("component") = i;
-          params.set<UserObjectName>("nodal_patch_recovery_uo") = "_npruo_" + prop_name;
-          params.set<ExecFlagEnum>("execute_on") = {EXEC_INITIAL, EXEC_TIMESTEP_END};
-          _problem->addAuxKernel(type_name, auxnames[i], params);
-        }
-      }
-      else
-      {
-        // elemental variables
-        const auto & type_name =
-            is_ad ? "ADProjectedStatefulMaterialAux" : "ProjectedStatefulMaterialAux";
-        for (const auto i : make_range(size))
-        {
-          auto params = _factory.getValidParams(type_name);
-          params.applySpecificParameters(parameters(), {"block"});
-          params.set<AuxVariableName>("variable") = vars[i];
-          params.set<unsigned int>("component") = i;
-          params.set<MaterialPropertyName>("property") = prop_name;
-          params.set<ExecFlagEnum>("execute_on") = {EXEC_INITIAL, EXEC_TIMESTEP_END};
-          _problem->addAuxKernel(type_name, auxnames[i], params);
-        }
-      }
-    }
-  };
-
-  const auto & data = _problem->getMaterialData(Moose::BLOCK_MATERIAL_DATA);
   for (const auto & prop_name : _prop_names)
   {
     // loop over all supported property types
-    Moose::typeLoop<ProcessProperty>(SupportedTypes{}, &data, prop_name, setup);
+    Moose::typeLoop<ProcessProperty>(SupportedTypes{}, this, prop_name);
   }
 }
 

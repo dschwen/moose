@@ -8,7 +8,6 @@
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "ProjectedStatefulMaterialNodalPatchRecovery.h"
-#include "ProjectedStatefulMaterialStorageAction.h"
 #include "ElementUserObject.h"
 #include "MaterialBase.h"
 #include "Assembly.h"
@@ -18,10 +17,18 @@
 #include "timpi/parallel_sync.h"
 #include "libmesh/parallel_eigen.h"
 
-registerMooseObject("MooseApp", ProjectedStatefulMaterialNodalPatchRecovery);
+registerMooseObject("MooseApp", ProjectedStatefulMaterialNodalPatchRecoveryReal);
+registerMooseObject("MooseApp", ADProjectedStatefulMaterialNodalPatchRecoveryReal);
+registerMooseObject("MooseApp", ProjectedStatefulMaterialNodalPatchRecoveryRealVectorValue);
+registerMooseObject("MooseApp", ADProjectedStatefulMaterialNodalPatchRecoveryRealVectorValue);
+registerMooseObject("MooseApp", ProjectedStatefulMaterialNodalPatchRecoveryRankTwoTensor);
+registerMooseObject("MooseApp", ADProjectedStatefulMaterialNodalPatchRecoveryRankTwoTensor);
+registerMooseObject("MooseApp", ProjectedStatefulMaterialNodalPatchRecoveryRankFourTensor);
+registerMooseObject("MooseApp", ADProjectedStatefulMaterialNodalPatchRecoveryRankFourTensor);
 
+template <typename T, bool is_ad>
 InputParameters
-ProjectedStatefulMaterialNodalPatchRecovery::validParams()
+ProjectedStatefulMaterialNodalPatchRecoveryTempl<T, is_ad>::validParams()
 {
   InputParameters params = ElementUserObject::validParams();
   MooseEnum orders("CONSTANT FIRST SECOND THIRD FOURTH");
@@ -43,28 +50,32 @@ ProjectedStatefulMaterialNodalPatchRecovery::validParams()
   return params;
 }
 
-ProjectedStatefulMaterialNodalPatchRecovery::ProjectedStatefulMaterialNodalPatchRecovery(
-    const InputParameters & parameters)
+template <typename T, bool is_ad>
+ProjectedStatefulMaterialNodalPatchRecoveryTempl<T, is_ad>::
+    ProjectedStatefulMaterialNodalPatchRecoveryTempl(const InputParameters & parameters)
   : ElementUserObject(parameters),
     _qp(0),
+    _n_components(Moose::SerialAccess<T>::size()),
     _patch_polynomial_order(
         static_cast<unsigned int>(getParam<MooseEnum>("patch_polynomial_order"))),
     _multi_index(MathUtils::multiIndex(_mesh.dimension(), _patch_polynomial_order)),
     _q(_multi_index.size()),
+    _prop(getMaterialProperty<T>("property")),
     _current_subdomain_id(_assembly.currentSubdomainID())
 {
-  Moose::typeLoop<FetchProperty>(ProjectedStatefulMaterialStorageAction::SupportedTypes{}, this);
 }
 
+template <typename T, bool is_ad>
 void
-ProjectedStatefulMaterialNodalPatchRecovery::initialSetup()
+ProjectedStatefulMaterialNodalPatchRecoveryTempl<T, is_ad>::initialSetup()
 {
   // get all material classes that provide properties for this object
   _required_materials = buildRequiredMaterials();
 }
 
+template <typename T, bool is_ad>
 Real
-ProjectedStatefulMaterialNodalPatchRecovery::nodalPatchRecovery(
+ProjectedStatefulMaterialNodalPatchRecoveryTempl<T, is_ad>::nodalPatchRecovery(
     const Point & x, const std::vector<dof_id_type> & elem_ids, std::size_t component) const
 {
   // Before we go, check if we have enough sample points for solving the least square fitting
@@ -90,8 +101,10 @@ ProjectedStatefulMaterialNodalPatchRecovery::nodalPatchRecovery(
   return p.dot(coef);
 }
 
+template <typename T, bool is_ad>
 RealEigenVector
-ProjectedStatefulMaterialNodalPatchRecovery::evaluateBasisFunctions(const Point & q_point) const
+ProjectedStatefulMaterialNodalPatchRecoveryTempl<T, is_ad>::evaluateBasisFunctions(
+    const Point & q_point) const
 {
   RealEigenVector p(_q);
   Real polynomial;
@@ -107,14 +120,16 @@ ProjectedStatefulMaterialNodalPatchRecovery::evaluateBasisFunctions(const Point 
   return p;
 }
 
+template <typename T, bool is_ad>
 void
-ProjectedStatefulMaterialNodalPatchRecovery::initialize()
+ProjectedStatefulMaterialNodalPatchRecoveryTempl<T, is_ad>::initialize()
 {
   _abs.clear();
 }
 
+template <typename T, bool is_ad>
 void
-ProjectedStatefulMaterialNodalPatchRecovery::execute()
+ProjectedStatefulMaterialNodalPatchRecoveryTempl<T, is_ad>::execute()
 {
   if (_t_step == 0)
     for (const auto & mat : _required_materials[_current_subdomain_id])
@@ -128,24 +143,27 @@ ProjectedStatefulMaterialNodalPatchRecovery::execute()
     RealEigenVector p = evaluateBasisFunctions(_q_point[_qp]);
     Ae += p * p.transpose();
 
-    auto compute = [&](const Real & v, std::size_t i) { bs[i] += v * p; };
-    Moose::typeLoop<ProcessProperty>(
-        ProjectedStatefulMaterialStorageAction::SupportedTypes{}, _prop, _qp, compute);
+    std::size_t index = 0;
+    for (const auto & v : Moose::serialAccess((*prop)[qp]))
+      bs[index++] += v * p;
   }
 
   dof_id_type elem_id = _current_elem->id();
   _abs[elem_id] = {Ae, bs};
 }
 
+template <typename T, bool is_ad>
 void
-ProjectedStatefulMaterialNodalPatchRecovery::threadJoin(const UserObject & uo)
+ProjectedStatefulMaterialNodalPatchRecoveryTempl<T, is_ad>::threadJoin(const UserObject & uo)
 {
-  const auto & npr = static_cast<const ProjectedStatefulMaterialNodalPatchRecovery &>(uo);
+  const auto & npr =
+      static_cast<const ProjectedStatefulMaterialNodalPatchRecoveryTempl<T, is_ad> &>(uo);
   _abs.insert(npr._abs.begin(), npr._abs.end());
 }
 
+template <typename T, bool is_ad>
 void
-ProjectedStatefulMaterialNodalPatchRecovery::finalize()
+ProjectedStatefulMaterialNodalPatchRecoveryTempl<T, is_ad>::finalize()
 {
   // When calling nodalPatchRecovery, we may need to know _Ae and _be on algebraically ghosted
   // elements. However, this userobject is only run on local elements, so we need to query those
@@ -179,3 +197,12 @@ ProjectedStatefulMaterialNodalPatchRecovery::finalize()
   libMesh::Parallel::pull_parallel_vector_data<ElementData>(
       _communicator, query_ids, gather_data, act_on_data, 0);
 }
+
+template class ProjectedStatefulMaterialNodalPatchRecoveryTempl<Real, false>;
+template class ProjectedStatefulMaterialNodalPatchRecoveryTempl<Real, true>;
+template class ProjectedStatefulMaterialNodalPatchRecoveryTempl<RealVectorValue, false>;
+template class ProjectedStatefulMaterialNodalPatchRecoveryTempl<RealVectorValue, true>;
+template class ProjectedStatefulMaterialNodalPatchRecoveryTempl<RankTwoTensor, false>;
+template class ProjectedStatefulMaterialNodalPatchRecoveryTempl<RankTwoTensor, true>;
+template class ProjectedStatefulMaterialNodalPatchRecoveryTempl<RankFourTensor, false>;
+template class ProjectedStatefulMaterialNodalPatchRecoveryTempl<RankFourTensor, true>;
