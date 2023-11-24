@@ -26,11 +26,24 @@ registerMooseObject("MooseApp", ADProjectedStatefulMaterialNodalPatchRecoveryRan
 registerMooseObject("MooseApp", ProjectedStatefulMaterialNodalPatchRecoveryRankFourTensor);
 registerMooseObject("MooseApp", ADProjectedStatefulMaterialNodalPatchRecoveryRankFourTensor);
 
+InputParameters
+ProjectedStatefulMaterialNodalPatchRecoveryBase::validParams()
+{
+  InputParameters params = ElementUserObject::validParams();
+
+  params.addRelationshipManager("ElementSideNeighborLayers",
+                                Moose::RelationshipManagerType::ALGEBRAIC,
+                                [](const InputParameters &, InputParameters & rm_params)
+                                { rm_params.set<unsigned short>("layers") = 2; });
+
+  return params;
+}
+
 template <typename T, bool is_ad>
 InputParameters
 ProjectedStatefulMaterialNodalPatchRecoveryTempl<T, is_ad>::validParams()
 {
-  InputParameters params = ElementUserObject::validParams();
+  InputParameters params = ProjectedStatefulMaterialNodalPatchRecoveryBase::validParams();
   MooseEnum orders("CONSTANT FIRST SECOND THIRD FOURTH");
   params.addRequiredParam<MaterialPropertyName>(
       "property", "Name of the material property to perform nodal patch recovery on");
@@ -60,7 +73,7 @@ ProjectedStatefulMaterialNodalPatchRecoveryTempl<T, is_ad>::
         static_cast<unsigned int>(getParam<MooseEnum>("patch_polynomial_order"))),
     _multi_index(MathUtils::multiIndex(_mesh.dimension(), _patch_polynomial_order)),
     _q(_multi_index.size()),
-    _prop(getMaterialProperty<T>("property")),
+    _prop(getGenericMaterialProperty<T, is_ad>("property")),
     _current_subdomain_id(_assembly.currentSubdomainID())
 {
 }
@@ -144,8 +157,8 @@ ProjectedStatefulMaterialNodalPatchRecoveryTempl<T, is_ad>::execute()
     Ae += p * p.transpose();
 
     std::size_t index = 0;
-    for (const auto & v : Moose::serialAccess((*prop)[qp]))
-      bs[index++] += v * p;
+    for (const auto & v : Moose::serialAccess(_prop[_qp]))
+      bs[index++] += MetaPhysicL::raw_value(v) * p;
   }
 
   dof_id_type elem_id = _current_elem->id();

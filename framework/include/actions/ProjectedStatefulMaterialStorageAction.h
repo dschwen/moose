@@ -108,8 +108,8 @@ ProjectedStatefulMaterialStorageAction::processProperty(const MaterialPropertyNa
       const auto type = Registry::getClassName<InterpolatedStatefulMaterialTempl<T>>();
       auto params = _factory.getValidParams(type);
       params.applySpecificParameters(parameters(), {"block"});
-      params.set<std::vector<VariableName>>("old_state") = vars;
-      params.set<MaterialPropertyName>("prop_name") = prop_name;
+      params.template set<std::vector<VariableName>>("old_state") = vars;
+      params.template set<MaterialPropertyName>("prop_name") = prop_name;
       _problem->addMaterial(type, "_mat_" + prop_name, params);
     }
 
@@ -121,10 +121,10 @@ ProjectedStatefulMaterialStorageAction::processProperty(const MaterialPropertyNa
           Registry::getClassName<ProjectedStatefulMaterialNodalPatchRecoveryTempl<T, is_ad>>();
       auto params = _factory.getValidParams(type);
       params.applySpecificParameters(parameters(), {"block"});
-      params.set<MaterialPropertyName>("property") = prop_name;
-      params.set<MooseEnum>("patch_polynomial_order") = _order;
-      params.set<ExecFlagEnum>("execute_on") = {EXEC_INITIAL, EXEC_TIMESTEP_END};
-      params.set<bool>("force_preaux") = true;
+      params.template set<MaterialPropertyName>("property") = prop_name;
+      params.template set<MooseEnum>("patch_polynomial_order") = _order;
+      params.template set<ExecFlagEnum>("execute_on") = {EXEC_INITIAL, EXEC_TIMESTEP_END};
+      params.template set<bool>("force_preaux") = true;
       _problem->addUserObject(type, "_npruo_" + prop_name, params);
     }
   }
@@ -145,10 +145,10 @@ ProjectedStatefulMaterialStorageAction::processProperty(const MaterialPropertyNa
       {
         auto params = _factory.getValidParams(type);
         params.applySpecificParameters(parameters(), {"block"});
-        params.set<AuxVariableName>("variable") = vars[i];
-        params.set<unsigned int>("component") = i;
-        params.set<UserObjectName>("nodal_patch_recovery_uo") = "_npruo_" + prop_name;
-        params.set<ExecFlagEnum>("execute_on") = {EXEC_INITIAL, EXEC_TIMESTEP_END};
+        params.template set<AuxVariableName>("variable") = vars[i];
+        params.template set<unsigned int>("component") = i;
+        params.template set<UserObjectName>("nodal_patch_recovery_uo") = "_npruo_" + prop_name;
+        params.template set<ExecFlagEnum>("execute_on") = {EXEC_INITIAL, EXEC_TIMESTEP_END};
         _problem->addAuxKernel(type, auxnames[i], params);
       }
     }
@@ -160,10 +160,10 @@ ProjectedStatefulMaterialStorageAction::processProperty(const MaterialPropertyNa
       {
         auto params = _factory.getValidParams(type);
         params.applySpecificParameters(parameters(), {"block"});
-        params.set<AuxVariableName>("variable") = vars[i];
-        params.set<unsigned int>("component") = i;
-        params.set<MaterialPropertyName>("property") = prop_name;
-        params.set<ExecFlagEnum>("execute_on") = {EXEC_INITIAL, EXEC_TIMESTEP_END};
+        params.template set<AuxVariableName>("variable") = vars[i];
+        params.template set<unsigned int>("component") = i;
+        params.template set<MaterialPropertyName>("property") = prop_name;
+        params.template set<ExecFlagEnum>("execute_on") = {EXEC_INITIAL, EXEC_TIMESTEP_END};
         _problem->addAuxKernel(type, auxnames[i], params);
       }
     }

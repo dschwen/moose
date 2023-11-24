@@ -65,7 +65,7 @@ void
 ProjectedStatefulMaterialStorageAction::addRelationshipManagers(
     Moose::RelationshipManagerType input_rm_type)
 {
-  auto params = _factory.getValidParams("ProjectedStatefulMaterialNodalPatchRecovery");
+  auto params = _factory.getValidParams("ProjectedStatefulMaterialNodalPatchRecoveryBase");
   addRelationshipManagers(input_rm_type, params);
 }
 

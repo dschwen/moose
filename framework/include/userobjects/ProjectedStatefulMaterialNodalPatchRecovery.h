@@ -16,6 +16,8 @@
 class ProjectedStatefulMaterialNodalPatchRecoveryBase : public ElementUserObject
 {
 public:
+  static InputParameters validParams();
+
   ProjectedStatefulMaterialNodalPatchRecoveryBase(const InputParameters & parameters)
     : ElementUserObject(parameters)
   {
@@ -89,7 +91,7 @@ private:
   const unsigned int _q;
 
   /// stored property
-  const MaterialProperty<T> & _prop;
+  const GenericMaterialProperty<T, is_ad> & _prop;
 
   /// The element-level A matrix and the element-level b vectors for each component
   std::map<dof_id_type, ElementData> _abs;
