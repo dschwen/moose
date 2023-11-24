@@ -10,6 +10,7 @@
 #pragma once
 
 #include "Action.h"
+#include "Registry.h"
 #include "Conversion.h"
 #include "SerialAccess.h"
 #include "RankTwoTensorForward.h"
@@ -107,7 +108,7 @@ ProjectedStatefulMaterialStorageAction::processProperty(const MaterialPropertyNa
       const auto type = Registry::getClassName<InterpolatedStatefulMaterialTempl<T>>();
       auto params = _factory.getValidParams(type);
       params.applySpecificParameters(parameters(), {"block"});
-      params.set<std::vector<typename VariableName>>("old_state") = vars;
+      params.set<std::vector<VariableName>>("old_state") = vars;
       params.set<MaterialPropertyName>("prop_name") = prop_name;
       _problem->addMaterial(type, "_mat_" + prop_name, params);
     }

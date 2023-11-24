@@ -13,8 +13,22 @@
 #include "ElementUserObject.h"
 #include "SerialAccess.h"
 
+class ProjectedStatefulMaterialNodalPatchRecoveryBase : public ElementUserObject
+{
+public:
+  ProjectedStatefulMaterialNodalPatchRecoveryBase(const InputParameters & parameters)
+    : ElementUserObject(parameters)
+  {
+  }
+
+  virtual Real nodalPatchRecovery(const Point & p,
+                                  const std::vector<dof_id_type> & elem_ids,
+                                  std::size_t component) const = 0;
+};
+
 template <typename T, bool is_ad>
-class ProjectedStatefulMaterialNodalPatchRecoveryTempl : public ElementUserObject
+class ProjectedStatefulMaterialNodalPatchRecoveryTempl
+  : public ProjectedStatefulMaterialNodalPatchRecoveryBase
 {
 public:
   static InputParameters validParams();
@@ -32,7 +46,7 @@ public:
    */
   virtual Real nodalPatchRecovery(const Point & p,
                                   const std::vector<dof_id_type> & elem_ids,
-                                  std::size_t component) const;
+                                  std::size_t component) const override;
 
   virtual void initialSetup() override;
 

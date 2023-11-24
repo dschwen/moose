@@ -53,7 +53,7 @@ ProjectedStatefulMaterialNodalPatchRecoveryTempl<T, is_ad>::validParams()
 template <typename T, bool is_ad>
 ProjectedStatefulMaterialNodalPatchRecoveryTempl<T, is_ad>::
     ProjectedStatefulMaterialNodalPatchRecoveryTempl(const InputParameters & parameters)
-  : ElementUserObject(parameters),
+  : ProjectedStatefulMaterialNodalPatchRecoveryBase(parameters),
     _qp(0),
     _n_components(Moose::SerialAccess<T>::size()),
     _patch_polynomial_order(
