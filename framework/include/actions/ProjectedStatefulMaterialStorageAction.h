@@ -162,7 +162,7 @@ ProjectedStatefulMaterialStorageAction::processProperty(const MaterialPropertyNa
         params.applySpecificParameters(parameters(), {"block"});
         params.template set<AuxVariableName>("variable") = vars[i];
         params.template set<unsigned int>("component") = i;
-        params.template set<MaterialPropertyName>("property") = prop_name;
+        params.template set<MaterialPropertyName>("prop") = prop_name;
         params.template set<ExecFlagEnum>("execute_on") = {EXEC_INITIAL, EXEC_TIMESTEP_END};
         _problem->addAuxKernel(type, auxnames[i], params);
       }
