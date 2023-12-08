@@ -17,6 +17,14 @@
 
 // MOOSE includes
 #include "MooseEnumItem.h"
+#include "MooseError.h"
+#include "MooseUtils.h"
+
+// libMesh includes
+#include "libmesh/int_range.h"
+
+// Magic Enum (enum reflection - contrib)
+#include "magic_enum.hpp"
 
 /**
  * The base class for both the MooseEnum and MultiMooseEnum classes.
@@ -32,6 +40,9 @@ public:
    *                             its range of defined values.
    */
   MooseEnumBase(std::string names, bool allow_out_of_range = false);
+
+  template <typename EnumClass>
+  void check();
 
   /**
    * Copy Constructor for use when creating vectors of MooseEnumBases
@@ -165,3 +176,41 @@ protected:
   /// The map of items and their respective documentation strings
   std::map<MooseEnumItem, std::string> _item_documentation;
 };
+
+template <typename EnumClass>
+void
+MooseEnumBase::check()
+{
+  const auto & moose_names = getNames();
+  const auto & moose_ids = getIDs();
+  mooseAssert(moose_names.size() == moose_ids.size(),
+              "Internal error, MooseEnum names and ids have different sizes.");
+
+  constexpr auto enum_entries = magic_enum::enum_entries<EnumClass>();
+
+  // check size
+  if (moose_names.size() != enum_entries.size())
+    mooseError("MooseEnum/C++ enum size mismatch.");
+
+  // check names and values
+  for (const auto i : index_range(moose_names))
+  {
+    const auto enum_id =
+        static_cast<typename std::underlying_type<EnumClass>::type>(enum_entries[i].first);
+    const auto enum_name = MooseUtils::toUpper(std::string(enum_entries[i].second));
+
+    if (enum_name != moose_names[i])
+      mooseError("MooseEnum/C++ enum size mismatch item name mismatch: ",
+                 enum_name,
+                 " != ",
+                 moose_names[i]);
+
+    if (enum_id != moose_ids[i])
+      mooseError("MooseEnum/C++ enum size mismatch item ID mismatch for '",
+                 moose_names[i],
+                 "': ",
+                 enum_id,
+                 " != ",
+                 moose_ids[i]);
+  }
+}

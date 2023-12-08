@@ -51,6 +51,9 @@ public:
    */
   MooseEnum(std::string names, std::string default_name = "", bool allow_out_of_range = false);
 
+  template <typename EnumClass>
+  MooseEnum(std::string names, std::string default_name = "", bool allow_out_of_range = false);
+
   /**
    * Copy Constructor for use when creating vectors of MooseEnums
    * @param other_enum - The other enumeration to copy state from

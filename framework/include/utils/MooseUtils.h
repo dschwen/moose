@@ -876,13 +876,13 @@ void clearSymlink(const std::string & link);
  * Convert supplied string to upper case.
  * @params name The string to convert upper case.
  */
-std::string toUpper(const std::string & name);
+std::string toUpper(std::string name);
 
 /**
  * Convert supplied string to lower case.
  * @params name The string to convert upper case.
  */
-std::string toLower(const std::string & name);
+std::string toLower(std::string name);
 
 /**
  * Returns a container that contains the content of second passed in container

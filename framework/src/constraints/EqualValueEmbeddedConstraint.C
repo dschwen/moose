@@ -32,6 +32,7 @@ EqualValueEmbeddedConstraint::validParams()
                              "have the same variable value");
   params.set<bool>("use_displaced_mesh") = false;
   MooseEnum formulation("kinematic penalty", "kinematic");
+  formulation.check<Formulation>();
   params.addParam<MooseEnum>(
       "formulation", formulation, "Formulation used to enforce the constraint");
   params.addRequiredParam<Real>(
