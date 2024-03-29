@@ -251,13 +251,7 @@ Factory::createUnique(const std::string & obj_name,
                       const InputParameters & parameters,
                       const THREAD_ID tid)
 {
-  auto object = createUnique(obj_name, name, parameters, tid, false);
-  if (!dynamic_cast<T *>(object.get()))
-    mooseError("We expected to create an object of type '" + demangle(typeid(T).name()) +
-               "'.\nInstead we received a parameters object for type '" + obj_name +
-               "'.\nDid you call the wrong \"add\" method in your Action?");
-
-  return std::unique_ptr<T>(static_cast<T *>(object.release()));
+  return std::unique_ptr<T>(create<T>(obj_name, name, parameters, tid).get());
 }
 
 template <typename T>
@@ -267,7 +261,13 @@ Factory::create(const std::string & obj_name,
                 const InputParameters & parameters,
                 const THREAD_ID tid)
 {
-  return std::move(createUnique<T>(obj_name, name, parameters, tid));
+  auto object = create(obj_name, name, parameters, tid, false);
+  if (!dynamic_cast<T *>(object.get()))
+    mooseError("We expected to create an object of type '" + demangle(typeid(T).name()) +
+               "'.\nInstead we received a parameters object for type '" + obj_name +
+               "'.\nDid you call the wrong \"add\" method in your Action?");
+
+  return std::dynamic_pointer_cast<T>(object);
 }
 
 template <typename T>

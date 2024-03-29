@@ -89,6 +89,17 @@ Factory::createUnique(const std::string & obj_name,
                       THREAD_ID tid /* =0 */,
                       bool print_deprecated /* =true */)
 {
+  return std::unique_ptr<MooseObject>(
+      create(obj_name, name, parameters, tid, print_deprecated).get());
+}
+
+std::shared_ptr<MooseObject>
+Factory::create(const std::string & obj_name,
+                const std::string & name,
+                const InputParameters & parameters,
+                THREAD_ID tid /* =0 */,
+                bool print_deprecated /* =true */)
+{
   if (print_deprecated)
     mooseDeprecated("Factory::create() is deprecated, please use Factory::create<T>() instead");
 
@@ -101,25 +112,12 @@ Factory::createUnique(const std::string & obj_name,
   auto obj = _name_to_object.at(obj_name)->build(warehouse_params);
   _currently_constructing.pop_back();
 
+  if (auto fep = std::dynamic_pointer_cast<FEProblemBase>(obj))
+    _app.actionWarehouse().problemBase() = fep;
+
   finalize(obj_name, *obj);
 
   return obj;
-}
-
-std::shared_ptr<MooseObject>
-Factory::create(const std::string & obj_name,
-                const std::string & name,
-                const InputParameters & parameters,
-                THREAD_ID tid /* =0 */,
-                bool print_deprecated /* =true */)
-{
-  std::shared_ptr<MooseObject> object =
-      createUnique(obj_name, name, parameters, tid, print_deprecated);
-
-  if (auto fep = std::dynamic_pointer_cast<FEProblemBase>(object))
-    _app.actionWarehouse().problemBase() = fep;
-
-  return object;
 }
 
 void

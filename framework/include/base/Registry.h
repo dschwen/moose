@@ -117,7 +117,7 @@ struct RegistryEntryBase : public RegistryEntryData
   RegistryEntryBase(const RegistryEntryData & data) : RegistryEntryData(data) {}
   virtual ~RegistryEntryBase() {}
   /// proxy functions
-  virtual std::unique_ptr<MooseObject> build(const InputParameters & parameters) = 0;
+  virtual std::shared_ptr<MooseObject> build(const InputParameters & parameters) = 0;
   virtual std::shared_ptr<Action> buildAction(const InputParameters & parameters) = 0;
   virtual InputParameters buildParameters() = 0;
   /// resolve the name from _classname, _alias, and _name
@@ -136,7 +136,7 @@ template <typename T>
 struct RegistryEntry : public RegistryEntryBase
 {
   RegistryEntry(const RegistryEntryData & data) : RegistryEntryBase(data) {}
-  virtual std::unique_ptr<MooseObject> build(const InputParameters & parameters) override;
+  virtual std::shared_ptr<MooseObject> build(const InputParameters & parameters) override;
   virtual std::shared_ptr<Action> buildAction(const InputParameters & parameters) override;
   virtual InputParameters buildParameters() override;
 };
@@ -269,11 +269,11 @@ Registry::getRegisteredName()
 }
 
 template <typename T>
-std::unique_ptr<MooseObject>
+std::shared_ptr<MooseObject>
 RegistryEntry<T>::build(const InputParameters & parameters)
 {
   if constexpr (std::is_base_of_v<MooseObject, T>)
-    return std::make_unique<T>(parameters);
+    return std::make_shared<T>(parameters);
   mooseError("The object to be built is not derived from MooseObject.");
 }
 

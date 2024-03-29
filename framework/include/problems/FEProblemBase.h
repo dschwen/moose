@@ -936,7 +936,7 @@ public:
                                    const THREAD_ID tid);
 
   /**
-   * Method to check whether or not a list of active material roperties has been set. This method
+   * Method to check whether or not a list of active material properties has been set. This method
    * is called by reinitMaterials to determine whether Material computeProperties methods need to be
    * called. If the return is False, this check prevents unnecessary material property computation
    * @param tid The thread id
