@@ -2013,7 +2013,6 @@ MooseMesh::detectPairedSidesets()
         // unique pairing of sides in this direction, but we'll just
         // keep going to keep the logic simple.
         boundary_info.boundary_ids(elem, s, face_ids);
-
         // x-direction faces
         if (normals[0].absolute_fuzzy_equals(minus_x))
           minus_x_ids[side_dim].insert(face_ids.begin(), face_ids.end());

@@ -23,7 +23,7 @@
 InputParameters
 MooseTestApp::validParams()
 {
-  InputParameters params = MooseApp::validParams();
+  InputParameters params = TestApp<MooseApp>::validParams();
 
   // Flag for testing MooseApp::getRestartableDataMap error message
   params.addCommandLineParam<bool>("test_getRestartableDataMap_error",
@@ -34,13 +34,6 @@ MooseTestApp::validParams()
   params.addCommandLineParam<bool>("output_inverse_eigenvalue",
                                    "--output-inverse-eigenvalue",
                                    "True to let EigenProblem output inverse eigenvalue.");
-
-  /* MooseTestApp is special because it will have its own
-   * binary and we want the default to allow test objects.
-   */
-  params.suppressParameter<bool>("allow_test_objects");
-  params.addCommandLineParam<bool>(
-      "disallow_test_objects", "--disallow-test-objects", "Don't register test objects and syntax");
 
   params.addCommandLineParam<Real>(
       "output_wall_time_interval",
@@ -60,18 +53,16 @@ MooseTestApp::validParams()
   return params;
 }
 
-MooseTestApp::MooseTestApp(const InputParameters & parameters) : MooseApp(parameters)
+MooseTestApp::MooseTestApp(const InputParameters & parameters) : TestApp<MooseApp>(parameters)
 {
   MooseTestApp::registerAll(
-      _factory, _action_factory, _syntax, !getParam<bool>("disallow_test_objects"));
+      _factory, _action_factory, _syntax, _allow_test_objects);
 
   if (getParam<bool>("test_getRestartableDataMap_error"))
     getRestartableDataMap("slaughter");
   if (getParam<bool>("disallow_test_objects"))
     _pars.set<bool>(MeshGeneratorSystem::allow_data_driven_param) = false;
 }
-
-MooseTestApp::~MooseTestApp() {}
 
 void
 MooseTestApp::executeExecutioner()

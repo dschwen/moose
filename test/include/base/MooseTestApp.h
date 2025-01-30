@@ -10,14 +10,14 @@
 #pragma once
 
 #include "MooseApp.h"
+#include "TestApp.h"
 
-class MooseTestApp : public MooseApp
+class MooseTestApp : public TestApp<MooseApp>
 {
 public:
   static InputParameters validParams();
 
   MooseTestApp(const InputParameters & parameters);
-  virtual ~MooseTestApp();
 
   virtual void executeExecutioner() override;
   virtual void setupOptions() override;

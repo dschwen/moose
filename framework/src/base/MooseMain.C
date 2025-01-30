@@ -30,6 +30,9 @@ createMooseApp(const std::string & default_app_type, int argc, char * argv[])
   // - the input file, to load and search for Application/type
   // - the --app command line argument
   // - The Application/type= hit command line argument
+  for (auto i:make_range(argc))
+    std::cerr << argv[i] << '\n';
+
   CommandLine cl(argc, argv);
   cl.parse();
   auto command_line_params = emptyInputParameters();
