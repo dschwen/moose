@@ -71,6 +71,7 @@ protected:
                           const std::string & var_name,
                           libMesh::FEFamily family,
                           Order order,
+                          Real scale_factor,
                           const std::set<SubdomainID> * const active_subdomains);
 
   /// build a text snippet of the minimal set of parameters that need to be specified
