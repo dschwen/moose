@@ -36,13 +36,9 @@ NEML2Residual::validParams()
 NEML2Residual::NEML2Residual(const InputParameters & parameters)
   : GeneralUserObject(parameters),
     _variable_names(getParam<std::vector<NonlinearVariableName>>("variables")),
-    _solution(dynamic_cast<const PetscVector<Real> *>(_sys.currentSolution())),
-    _residual(dynamic_cast<PetscVector<Real> *>(&_sys.getVector("nontime")))
+    _solution(_sys.currentSolution()),
+    _residual(dynamic_cast<PetscVector<Real> *>(&_sys.getVector("NONTIME")))
 {
-  // check if the solution vector is of a supported type
-  if (!_solution)
-    mooseError("Only solution vectors of type PetscVector are currently supported");
-
   if (sizeof(Real) != 8 && sizeof(sizeof(Real)) != 4)
     mooseError("Unsupported Real number size");
 
@@ -74,6 +70,11 @@ NEML2Residual::meshChanged()
   int64_t nvar = _variables.size();
   std::vector<dof_id_type> var_dof_indices;
 
+  const auto petsc_solution = dynamic_cast<const PetscVector<Real> *>(_solution);
+  // check if the solution vector is of a supported type
+  if (!petsc_solution)
+    mooseError("Only solution vectors of type PetscVector are currently supported");
+
   _connectivity.clear();
   // iterate over the entire domain
   for (const auto & elem : *_fe_problem.mesh().getActiveLocalElementRange())
@@ -95,7 +96,7 @@ NEML2Residual::meshChanged()
         mooseError("Scaling factors other than unity are not yet supported");
 
       for (const auto j : var_dof_indices)
-        _connectivity.push_back(_solution->map_global_to_local_index(j));
+        _connectivity.push_back(petsc_solution->map_global_to_local_index(j));
     }
     nelem++;
   }
@@ -109,16 +110,26 @@ NEML2Residual::meshChanged()
   _solution_size = torch::max(_connectivity_tensor).cpu().item<int64_t>();
 }
 
+#include <gperftools/profiler.h>
+
 void
 NEML2Residual::execute()
 {
+  if (_t_step == 2)
+    ProfilerStart("output.prof");
+
+  const auto petsc_solution = dynamic_cast<const PetscVector<Real> *>(_solution);
+  // check if the solution vector is of a supported type
+  if (!petsc_solution)
+    mooseError("Only solution vectors of type PetscVector are currently supported");
+
   // grab solution vector (pinky promise not to write to it!)
-  _solution_tensor = at::from_blob(const_cast<Real *>(_solution->get_array_read()),
+  _solution_tensor = at::from_blob(const_cast<Real *>(petsc_solution->get_array_read()),
                                    {static_cast<int64_t>(_solution_size)})
                          .to(_app.getLibtorchDevice());
 
   // run NEML2 stuff
-  _residual_tensor = torch::zeros_like(_solution_tensor); // <- dummy
+  _residual_tensor = torch::zeros_like(_solution_tensor, _app.getLibtorchDevice()); // <- dummy
 
   // copy back residual
   torch::Tensor moose_residual_tensor =
@@ -128,8 +139,10 @@ NEML2Residual::execute()
   moose_residual_tensor += _residual_tensor.cpu();
 
   // close solution and residual vector access
-  const_cast<PetscVector<Real> *>(_solution)->restore_array();
+  const_cast<PetscVector<Real> *>(petsc_solution)->restore_array();
   _residual->restore_array();
+
+  std::cout << "DONE " << _solution_size << '\n';
 }
 
 #endif

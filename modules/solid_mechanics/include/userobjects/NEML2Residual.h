@@ -53,7 +53,8 @@ protected:
   at::Tensor _connectivity_tensor;
 
   /// Solution vector
-  const PetscVector<Real> * const _solution;
+  const NumericVector<Number> * const & _solution;
+
   at::Tensor _solution_tensor;
   int64_t _solution_size;
 
