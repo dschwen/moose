@@ -1,0 +1,12 @@
+[Tests]
+design = 'HANGING_NODES.md'
+issues = ''
+
+  [./explicit_periodic_mass_ptmp]
+    type = 'RunApp'
+    input = 'explicit_periodic_mass.i'
+    requirement = 'Explicit lumped mass uses P^T M P reduction when constraints exist (periodic).'
+    design = 'HANGING_NODES.md'
+  [../]
+[]
+

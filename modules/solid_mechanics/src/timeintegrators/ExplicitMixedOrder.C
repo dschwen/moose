@@ -20,6 +20,9 @@
 #include "TimeStepper.h"
 #include "TransientBase.h"
 
+// Work-conserving hanging-node support
+#include "ConstrainedSubspace.h"
+
 // libMesh includes
 #include "TransientBase.h"
 #include "libmesh/id_types.h"
@@ -124,16 +127,42 @@ ExplicitMixedOrder::solve()
   // Compute the mass matrix
   if (!_constant_mass || _t_step == 1)
   {
-    // We only want to compute "inverted" lumped mass matrix once.
-    _fe_problem.computeJacobianTag(
-        *_nonlinear_implicit_system->current_local_solution, mass_matrix, mass_tag);
+    // Build lumped mass on full space, then reduce to masters if constraints exist
+    auto & dof_map = _nonlinear_implicit_system->get_dof_map();
+    const bool have_constraints =
+        (dof_map.constraint_rows_begin() != dof_map.constraint_rows_end());
 
-    // Calculating the lumped mass matrix for use in residual calculation
-    mass_matrix.vector_mult(*_mass_matrix_diag_inverted, *_ones);
+    if (!have_constraints)
+    {
+      _fe_problem.computeJacobianTag(
+          *_nonlinear_implicit_system->current_local_solution, mass_matrix, mass_tag);
 
-    // "Invert" the diagonal mass matrix
-    _mass_matrix_diag_inverted->reciprocal();
-    _mass_matrix_diag_inverted->close();
+      // Lump (row-sum) and invert
+      mass_matrix.vector_mult(*_mass_matrix_diag_inverted, *_ones);
+      _mass_matrix_diag_inverted->reciprocal();
+      _mass_matrix_diag_inverted->close();
+    }
+    else
+    {
+      // Assemble TIME tag without applying element constraints
+      _fe_problem.computeJacobianTagUnconstrained(
+          *_nonlinear_implicit_system->current_local_solution, mass_matrix, mass_tag);
+
+      // Lump on full space
+      NumericVector<Number> & m_full = _nl->getVector("mass_lumped_full");
+      mass_matrix.vector_mult(m_full, *_ones);
+      m_full.close();
+
+      // Reduce diagonal via P^T M P to the master space
+      ConstrainedSubspace cs;
+      cs.rebuild(dof_map);
+      cs.reduce_lumped_mass(m_full, *_mass_matrix_diag_inverted);
+      _mass_matrix_diag_inverted->close();
+
+      // Invert master diagonal
+      _mass_matrix_diag_inverted->reciprocal();
+      _mass_matrix_diag_inverted->close();
+    }
   }
 
   // Set time to the time at which to evaluate the residual
@@ -155,6 +184,11 @@ ExplicitMixedOrder::solve()
   // Update the solution
   *_nonlinear_implicit_system->solution = _nl->solutionOld();
   *_nonlinear_implicit_system->solution += *_solution_update;
+
+  // Enforce constraints to prolong updated masters into full solution
+  auto & dof_map2 = _nonlinear_implicit_system->get_dof_map();
+  dof_map2.enforce_constraints_exactly(*_nonlinear_implicit_system,
+                                       _nonlinear_implicit_system->solution.get());
 
   _nonlinear_implicit_system->update();
 

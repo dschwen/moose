@@ -1462,6 +1462,14 @@ public:
                                   TagID tag);
 
   /**
+   * Compute Jacobian for a given tag while skipping element-matrix constraint application.
+   * Useful for building unconstrained TIME matrices for work-conserving explicit schemes.
+   */
+  virtual void computeJacobianTagUnconstrained(const NumericVector<libMesh::Number> & soln,
+                                               libMesh::SparseMatrix<libMesh::Number> & jacobian,
+                                               TagID tag);
+
+  /**
    * Form a Jacobian matrix for multiple tags. It should not be called directly by users.
    */
   virtual void computeJacobianInternal(const NumericVector<libMesh::Number> & soln,

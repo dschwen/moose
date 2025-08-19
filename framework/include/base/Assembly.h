@@ -212,6 +212,15 @@ public:
   }
 
   /**
+   * Control whether element matrices are constrained during assembly.
+   * Default is true. When set to false, Assembly will skip calls to
+   * DofMap::constrain_element_matrix and will route AD-based caching to
+   * cacheJacobianWithoutConstraints.
+   */
+  void setApplyConstraintsToMatrices(bool apply) { _apply_constraints_to_matrices = apply; }
+  bool getApplyConstraintsToMatrices() const { return _apply_constraints_to_matrices; }
+
+  /**
    * Returns the reference to the current quadrature being used
    * @return A _reference_ to the pointer.  Make sure to store this as a reference!
    */
@@ -2875,6 +2884,9 @@ protected:
 
   /// A pointer to the static condensation class. Null if not present
   libMesh::StaticCondensation * _sc;
+
+  // Whether to apply constraints when assembling element matrices
+  bool _apply_constraints_to_matrices = true;
 };
 
 template <typename OutputType>
@@ -3094,6 +3106,13 @@ Assembly::cacheJacobian(const Residuals & residuals,
 {
   if (!computingJacobian() || matrix_tags.empty())
     return;
+
+  if (!_apply_constraints_to_matrices)
+  {
+    cacheJacobianWithoutConstraints(
+        residuals, input_row_indices, scaling_factor, LocalDataKey{}, matrix_tags);
+    return;
+  }
 
   if (residuals.size() == 1)
   {

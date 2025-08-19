@@ -3620,7 +3620,8 @@ Assembly::addJacobianBlock(SparseMatrix<Number> & jacobian,
       // If we're computing the jacobian for automatically scaling variables we do not want
       // to constrain the element matrix because it introduces 1s on the diagonal for the
       // constrained dofs
-      if (!_sys.computingScalingJacobian())
+      if (!_sys.computingScalingJacobian() && _apply_constraints_to_matrices)
+      if (_apply_constraints_to_matrices)
         _dof_map.constrain_element_matrix(sub, di, dj, false);
 
       jacobian.add_matrix(sub, di, dj);
@@ -3673,7 +3674,8 @@ Assembly::cacheJacobianBlock(DenseMatrix<Number> & jac_block,
       // If we're computing the jacobian for automatically scaling variables we do not want
       // to constrain the element matrix because it introduces 1s on the diagonal for the
       // constrained dofs
-      if (!_sys.computingScalingJacobian())
+      if (!_sys.computingScalingJacobian() && _apply_constraints_to_matrices)
+      if (_apply_constraints_to_matrices)
         _dof_map.constrain_element_matrix(sub, di, dj, false);
 
       for (MooseIndex(di) i = 0; i < di.size(); i++)
@@ -3731,7 +3733,8 @@ Assembly::cacheJacobianBlockNonzero(DenseMatrix<Number> & jac_block,
       if (scaling_factor[i] != 1.0)
         sub *= scaling_factor[i];
 
-      _dof_map.constrain_element_matrix(sub, di, dj, false);
+      if (_apply_constraints_to_matrices)
+        _dof_map.constrain_element_matrix(sub, di, dj, false);
 
       for (MooseIndex(di) i = 0; i < di.size(); i++)
         for (MooseIndex(dj) j = 0; j < dj.size(); j++)
@@ -3766,7 +3769,7 @@ Assembly::cacheJacobianBlock(DenseMatrix<Number> & jac_block,
     // If we're computing the jacobian for automatically scaling variables we do not want to
     // constrain the element matrix because it introduces 1s on the diagonal for the constrained
     // dofs
-    if (!_sys.computingScalingJacobian())
+    if (!_sys.computingScalingJacobian() && _apply_constraints_to_matrices)
       _dof_map.constrain_element_matrix(jac_block, di, dj, false);
 
     if (scaling_factor != 1.0)
@@ -4291,7 +4294,8 @@ Assembly::addJacobianBlock(SparseMatrix<Number> & jacobian,
   // constrain the element matrix because it introduces 1s on the diagonal for the constrained
   // dofs
   if (!_sys.computingScalingJacobian())
-    dof_map.constrain_element_matrix(sub, di, dj, false);
+    if (_apply_constraints_to_matrices)
+      dof_map.constrain_element_matrix(sub, di, dj, false);
 
   if (scaling_factor[i] != 1.0)
     sub *= scaling_factor[i];
@@ -4349,7 +4353,8 @@ Assembly::addJacobianBlockNonlocal(SparseMatrix<Number> & jacobian,
   // constrain the element matrix because it introduces 1s on the diagonal for the constrained
   // dofs
   if (!_sys.computingScalingJacobian())
-    dof_map.constrain_element_matrix(sub, di, dj, false);
+    if (_apply_constraints_to_matrices)
+      dof_map.constrain_element_matrix(sub, di, dj, false);
 
   if (scaling_factor[i] != 1.0)
     sub *= scaling_factor[i];
@@ -4424,9 +4429,12 @@ Assembly::addJacobianNeighbor(SparseMatrix<Number> & jacobian,
   // dofs
   if (!_sys.computingScalingJacobian())
   {
-    dof_map.constrain_element_matrix(suben, dc, dn, false);
-    dof_map.constrain_element_matrix(subne, dn, dc, false);
-    dof_map.constrain_element_matrix(subnn, dn, dn, false);
+    if (_apply_constraints_to_matrices)
+    {
+      dof_map.constrain_element_matrix(suben, dc, dn, false);
+      dof_map.constrain_element_matrix(subne, dn, dc, false);
+      dof_map.constrain_element_matrix(subnn, dn, dn, false);
+    }
   }
 
   if (scaling_factor[i] != 1.0)

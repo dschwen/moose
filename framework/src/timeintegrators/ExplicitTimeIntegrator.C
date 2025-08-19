@@ -18,6 +18,7 @@
 #include "FVElementalKernel.h"
 #include "FVFluxKernel.h"
 #include "NodalKernelBase.h"
+#include "ConstrainedSubspace.h"
 
 // libMesh includes
 #include "libmesh/enum_convergence_flags.h"
@@ -60,6 +61,9 @@ ExplicitTimeIntegrator::ExplicitTimeIntegrator(const InputParameters & parameter
 
   if (_solve_type == LUMPED || _solve_type == LUMP_PRECONDITIONED)
     _ones = addVector("ones", true, PARALLEL);
+
+  if (_solve_type == LUMPED)
+    addVector("mass_lumped_full", true, GHOSTED);
   // don't set any of the common SNES-related petsc options to prevent unused option warnings
   Moose::PetscSupport::dontAddCommonSNESOptions(_fe_problem);
 }
@@ -189,16 +193,36 @@ ExplicitTimeIntegrator::performExplicitSolve(SparseMatrix<Number> & mass_matrix)
     }
     case LUMPED:
     {
-      // Computes the sum of each row (lumping)
-      // Note: This is actually how PETSc does it
-      // It's not "perfectly optimal" - but it will be fast (and universal)
-      mass_matrix.vector_mult(*_mass_matrix_diag_inverted, *_ones);
+      // If no constraints exist, use the existing fast path
+      const auto & dof_map = _nonlinear_implicit_system->get_dof_map();
+      bool have_constraints = (dof_map.constraint_rows_begin() != dof_map.constraint_rows_end());
 
-      // "Invert" the diagonal mass matrix
-      _mass_matrix_diag_inverted->reciprocal();
+      if (!have_constraints)
+      {
+        mass_matrix.vector_mult(*_mass_matrix_diag_inverted, *_ones);
+        _mass_matrix_diag_inverted->reciprocal();
+        _solution_update->pointwise_mult(*_mass_matrix_diag_inverted, *_explicit_residual);
+      }
+      else
+      {
+        // Build unconstrained TIME matrix and lump on the full space
+        _fe_problem.computeJacobianTagUnconstrained(
+            *_nonlinear_implicit_system->current_local_solution, mass_matrix, _Ke_time_tag);
 
-      // Multiply the inversion by the RHS
-      _solution_update->pointwise_mult(*_mass_matrix_diag_inverted, *_explicit_residual);
+        NumericVector<Number> & m_full = _nl->getVector("mass_lumped_full");
+        mass_matrix.vector_mult(m_full, *_ones);
+        m_full.close();
+
+        // Reduce to masters via P^T M P (diagonal-only)
+        ConstrainedSubspace cs;
+        cs.rebuild(dof_map);
+        cs.reduce_lumped_mass(m_full, *_mass_matrix_diag_inverted);
+        _mass_matrix_diag_inverted->close();
+
+        // Invert and apply to RHS living on masters
+        _mass_matrix_diag_inverted->reciprocal();
+        _solution_update->pointwise_mult(*_mass_matrix_diag_inverted, *_explicit_residual);
+      }
 
       // Check for convergence by seeing if there is a nan or inf
       auto sum = _solution_update->sum();

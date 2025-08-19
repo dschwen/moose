@@ -7266,6 +7266,29 @@ FEProblemBase::computeJacobianTag(const NumericVector<Number> & soln,
 }
 
 void
+FEProblemBase::computeJacobianTagUnconstrained(const NumericVector<Number> & soln,
+                                               SparseMatrix<Number> & jacobian,
+                                               TagID tag)
+{
+  // Temporarily disable matrix constraint application in all assemblies for current NL system
+  const auto sys_num = _current_nl_sys->number();
+  std::vector<bool> old_flags;
+  old_flags.reserve(_assembly.size());
+  for (THREAD_ID tid = 0; tid < _assembly.size(); ++tid)
+  {
+    auto & assem = *(_assembly[tid][sys_num]);
+    old_flags.push_back(assem.getApplyConstraintsToMatrices());
+    assem.setApplyConstraintsToMatrices(false);
+  }
+
+  computeJacobianTag(soln, jacobian, tag);
+
+  // Restore flags
+  for (THREAD_ID tid = 0; tid < _assembly.size(); ++tid)
+    _assembly[tid][sys_num]->setApplyConstraintsToMatrices(old_flags[tid]);
+}
+
+void
 FEProblemBase::computeJacobian(const NumericVector<Number> & soln,
                                SparseMatrix<Number> & jacobian,
                                const unsigned int nl_sys_num)
