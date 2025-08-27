@@ -36,6 +36,7 @@ ifeq ($(ALL_MODULES),yes)
         REACTOR                     := yes
         RICHARDS                    := yes
         SCALAR_TRANSPORT            := yes
+        SHALLOW_WATER               := yes
         SOLID_MECHANICS             := yes
         SOLID_PROPERTIES            := yes
         STOCHASTIC_TOOLS            := yes
@@ -127,8 +128,15 @@ ifeq ($(SCALAR_TRANSPORT),yes)
         MISC                        := yes
 endif
 
+ifeq ($(SHALLOW_WATER),yes)
+        THERMAL_HYDRAULICS          := yes
+        FLUID_PROPERTIES            := yes
+        RDG                         := yes
+endif
+
+
 # The complete list of all moose modules
-MODULE_NAMES := "chemical_reactions contact electromagnetics external_petsc_solver fluid_properties fsi functional_expansion_tools geochemistry heat_transfer level_set misc navier_stokes optimization peridynamics phase_field porous_flow ray_tracing rdg reactor richards scalar_transport solid_properties stochastic_tools solid_mechanics thermal_hydraulics xfem"
+MODULE_NAMES := "chemical_reactions contact electromagnetics external_petsc_solver fluid_properties fsi functional_expansion_tools geochemistry heat_transfer level_set misc navier_stokes optimization peridynamics phase_field porous_flow ray_tracing rdg reactor richards scalar_transport shallow_water solid_properties stochastic_tools solid_mechanics thermal_hydraulics xfem"
 
 ################################################################################
 ########################## MODULE REGISTRATION #################################
@@ -235,6 +243,14 @@ ifeq ($(HEAT_TRANSFER),yes)
   APPLICATION_NAME   := heat_transfer
   DEPEND_MODULES     := ray_tracing
   SUFFIX             := ht
+  include $(FRAMEWORK_DIR)/app.mk
+endif
+
+ifeq ($(SHALLOW_WATER),yes)
+  APPLICATION_DIR    := $(MOOSE_DIR)/modules/shallow_water
+  APPLICATION_NAME   := shallow_water
+  DEPEND_MODULES     := fluid_properties rdg thermal_hydraulics
+  SUFFIX             := sw
   include $(FRAMEWORK_DIR)/app.mk
 endif
 
