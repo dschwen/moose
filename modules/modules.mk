@@ -47,6 +47,12 @@ endif
 
 # Modules that follow have one or more dependencies
 # on the modules defined above them.
+ifeq ($(SHALLOW_WATER),yes)
+        THERMAL_HYDRAULICS          := yes
+        FLUID_PROPERTIES            := yes
+        RDG                         := yes
+endif
+
 ifeq ($(THERMAL_HYDRAULICS),yes)
         NAVIER_STOKES               := yes
         FLUID_PROPERTIES            := yes
@@ -126,12 +132,6 @@ ifeq ($(SCALAR_TRANSPORT),yes)
         RAY_TRACING                 := yes
         SOLID_PROPERTIES            := yes
         MISC                        := yes
-endif
-
-ifeq ($(SHALLOW_WATER),yes)
-        THERMAL_HYDRAULICS          := yes
-        FLUID_PROPERTIES            := yes
-        RDG                         := yes
 endif
 
 

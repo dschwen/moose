@@ -26,4 +26,3 @@ SWENumericalFluxBase::SWENumericalFluxBase(const InputParameters & parameters)
     _h_eps(getParam<Real>("dry_depth"))
 {
 }
-

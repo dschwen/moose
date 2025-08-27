@@ -31,6 +31,5 @@ SWEBathymetry::~SWEBathymetry() {}
 void
 SWEBathymetry::computeQpProperties()
 {
-  _b[_qp] = _bed.value(_q_point[_qp]);
+  _b[_qp] = _bed.value(_t, _q_point[_qp]);
 }
-

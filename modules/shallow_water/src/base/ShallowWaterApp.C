@@ -8,6 +8,9 @@
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "ShallowWaterApp.h"
+#include "ThermalHydraulicsApp.h"
+#include "RdgApp.h"
+#include "FluidPropertiesApp.h"
 #include "Moose.h"
 #include "AppFactory.h"
 #include "MooseSyntax.h"
@@ -32,10 +35,14 @@ ShallowWaterApp::ShallowWaterApp(const InputParameters & parameters) : MooseApp(
 ShallowWaterApp::~ShallowWaterApp() {}
 
 void
-ShallowWaterApp::registerAll(Factory & f, ActionFactory & af, Syntax & /*s*/)
+ShallowWaterApp::registerAll(Factory & f, ActionFactory & af, Syntax & s)
 {
   Registry::registerObjectsTo(f, {"ShallowWaterApp"});
   Registry::registerActionsTo(af, {"ShallowWaterApp"});
+
+  ThermalHydraulicsApp::registerAll(f, af, s);
+  FluidPropertiesApp::registerAll(f, af, s);
+  RdgApp::registerAll(f, af, s);
 }
 
 void
@@ -54,4 +61,3 @@ ShallowWaterApp__registerApps()
 {
   ShallowWaterApp::registerApps();
 }
-

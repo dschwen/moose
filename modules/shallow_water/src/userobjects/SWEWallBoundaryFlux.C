@@ -62,4 +62,3 @@ SWEWallBoundaryFlux::calcJacobian(unsigned int /*iside*/,
   J(1, 0) = _g * h * nx;
   J(2, 0) = _g * h * ny;
 }
-

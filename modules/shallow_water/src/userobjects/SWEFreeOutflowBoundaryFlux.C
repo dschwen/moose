@@ -49,12 +49,8 @@ SWEFreeOutflowBoundaryFlux::calcFlux(unsigned int /*iside*/,
 }
 
 void
-SWEFreeOutflowBoundaryFlux::fill_dF(const std::vector<Real> & U,
-                                    Real nx,
-                                    Real ny,
-                                    Real g,
-                                    Real h_eps,
-                                    DenseMatrix<Real> & J) const
+SWEFreeOutflowBoundaryFlux::fill_dF(
+    const std::vector<Real> & U, Real nx, Real ny, Real g, Real h_eps, DenseMatrix<Real> & J) const
 {
   const Real h = std::max(U[0], 0.0);
   const Real hu = (h > h_eps) ? U[1] : 0.0;
@@ -104,4 +100,3 @@ SWEFreeOutflowBoundaryFlux::calcJacobian(unsigned int /*iside*/,
   mooseAssert(U.size() >= 3, "Expected at least 3 conservative variables");
   fill_dF(U, n(0), n(1), _g, _h_eps, jac1);
 }
-

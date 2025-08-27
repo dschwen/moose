@@ -62,7 +62,8 @@ SWEInflowBoundaryFlux::calcFlux(unsigned int /*iside*/,
   const Real cR = std::sqrt(_g * std::max(hR, 0.0));
   const Real smax = std::max(std::fabs(unL) + cL, std::fabs(unR) + cR);
 
-  auto Fn = [&](Real h, Real hu, Real hv, Real un) {
+  auto Fn = [&](Real h, Real hu, Real hv, Real un)
+  {
     std::vector<Real> f(3, 0.0);
     f[0] = h * un;
     f[1] = hu * un + 0.5 * _g * h * h * nx;
@@ -75,8 +76,9 @@ SWEInflowBoundaryFlux::calcFlux(unsigned int /*iside*/,
 
   flux.resize(3);
   for (unsigned int i = 0; i < 3; ++i)
-    flux[i] = 0.5 * (FL[i] + FR[i]) - 0.5 * smax * ((i == 0 ? UR[0] : (i == 1 ? UR[1] : UR[2])) -
-                                                    (i == 0 ? UL[0] : (i == 1 ? UL[1] : UL[2])));
+    flux[i] = 0.5 * (FL[i] + FR[i]) - 0.5 * smax *
+                                          ((i == 0 ? UR[0] : (i == 1 ? UR[1] : UR[2])) -
+                                           (i == 0 ? UL[0] : (i == 1 ? UL[1] : UL[2])));
 }
 
 void
@@ -130,4 +132,3 @@ SWEInflowBoundaryFlux::calcJacobian(unsigned int /*iside*/,
   for (unsigned int i = 0; i < 3; ++i)
     jac1(i, i) += 0.5 * smax;
 }
-

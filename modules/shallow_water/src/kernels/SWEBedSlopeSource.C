@@ -40,7 +40,7 @@ SWEBedSlopeSource::~SWEBedSlopeSource() {}
 Real
 SWEBedSlopeSource::computeQpResidual()
 {
-  const auto gradb = _bed.gradient(_q_point[_qp]);
+  const auto gradb = _bed.gradient(_t, _q_point[_qp]);
   const Real db = (_dir == 0 ? gradb(0) : gradb(1));
   const Real S = -_g * _h[_qp] * db;
   return S * _test[_i][_qp];
@@ -58,10 +58,9 @@ SWEBedSlopeSource::computeQpOffDiagJacobian(unsigned int jvar)
 {
   if (jvar == _h_var)
   {
-    const auto gradb = _bed.gradient(_q_point[_qp]);
+    const auto gradb = _bed.gradient(_t, _q_point[_qp]);
     const Real db = (_dir == 0 ? gradb(0) : gradb(1));
     return (-_g * db) * _phi[_j][_qp] * _test[_i][_qp];
   }
   return 0.0;
 }
-

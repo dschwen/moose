@@ -97,7 +97,8 @@ SWENumericalFluxHLLC::calcFlux(unsigned int /*iside*/,
   const Real hRstar = (SM <= SR) ? hR * (SR - unR) / (SR - SM) : hR;
 
   // Physical fluxes
-  auto Fn = [&](Real h, Real hu, Real hv, Real un) {
+  auto Fn = [&](Real h, Real hu, Real hv, Real un)
+  {
     std::vector<Real> f(3, 0.0);
     f[0] = h * un;
     f[1] = hu * un + 0.5 * _g * h * h * nx;
@@ -156,7 +157,8 @@ SWENumericalFluxHLLC::calcJacobian(unsigned int /*iside*/,
   const Real nx = n(0);
   const Real ny = n(1);
 
-  auto fill_dF = [&](const std::vector<Real> & U, DenseMatrix<Real> & J) {
+  auto fill_dF = [&](const std::vector<Real> & U, DenseMatrix<Real> & J)
+  {
     const Real h = std::max(U[0], 0.0);
     const Real hu = (h > _h_eps) ? U[1] : 0.0;
     const Real hv = (h > _h_eps) ? U[2] : 0.0;
@@ -201,4 +203,3 @@ SWENumericalFluxHLLC::calcJacobian(unsigned int /*iside*/,
     jac2(i, i) += 0.5 * smax;
   }
 }
-

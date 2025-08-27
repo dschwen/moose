@@ -79,7 +79,8 @@ SWENumericalFluxHLL::calcFlux(unsigned int /*iside*/,
   const Real smax = std::max(std::fabs(unL) + cL, std::fabs(unR) + cR);
 
   // physical flux projected on n
-  auto Fn = [&](Real h, Real hu, Real hv, Real un) {
+  auto Fn = [&](Real h, Real hu, Real hv, Real un)
+  {
     std::vector<Real> f(3, 0.0);
     f[0] = h * un;
     f[1] = hu * un + 0.5 * _g * h * h * nx;
@@ -92,17 +93,18 @@ SWENumericalFluxHLL::calcFlux(unsigned int /*iside*/,
 
   flux.resize(3);
   for (unsigned int i = 0; i < 3; ++i)
-    flux[i] = 0.5 * (FL[i] + FR[i]) - 0.5 * smax * ((i == 0 ? hR : (i == 1 ? huR : hvR)) -
-                                                    (i == 0 ? hL : (i == 1 ? huL : hvL)));
+    flux[i] =
+        0.5 * (FL[i] + FR[i]) -
+        0.5 * smax * ((i == 0 ? hR : (i == 1 ? huR : hvR)) - (i == 0 ? hL : (i == 1 ? huL : hvL)));
 }
 
 void
 SWENumericalFluxHLL::calcJacobian(unsigned int /*iside*/,
                                   dof_id_type /*ielem*/,
                                   dof_id_type /*ineig*/,
-                                  const std::vector<Real> & libmesh_dbg_var(uvec1),
-                                  const std::vector<Real> & libmesh_dbg_var(uvec2),
-                                  const RealVectorValue & /*n*/,
+                                  const std::vector<Real> & uvec1,
+                                  const std::vector<Real> & uvec2,
+                                  const RealVectorValue & n,
                                   DenseMatrix<Real> & jac1,
                                   DenseMatrix<Real> & jac2) const
 {
@@ -120,7 +122,9 @@ SWENumericalFluxHLL::calcJacobian(unsigned int /*iside*/,
   jac2.zero();
 
   // Build dF/dU for each side assuming U=[h,hu,hv]
-  auto fill_dF = [&](const std::vector<Real> & U, const Real nx, const Real ny, DenseMatrix<Real> & J) {
+  auto fill_dF =
+      [&](const std::vector<Real> & U, const Real nx, const Real ny, DenseMatrix<Real> & J)
+  {
     const Real h = std::max(U[0], 0.0);
     const Real hu = (h > _h_eps) ? U[1] : 0.0;
     const Real hv = (h > _h_eps) ? U[2] : 0.0;
