@@ -13,115 +13,107 @@
 []
 
 [Variables]
-  [./h]
-  [../]
-  [./hu]
-  [../]
-  [./hv]
-  [../]
+  [h]
+  []
+  [hu]
+  []
+  [hv]
+  []
 []
 
 [Functions]
-  [./flat]
+  [flat]
     type = ConstantFunction
     value = 0.0
-  [../]
-  [./hL]
+  []
+  [hL]
     type = ConstantFunction
     value = 1.0
-  [../]
-  [./hR]
+  []
+  [hR]
     type = ConstantFunction
     value = 0.1
-  [../]
-  [./h_init]
+  []
+  [h_init]
     type = ParsedFunction
-    value = "(x<0.5) ? hL(x,y,t) : hR(x,y,t)"
+    value = "if(x<0.5, hL, hR)"
     vars = 'hL hR'
     vals = 'hL hR'
-  [../]
+  []
 []
 
 [UserObjects]
-  [./flux]
+  [flux]
     type = SWENumericalFluxHLLC
     gravity = 9.81
     dry_depth = 1e-6
-  [../]
-  [./outlet]
+  []
+  [outlet]
     type = SWEFreeOutflowBoundaryFlux
-  [../]
-  [./recon_uo]
-    type = SlopeReconstructionMultiD
-  [../]
-  [./limiter]
-    type = SlopeLimitingBarthJespersen
-    slope_reconstruction = recon_uo
-  [../]
+  []
 []
 
 [ICs]
-  [./h0]
+  [h0]
     type = FunctionIC
     variable = h
     function = h_init
-  [../]
-  [./hu0]
+  []
+  [hu0]
     type = ConstantIC
     variable = hu
     value = 0.0
-  [../]
-  [./hv0]
+  []
+  [hv0]
     type = ConstantIC
     variable = hv
     value = 0.0
-  [../]
+  []
 []
 
 [Materials]
-  [./recon]
+  [recon]
     type = SWERDGReconstruction
     h = h
     hu = hu
     hv = hv
-    slope_limiting = limiter
-  [../]
-  [./bath]
+  []
+  [bath]
     type = SWEBathymetry
     bed = flat
-  [../]
+  []
 []
 
 [DGKernels]
-  [./flux_h]
+  [flux_h]
     type = SWEFVFluxDGKernel
     variable = h
     h = h
     hu = hu
     hv = hv
     numerical_flux = flux
-  [../]
-  [./flux_hu]
+  []
+  [flux_hu]
     type = SWEFVFluxDGKernel
     variable = hu
     h = h
     hu = hu
     hv = hv
     numerical_flux = flux
-  [../]
-  [./flux_hv]
+  []
+  [flux_hv]
     type = SWEFVFluxDGKernel
     variable = hv
     h = h
     hu = hu
     hv = hv
     numerical_flux = flux
-  [../]
+  []
 []
 
 [BCs]
   active = 'bch bchu bchv'
-  [./bch]
+  [bch]
     type = SWEFluxBC
     variable = h
     boundary = 'left right'
@@ -129,8 +121,8 @@
     hu = hu
     hv = hv
     boundary_flux = outlet
-  [../]
-  [./bchu]
+  []
+  [bchu]
     type = SWEFluxBC
     variable = hu
     boundary = 'left right'
@@ -138,8 +130,8 @@
     hu = hu
     hv = hv
     boundary_flux = outlet
-  [../]
-  [./bchv]
+  []
+  [bchv]
     type = SWEFluxBC
     variable = hv
     boundary = 'left right'
@@ -147,22 +139,22 @@
     hu = hu
     hv = hv
     boundary_flux = outlet
-  [../]
+  []
 []
 
 [Kernels]
-  [./th]
+  [th]
     type = TimeDerivative
     variable = h
-  [../]
-  [./thu]
+  []
+  [thu]
     type = TimeDerivative
     variable = hu
-  [../]
-  [./thv]
+  []
+  [thv]
     type = TimeDerivative
     variable = hv
-  [../]
+  []
 []
 
 [Executioner]
@@ -173,5 +165,5 @@
 
 [Outputs]
   exodus = true
+  print_linear_residuals = false
 []
-

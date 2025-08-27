@@ -16,122 +16,114 @@
 []
 
 [Variables]
-  [./h]
-  [../]
-  [./hu]
-  [../]
-  [./hv]
-  [../]
+  [h]
+  []
+  [hu]
+  []
+  [hv]
+  []
 []
 
 [UserObjects]
-  [./flux]
+  [flux]
     type = SWENumericalFluxHLL
     gravity = 9.81
     dry_depth = 1e-6
-  [../]
-  [./recon_uo]
-    type = SlopeReconstructionMultiD
-  [../]
-  [./limiter]
-    type = SlopeLimitingBarthJespersen
-    slope_reconstruction = recon_uo
-  [../]
+  []
 []
 
 [ICs]
-  [./h0]
+  [h0]
     type = ConstantIC
     variable = h
     value = 1.0
-  [../]
-  [./hu0]
+  []
+  [hu0]
     type = ConstantIC
     variable = hu
     value = 0.0
-  [../]
-  [./hv0]
+  []
+  [hv0]
     type = ConstantIC
     variable = hv
     value = 0.0
-  [../]
+  []
 []
 
 [Materials]
-  [./recon]
+  [recon]
     type = SWERDGReconstruction
     h = h
     hu = hu
     hv = hv
-    slope_limiting = limiter
-  [../]
-  [./bath]
+  []
+  [bath]
     type = SWEBathymetry
     bed = flat
-  [../]
+  []
 []
 
 [Functions]
-  [./flat]
+  [flat]
     type = ConstantFunction
     value = 0.0
-  [../]
+  []
 []
 
 [DGKernels]
-  [./flux_h]
+  [flux_h]
     type = SWEFVFluxDGKernel
     variable = h
     h = h
     hu = hu
     hv = hv
     numerical_flux = flux
-  [../]
-  [./flux_hu]
+  []
+  [flux_hu]
     type = SWEFVFluxDGKernel
     variable = hu
     h = h
     hu = hu
     hv = hv
     numerical_flux = flux
-  [../]
-  [./flux_hv]
+  []
+  [flux_hv]
     type = SWEFVFluxDGKernel
     variable = hv
     h = h
     hu = hu
     hv = hv
     numerical_flux = flux
-  [../]
+  []
 []
 
 [Kernels]
-  [./th]
+  [th]
     type = TimeDerivative
     variable = h
-  [../]
-  [./thu]
+  []
+  [thu]
     type = TimeDerivative
     variable = hu
-  [../]
-  [./thv]
+  []
+  [thv]
     type = TimeDerivative
     variable = hv
-  [../]
-  [./sx]
+  []
+  [sx]
     type = SWEBedSlopeSource
     variable = hu
     h = h
     direction = x
     bed = flat
-  [../]
-  [./sy]
+  []
+  [sy]
     type = SWEBedSlopeSource
     variable = hv
     h = h
     direction = y
     bed = flat
-  [../]
+  []
 []
 
 [Executioner]

@@ -28,7 +28,7 @@ ShallowWaterApp::ShallowWaterApp(const InputParameters & parameters) : MooseApp(
   ShallowWaterApp::registerAll(_factory, _action_factory, _syntax);
 }
 
-// registerKnownLabel("ShallowWaterApp");
+registerKnownLabel("ShallowWaterApp");
 
 ShallowWaterApp::~ShallowWaterApp() {}
 

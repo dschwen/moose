@@ -47,12 +47,6 @@ endif
 
 # Modules that follow have one or more dependencies
 # on the modules defined above them.
-ifeq ($(SHALLOW_WATER),yes)
-        THERMAL_HYDRAULICS          := yes
-        FLUID_PROPERTIES            := yes
-        RDG                         := yes
-endif
-
 ifeq ($(THERMAL_HYDRAULICS),yes)
         NAVIER_STOKES               := yes
         FLUID_PROPERTIES            := yes
@@ -246,14 +240,6 @@ ifeq ($(HEAT_TRANSFER),yes)
   include $(FRAMEWORK_DIR)/app.mk
 endif
 
-ifeq ($(SHALLOW_WATER),yes)
-  APPLICATION_DIR    := $(MOOSE_DIR)/modules/shallow_water
-  APPLICATION_NAME   := shallow_water
-  DEPEND_MODULES     := fluid_properties rdg thermal_hydraulics
-  SUFFIX             := sw
-  include $(FRAMEWORK_DIR)/app.mk
-endif
-
 ifeq ($(SOLID_PROPERTIES),yes)
   APPLICATION_DIR    := $(MOOSE_DIR)/modules/solid_properties
   APPLICATION_NAME   := solid_properties
@@ -349,6 +335,13 @@ ifeq ($(SCALAR_TRANSPORT),yes)
   APPLICATION_NAME   := scalar_transport
   DEPEND_MODULES     := chemical_reactions navier_stokes thermal_hydraulics fluid_properties heat_transfer rdg ray_tracing solid_properties misc
   SUFFIX             := st
+  include $(FRAMEWORK_DIR)/app.mk
+endif
+
+ifeq ($(SHALLOW_WATER),yes)
+  APPLICATION_DIR    := $(MOOSE_DIR)/modules/shallow_water
+  APPLICATION_NAME   := shallow_water
+  SUFFIX             := sw
   include $(FRAMEWORK_DIR)/app.mk
 endif
 
