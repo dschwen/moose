@@ -13,11 +13,11 @@
 []
 
 [Variables]
-  [h]
+  [h]   # Water depth (m)
   []
-  [hu]
+  [hu]  # Depth-integrated x-momentum h*u (m^2/s)
   []
-  [hv]
+  [hv]  # Depth-integrated y-momentum h*v (m^2/s)
   []
 []
 
@@ -81,6 +81,34 @@
   [bath]
     type = SWEBathymetry
     bed = flat
+  []
+[]
+
+# Aux fields for visualization of water level (eta = h + b)
+[AuxVariables]
+  [b_field]
+    family = MONOMIAL
+    order = CONSTANT
+  []
+  [eta]
+    family = MONOMIAL
+    order = CONSTANT
+  []
+[]
+
+[AuxKernels]
+  # Export bathymetry material property 'b' (here zero) to a field
+  [b_out]
+    type = MaterialRealAux
+    variable = b_field
+    property = b
+  []
+  # Compute water surface elevation eta = h + b
+  [eta_aux]
+    type = ParsedAux
+    variable = eta
+    expression = h + b_field
+    coupled_variables = 'h b_field'
   []
 []
 
