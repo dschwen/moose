@@ -34,15 +34,15 @@ protected:
 
   std::map<unsigned int, unsigned int> getIndexMapping() const;
 
-  // element-side conservative values (no reconstruction in stub)
-  const VariableValue & _h_elem;
-  const VariableValue & _hu_elem;
-  const VariableValue & _hv_elem;
+  // element-side face values (from reconstruction material)
+  const MaterialProperty<Real> & _h1;
+  const MaterialProperty<Real> & _hu1;
+  const MaterialProperty<Real> & _hv1;
 
-  // neighbor-side conservative values
-  const VariableValue & _h_neig;
-  const VariableValue & _hu_neig;
-  const VariableValue & _hv_neig;
+  // neighbor-side face values
+  const MaterialProperty<Real> & _h2;
+  const MaterialProperty<Real> & _hu2;
+  const MaterialProperty<Real> & _hv2;
 
   // numerical flux user object
   const InternalSideFluxBase & _numerical_flux;
@@ -54,5 +54,8 @@ protected:
 
   const std::map<unsigned int, unsigned int> _jmap;
   const unsigned int _equation_index;
-};
 
+  // bathymetry (optional but expected for hydrostatic reconstruction)
+  const MaterialProperty<Real> & _b1;
+  const MaterialProperty<Real> & _b2;
+};

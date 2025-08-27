@@ -26,18 +26,20 @@ SWEFVFluxDGKernel::validParams()
 
 SWEFVFluxDGKernel::SWEFVFluxDGKernel(const InputParameters & parameters)
   : DGKernel(parameters),
-    _h_elem(coupledValue("h")),
-    _hu_elem(coupledValue("hu")),
-    _hv_elem(coupledValue("hv")),
-    _h_neig(coupledNeighborValue("h")),
-    _hu_neig(coupledNeighborValue("hu")),
-    _hv_neig(coupledNeighborValue("hv")),
+    _h1(getMaterialProperty<Real>("h")),
+    _hu1(getMaterialProperty<Real>("hu")),
+    _hv1(getMaterialProperty<Real>("hv")),
+    _h2(getNeighborMaterialProperty<Real>("h")),
+    _hu2(getNeighborMaterialProperty<Real>("hu")),
+    _hv2(getNeighborMaterialProperty<Real>("hv")),
     _numerical_flux(getUserObject<InternalSideFluxBase>("numerical_flux")),
     _h_var(coupled("h")),
     _hu_var(coupled("hu")),
     _hv_var(coupled("hv")),
     _jmap(getIndexMapping()),
-    _equation_index(_jmap.at(_var.number()))
+    _equation_index(_jmap.at(_var.number())),
+    _b1(getMaterialProperty<Real>("b")),
+    _b2(getNeighborMaterialProperty<Real>("b"))
 {
 }
 
@@ -46,8 +48,8 @@ SWEFVFluxDGKernel::~SWEFVFluxDGKernel() {}
 Real
 SWEFVFluxDGKernel::computeQpResidual(Moose::DGResidualType type)
 {
-  std::vector<Real> U1 = {_h_elem[_qp], _hu_elem[_qp], _hv_elem[_qp]};
-  std::vector<Real> U2 = {_h_neig[_qp], _hu_neig[_qp], _hv_neig[_qp]};
+  std::vector<Real> U1 = {_h1[_qp], _hu1[_qp], _hv1[_qp], _b1[_qp]};
+  std::vector<Real> U2 = {_h2[_qp], _hu2[_qp], _hv2[_qp], _b2[_qp]};
 
   const auto & flux = _numerical_flux.getFlux(
       _current_side, _current_elem->id(), _neighbor_elem->id(), U1, U2, _normals[_qp]);
@@ -71,8 +73,8 @@ SWEFVFluxDGKernel::computeQpJacobian(Moose::DGJacobianType type)
 Real
 SWEFVFluxDGKernel::computeQpOffDiagJacobian(Moose::DGJacobianType type, unsigned int jvar)
 {
-  std::vector<Real> U1 = {_h_elem[_qp], _hu_elem[_qp], _hv_elem[_qp]};
-  std::vector<Real> U2 = {_h_neig[_qp], _hu_neig[_qp], _hv_neig[_qp]};
+  std::vector<Real> U1 = {_h1[_qp], _hu1[_qp], _hv1[_qp], _b1[_qp]};
+  std::vector<Real> U2 = {_h2[_qp], _hu2[_qp], _hv2[_qp], _b2[_qp]};
 
   const auto & dF_dUL = _numerical_flux.getJacobian(
       Moose::Element, _current_side, _current_elem->id(), _neighbor_elem->id(), U1, U2, _normals[_qp]);
@@ -102,4 +104,3 @@ SWEFVFluxDGKernel::getIndexMapping() const
   jmap.insert(std::make_pair(_hv_var, 2));
   return jmap;
 }
-

@@ -50,6 +50,26 @@
   [../]
 []
 
+[Materials]
+  [./recon]
+    type = SWERDGReconstruction
+    h = h
+    hu = hu
+    hv = hv
+  [../]
+  [./bath]
+    type = SWEBathymetry
+    bed = flat
+  [../]
+[]
+
+[Functions]
+  [./flat]
+    type = ConstantFunction
+    value = 0.0
+  [../]
+[]
+
 [DGKernels]
   [./flux_h]
     type = SWEFVFluxDGKernel
@@ -90,6 +110,20 @@
     type = TimeDerivative
     variable = hv
   [../]
+  [./sx]
+    type = SWEBedSlopeSource
+    variable = hu
+    h = h
+    direction = x
+    bed = flat
+  [../]
+  [./sy]
+    type = SWEBedSlopeSource
+    variable = hv
+    h = h
+    direction = y
+    bed = flat
+  [../]
 []
 
 [Executioner]
@@ -101,4 +135,3 @@
 [Outputs]
   exodus = true
 []
-
