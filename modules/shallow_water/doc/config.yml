@@ -1,7 +1,6 @@
 Content:
     - framework/doc/content
     - modules/shallow_water/doc/content
-
 Renderer:
     type: MooseDocs.base.MaterializeRenderer
 Extensions:
@@ -20,4 +19,10 @@ Extensions:
     MooseDocs.extensions.acronym:
         acronyms: !include ${MOOSE_DIR}/framework/doc/acronyms.yml
     MooseDocs.extensions.sqa:
-        active: False
+        active: true
+        reports: !include ${ROOT_DIR}/modules/shallow_water/doc/sqa_reports.yml
+        categories:
+            framework: !include ${MOOSE_DIR}/framework/doc/sqa_framework.yml
+            shallow_water: !include ${ROOT_DIR}/modules/shallow_water/doc/sqa_shallow_water.yml
+    MooseDocs.extensions.template:
+        active: true

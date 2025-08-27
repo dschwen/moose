@@ -19,18 +19,16 @@ InputParameters
 ShallowWaterApp::validParams()
 {
   InputParameters params = MooseApp::validParams();
-  params.set<bool>("automatic_automatic_scaling") = false;
   params.set<bool>("use_legacy_material_output") = false;
-  params.set<bool>("use_legacy_initial_residual_evaluation_behavior") = false;
   return params;
 }
-
-registerKnownLabel("ShallowWaterApp");
 
 ShallowWaterApp::ShallowWaterApp(const InputParameters & parameters) : MooseApp(parameters)
 {
   ShallowWaterApp::registerAll(_factory, _action_factory, _syntax);
 }
+
+// registerKnownLabel("ShallowWaterApp");
 
 ShallowWaterApp::~ShallowWaterApp() {}
 
@@ -51,6 +49,9 @@ ShallowWaterApp::registerApps()
   registerApp(ShallowWaterApp);
 }
 
+/***************************************************************************************************
+ *********************** Dynamic Library Entry Points - DO NOT MODIFY ******************************
+ **************************************************************************************************/
 extern "C" void
 ShallowWaterApp__registerAll(Factory & f, ActionFactory & af, Syntax & s)
 {
