@@ -10,6 +10,7 @@
 #pragma once
 
 #include "Material.h"
+#include "SlopeLimitingBase.h"
 
 /**
  * Face-extrapolated values for SWE variables [h, hu, hv].
@@ -37,5 +38,7 @@ protected:
   MaterialProperty<Real> & _hf;
   MaterialProperty<Real> & _huf;
   MaterialProperty<Real> & _hvf;
-};
 
+  // slope limiting user object (multi-D)
+  const SlopeLimitingBase * _lslope;
+};

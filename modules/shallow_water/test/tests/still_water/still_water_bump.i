@@ -1,11 +1,8 @@
-# Minimal placeholder input for shallow water still-water test
-# Note: This is a stub for anchoring the design; not wired into build.
-
 [Mesh]
   type = GeneratedMesh
   dim = 2
-  nx = 10
-  ny = 10
+  nx = 20
+  ny = 20
   xmax = 1.0
   ymax = 1.0
 []
@@ -24,11 +21,31 @@
   [../]
 []
 
+[Functions]
+  [./bump]
+    type = ParsedFunction
+    value = "0.1*exp(-100*((x-0.5)^2 + (y-0.5)^2))"
+  [../]
+  [./eta]
+    type = ConstantFunction
+    value = 1.0
+  [../]
+  [./h_init]
+    type = ParsedFunction
+    value = "max(eta(x,y,t) - bump(x,y,t), 0)"
+    vars = 'eta bump'
+    vals = 'eta bump'
+  [../]
+[]
+
 [UserObjects]
   [./flux]
     type = SWENumericalFluxHLL
     gravity = 9.81
     dry_depth = 1e-6
+  [../]
+  [./wall]
+    type = SWEWallBoundaryFlux
   [../]
   [./recon_uo]
     type = SlopeReconstructionMultiD
@@ -41,9 +58,9 @@
 
 [ICs]
   [./h0]
-    type = ConstantIC
+    type = FunctionIC
     variable = h
-    value = 1.0
+    function = h_init
   [../]
   [./hu0]
     type = ConstantIC
@@ -67,16 +84,11 @@
   [../]
   [./bath]
     type = SWEBathymetry
-    bed = flat
+    bed = bump
   [../]
 []
 
-[Functions]
-  [./flat]
-    type = ConstantFunction
-    value = 0.0
-  [../]
-[]
+
 
 [DGKernels]
   [./flux_h]
@@ -105,6 +117,37 @@
   [../]
 []
 
+[BCs]
+  active = 'bch bchu bchv'
+  [./bch]
+    type = SWEFluxBC
+    variable = h
+    boundary = 'left right top bottom'
+    h = h
+    hu = hu
+    hv = hv
+    boundary_flux = wall
+  [../]
+  [./bchu]
+    type = SWEFluxBC
+    variable = hu
+    boundary = 'left right top bottom'
+    h = h
+    hu = hu
+    hv = hv
+    boundary_flux = wall
+  [../]
+  [./bchv]
+    type = SWEFluxBC
+    variable = hv
+    boundary = 'left right top bottom'
+    h = h
+    hu = hu
+    hv = hv
+    boundary_flux = wall
+  [../]
+[]
+
 [Kernels]
   [./th]
     type = TimeDerivative
@@ -123,14 +166,14 @@
     variable = hu
     h = h
     direction = x
-    bed = flat
+    bed = bump
   [../]
   [./sy]
     type = SWEBedSlopeSource
     variable = hv
     h = h
     direction = y
-    bed = flat
+    bed = bump
   [../]
 []
 

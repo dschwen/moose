@@ -1,13 +1,10 @@
-# Minimal placeholder input for shallow water still-water test
-# Note: This is a stub for anchoring the design; not wired into build.
-
 [Mesh]
   type = GeneratedMesh
   dim = 2
-  nx = 10
-  ny = 10
+  nx = 200
+  ny = 1
   xmax = 1.0
-  ymax = 1.0
+  ymax = 0.005
 []
 
 [GlobalParams]
@@ -24,11 +21,35 @@
   [../]
 []
 
+[Functions]
+  [./flat]
+    type = ConstantFunction
+    value = 0.0
+  [../]
+  [./hL]
+    type = ConstantFunction
+    value = 1.0
+  [../]
+  [./hR]
+    type = ConstantFunction
+    value = 0.1
+  [../]
+  [./h_init]
+    type = ParsedFunction
+    value = "(x<0.5) ? hL(x,y,t) : hR(x,y,t)"
+    vars = 'hL hR'
+    vals = 'hL hR'
+  [../]
+[]
+
 [UserObjects]
   [./flux]
-    type = SWENumericalFluxHLL
+    type = SWENumericalFluxHLLC
     gravity = 9.81
     dry_depth = 1e-6
+  [../]
+  [./outlet]
+    type = SWEFreeOutflowBoundaryFlux
   [../]
   [./recon_uo]
     type = SlopeReconstructionMultiD
@@ -41,9 +62,9 @@
 
 [ICs]
   [./h0]
-    type = ConstantIC
+    type = FunctionIC
     variable = h
-    value = 1.0
+    function = h_init
   [../]
   [./hu0]
     type = ConstantIC
@@ -68,13 +89,6 @@
   [./bath]
     type = SWEBathymetry
     bed = flat
-  [../]
-[]
-
-[Functions]
-  [./flat]
-    type = ConstantFunction
-    value = 0.0
   [../]
 []
 
@@ -105,6 +119,37 @@
   [../]
 []
 
+[BCs]
+  active = 'bch bchu bchv'
+  [./bch]
+    type = SWEFluxBC
+    variable = h
+    boundary = 'left right'
+    h = h
+    hu = hu
+    hv = hv
+    boundary_flux = outlet
+  [../]
+  [./bchu]
+    type = SWEFluxBC
+    variable = hu
+    boundary = 'left right'
+    h = h
+    hu = hu
+    hv = hv
+    boundary_flux = outlet
+  [../]
+  [./bchv]
+    type = SWEFluxBC
+    variable = hv
+    boundary = 'left right'
+    h = h
+    hu = hu
+    hv = hv
+    boundary_flux = outlet
+  [../]
+[]
+
 [Kernels]
   [./th]
     type = TimeDerivative
@@ -118,28 +163,15 @@
     type = TimeDerivative
     variable = hv
   [../]
-  [./sx]
-    type = SWEBedSlopeSource
-    variable = hu
-    h = h
-    direction = x
-    bed = flat
-  [../]
-  [./sy]
-    type = SWEBedSlopeSource
-    variable = hv
-    h = h
-    direction = y
-    bed = flat
-  [../]
 []
 
 [Executioner]
   type = Transient
-  dt = 1e-2
-  num_steps = 1
+  dt = 2e-4
+  num_steps = 100
 []
 
 [Outputs]
   exodus = true
 []
+
