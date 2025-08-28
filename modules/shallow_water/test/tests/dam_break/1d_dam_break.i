@@ -47,9 +47,11 @@
     type = SWENumericalFluxHLLC
     gravity = 9.81
     dry_depth = 1e-6
+    execute_on = 'INITIAL TIMESTEP_END'
   []
   [outlet]
     type = SWEFreeOutflowBoundaryFlux
+    execute_on = 'INITIAL TIMESTEP_END'
   []
 []
 
@@ -98,13 +100,15 @@
     type = FunctionAux
     variable = b_field
     function = flat
+    execute_on = 'INITIAL TIMESTEP_END'
   []
   # Compute water surface elevation eta = h + b
   [eta_aux]
     type = ParsedAux
     variable = eta
-    expression = h + b_field
+    expression = 'h + b_field'
     coupled_variables = 'h b_field'
+    execute_on = 'INITIAL TIMESTEP_END'
   []
 []
 
@@ -184,10 +188,18 @@
   []
 []
 
+[Preconditioning]
+  [fdp]
+    type = FDP
+    full = true
+  []
+[]
+
 [Executioner]
   type = Transient
   dt = 2e-4
   num_steps = 100
+  line_search = NONE
 []
 
 [Outputs]
