@@ -199,20 +199,10 @@
     type = TimeDerivative
     variable = hv
   []
-  [sx]
-    type = SWEBedSlopeSource
-    variable = hu
-    h = h
-    direction = x
-    bed = bump
-  []
-  [sy]
-    type = SWEBedSlopeSource
-    variable = hv
-    h = h
-    direction = y
-    bed = bump
-  []
+  # Note: We omit explicit bed-slope sources here because the numerical flux
+  # uses hydrostatic reconstruction with bathymetry, which is well-balanced for
+  # the lake-at-rest state. Adding a separate source term would double-count
+  # topographic effects and destroy well-balancing.
 []
 
 [Executioner]

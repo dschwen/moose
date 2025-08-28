@@ -110,20 +110,8 @@
     type = TimeDerivative
     variable = hv
   []
-  [sx]
-    type = SWEBedSlopeSource
-    variable = hu
-    h = h
-    direction = x
-    bed = flat
-  []
-  [sy]
-    type = SWEBedSlopeSource
-    variable = hv
-    h = h
-    direction = y
-    bed = flat
-  []
+  # No explicit bed-slope source with hydrostatic reconstruction; it is
+  # handled implicitly by the flux for well-balanced lake-at-rest.
 []
 
 [Executioner]

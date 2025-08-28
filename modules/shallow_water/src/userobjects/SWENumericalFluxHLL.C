@@ -78,7 +78,7 @@ SWENumericalFluxHLL::calcFlux(unsigned int /*iside*/,
   const Real cR = std::sqrt(_g * std::max(hR, 0.0));
   const Real smax = std::max(std::fabs(unL) + cL, std::fabs(unR) + cR);
 
-  // physical flux projected on n
+  // Physical flux projected on n (includes pressure term)
   auto Fn = [&](Real h, Real hu, Real hv, Real un)
   {
     std::vector<Real> f(3, 0.0);
@@ -96,6 +96,9 @@ SWENumericalFluxHLL::calcFlux(unsigned int /*iside*/,
     flux[i] =
         0.5 * (FL[i] + FR[i]) -
         0.5 * smax * ((i == 0 ? hR : (i == 1 ? huR : hvR)) - (i == 0 ? hL : (i == 1 ? huL : hvL)));
+
+  // No extra correction here; hydrostatic reconstruction above adjusts h
+  // to maintain lake-at-rest when paired with this physical flux.
 }
 
 void

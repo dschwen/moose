@@ -96,7 +96,7 @@ SWENumericalFluxHLLC::calcFlux(unsigned int /*iside*/,
   const Real hLstar = (SL <= SM) ? hL * (SL - unL) / (SL - SM) : hL;
   const Real hRstar = (SM <= SR) ? hR * (SR - unR) / (SR - SM) : hR;
 
-  // Physical fluxes
+  // Physical flux (includes pressure term); star states provide hydrostatic balance
   auto Fn = [&](Real h, Real hu, Real hv, Real un)
   {
     std::vector<Real> f(3, 0.0);
