@@ -92,9 +92,6 @@
     hu = hu
     hv = hv
   []
-  [bed]
-    type = SWEBathymetryCell
-    function = bump
   []
 []
 

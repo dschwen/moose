@@ -20,10 +20,8 @@ SWEHydrostaticCorrectionDGKernel::validParams()
   params.addRequiredCoupledVar("h", "Conserved variable: h");
   params.addRequiredCoupledVar("hu", "Conserved variable: h*u");
   params.addRequiredCoupledVar("hv", "Conserved variable: h*v");
-  params.addParam<VariableName>("b_var",
-                                "",
-                                "Optional cell-constant bathymetry variable to use instead of"
-                                " material property 'b'");
+  params.addRequiredCoupledVar("b_var",
+                               "Cell-constant bathymetry variable to use at faces");
   params.addParam<Real>("gravity", 9.81, "Gravitational acceleration g");
   return params;
 }
@@ -32,11 +30,8 @@ SWEHydrostaticCorrectionDGKernel::SWEHydrostaticCorrectionDGKernel(const InputPa
   : DGKernel(parameters),
     _h1(getMaterialProperty<Real>("h")),
     _h2(getNeighborMaterialProperty<Real>("h")),
-    _b1(getMaterialProperty<Real>("b")),
-    _b2(getNeighborMaterialProperty<Real>("b")),
-    _use_b_var(isParamValid("b_var") && getParam<VariableName>("b_var").size()),
-    _b1_var(nullptr),
-    _b2_var(nullptr),
+    _b1_var(coupledValue("b_var")),
+    _b2_var(coupledNeighborValue("b_var")),
     _h_var(coupled("h")),
     _hu_var(coupled("hu")),
     _hv_var(coupled("hv")),
@@ -44,11 +39,7 @@ SWEHydrostaticCorrectionDGKernel::SWEHydrostaticCorrectionDGKernel(const InputPa
     _equation_index(_jmap.at(_var.number())),
     _g(getParam<Real>("gravity"))
 {
-  if (_use_b_var)
-  {
-    _b1_var = &coupledValue("b_var");
-    _b2_var = &coupledNeighborValue("b_var");
-  }
+  
 }
 
 std::map<unsigned int, unsigned int>
@@ -71,8 +62,8 @@ SWEHydrostaticCorrectionDGKernel::computeQpResidual(Moose::DGResidualType type)
   // Hydrostatic reconstruction on the face
   const Real hL = std::max(_h1[_qp], 0.0);
   const Real hR = std::max(_h2[_qp], 0.0);
-  const Real bL = _use_b_var ? (*_b1_var)[_qp] : _b1[_qp];
-  const Real bR = _use_b_var ? (*_b2_var)[_qp] : _b2[_qp];
+  const Real bL = _b1_var[_qp];
+  const Real bR = _b2_var[_qp];
   const Real etaL = hL + bL;
   const Real etaR = hR + bR;
   const Real bstar = std::max(bL, bR);
@@ -122,8 +113,8 @@ SWEHydrostaticCorrectionDGKernel::computeQpOffDiagJacobian(Moose::DGJacobianType
     if (wrt_h_left)
     {
       const Real hL = std::max(_h1[_qp], 0.0);
-      const Real bL = _use_b_var ? (*_b1_var)[_qp] : _b1[_qp];
-      const Real bR = _use_b_var ? (*_b2_var)[_qp] : _b2[_qp];
+      const Real bL = _b1_var[_qp];
+      const Real bR = _b2_var[_qp];
       const Real bstar = std::max(bL, bR);
       const Real etaL = hL + bL;
       const Real hLstar = std::max(0.0, etaL - bstar);
@@ -145,8 +136,8 @@ SWEHydrostaticCorrectionDGKernel::computeQpOffDiagJacobian(Moose::DGJacobianType
     if (jvar == _h_var)
     {
       const Real hR = std::max(_h2[_qp], 0.0);
-      const Real bL = _use_b_var ? (*_b1_var)[_qp] : _b1[_qp];
-      const Real bR = _use_b_var ? (*_b2_var)[_qp] : _b2[_qp];
+      const Real bL = _b1_var[_qp];
+      const Real bR = _b2_var[_qp];
       const Real bstar = std::max(bL, bR);
       const Real etaR = hR + bR;
       const Real hRstar = std::max(0.0, etaR - bstar);

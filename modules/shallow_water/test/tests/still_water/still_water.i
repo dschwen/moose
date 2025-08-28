@@ -93,10 +93,6 @@
     hu = hu
     hv = hv
   []
-  [bath]
-    type = SWEBathymetry
-    bed = bump
-  []
 []
 
 # Aux fields for visualization of water level
@@ -112,11 +108,11 @@
 []
 
 [AuxKernels]
-  # Export bathymetry material property 'b' to a field
+  # Cell-constant bathymetry via function
   [b_out]
-    type = MaterialRealAux
+    type = FunctionAux
     variable = b_field
-    property = b
+    function = bump
     execute_on = 'INITIAL TIMESTEP_END'
   []
   # Compute water surface elevation eta = h + b
@@ -137,6 +133,7 @@
     hu = hu
     hv = hv
     numerical_flux = flux
+    b_var = b_field
   []
   [flux_hu]
     type = SWEFVFluxDGKernel
@@ -145,6 +142,7 @@
     hu = hu
     hv = hv
     numerical_flux = flux
+    b_var = b_field
   []
   [flux_hv]
     type = SWEFVFluxDGKernel
@@ -153,6 +151,7 @@
     hu = hu
     hv = hv
     numerical_flux = flux
+    b_var = b_field
   []
   # Hydrostatic correction to preserve eta = const
   [corr_hu]
@@ -161,6 +160,7 @@
     h = h
     hu = hu
     hv = hv
+    b_var = b_field
   []
   [corr_hv]
     type = SWEHydrostaticCorrectionDGKernel
@@ -168,6 +168,7 @@
     h = h
     hu = hu
     hv = hv
+    b_var = b_field
   []
 []
 
