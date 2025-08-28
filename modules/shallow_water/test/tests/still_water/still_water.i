@@ -95,6 +95,21 @@
     hv = hv
     numerical_flux = flux
   []
+  # Hydrostatic correction to preserve eta = const
+  [corr_hu]
+    type = SWEHydrostaticCorrectionDGKernel
+    variable = hu
+    h = h
+    hu = hu
+    hv = hv
+  []
+  [corr_hv]
+    type = SWEHydrostaticCorrectionDGKernel
+    variable = hv
+    h = h
+    hu = hu
+    hv = hv
+  []
 []
 
 [Kernels]
