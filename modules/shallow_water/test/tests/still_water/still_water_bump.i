@@ -92,9 +92,9 @@
     hu = hu
     hv = hv
   []
-  [bath]
-    type = SWEBathymetry
-    bed = bump
+  [bed]
+    type = SWEBathymetryCell
+    function = bump
   []
 []
 
@@ -224,6 +224,7 @@
   type = Transient
   dt = 1e-2
   num_steps = 150
+  nl_abs_tol = 1e-12
 []
 
 [Outputs]
