@@ -21,6 +21,10 @@ SWEFVFluxDGKernel::validParams()
   params.addRequiredCoupledVar("hu", "Conserved variable: h*u");
   params.addRequiredCoupledVar("hv", "Conserved variable: h*v");
   params.addRequiredParam<UserObjectName>("numerical_flux", "Name of numerical flux user object");
+  params.addParam<VariableName>("b_var",
+                                "",
+                                "Optional cell-constant bathymetry variable (MONOMIAL/CONSTANT)."
+                                " If provided, overrides material property 'b'");
   return params;
 }
 
@@ -39,8 +43,16 @@ SWEFVFluxDGKernel::SWEFVFluxDGKernel(const InputParameters & parameters)
     _jmap(getIndexMapping()),
     _equation_index(_jmap.at(_var.number())),
     _b1(getMaterialProperty<Real>("b")),
-    _b2(getNeighborMaterialProperty<Real>("b"))
+    _b2(getNeighborMaterialProperty<Real>("b")),
+    _use_b_var(isParamValid("b_var") && getParam<VariableName>("b_var").size()),
+    _b1_var(nullptr),
+    _b2_var(nullptr)
 {
+  if (_use_b_var)
+  {
+    _b1_var = &coupledValue("b_var");
+    _b2_var = &coupledNeighborValue("b_var");
+  }
 }
 
 SWEFVFluxDGKernel::~SWEFVFluxDGKernel() {}
@@ -48,8 +60,10 @@ SWEFVFluxDGKernel::~SWEFVFluxDGKernel() {}
 Real
 SWEFVFluxDGKernel::computeQpResidual(Moose::DGResidualType type)
 {
-  std::vector<Real> U1 = {_h1[_qp], _hu1[_qp], _hv1[_qp], _b1[_qp]};
-  std::vector<Real> U2 = {_h2[_qp], _hu2[_qp], _hv2[_qp], _b2[_qp]};
+  const Real bL = _use_b_var ? (*_b1_var)[_qp] : _b1[_qp];
+  const Real bR = _use_b_var ? (*_b2_var)[_qp] : _b2[_qp];
+  std::vector<Real> U1 = {_h1[_qp], _hu1[_qp], _hv1[_qp], bL};
+  std::vector<Real> U2 = {_h2[_qp], _hu2[_qp], _hv2[_qp], bR};
 
   const auto & flux = _numerical_flux.getFlux(
       _current_side, _current_elem->id(), _neighbor_elem->id(), U1, U2, _normals[_qp]);
@@ -73,8 +87,10 @@ SWEFVFluxDGKernel::computeQpJacobian(Moose::DGJacobianType type)
 Real
 SWEFVFluxDGKernel::computeQpOffDiagJacobian(Moose::DGJacobianType type, unsigned int jvar)
 {
-  std::vector<Real> U1 = {_h1[_qp], _hu1[_qp], _hv1[_qp], _b1[_qp]};
-  std::vector<Real> U2 = {_h2[_qp], _hu2[_qp], _hv2[_qp], _b2[_qp]};
+  const Real bL = _use_b_var ? (*_b1_var)[_qp] : _b1[_qp];
+  const Real bR = _use_b_var ? (*_b2_var)[_qp] : _b2[_qp];
+  std::vector<Real> U1 = {_h1[_qp], _hu1[_qp], _hv1[_qp], bL};
+  std::vector<Real> U2 = {_h2[_qp], _hu2[_qp], _hv2[_qp], bR};
 
   const auto & dF_dUL = _numerical_flux.getJacobian(
       Moose::Element, _current_side, _current_elem->id(), _neighbor_elem->id(), U1, U2, _normals[_qp]);

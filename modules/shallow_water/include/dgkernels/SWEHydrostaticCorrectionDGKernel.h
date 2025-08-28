@@ -45,6 +45,11 @@ protected:
   const MaterialProperty<Real> & _b1;
   const MaterialProperty<Real> & _b2;
 
+  // Optional bathymetry variable coupling
+  const bool _use_b_var;
+  const VariableValue * _b1_var;
+  const VariableValue * _b2_var;
+
   // coupled variables and mapping
   const unsigned int _h_var;
   const unsigned int _hu_var;
@@ -55,4 +60,3 @@ protected:
   // gravity
   const Real _g;
 };
-

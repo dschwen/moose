@@ -58,4 +58,9 @@ protected:
   // bathymetry (optional but expected for hydrostatic reconstruction)
   const MaterialProperty<Real> & _b1;
   const MaterialProperty<Real> & _b2;
+
+  // Optional coupling to a cell-constant bathymetry variable (piecewise-constant)
+  const bool _use_b_var;
+  const VariableValue * _b1_var;          // current element value at face
+  const VariableValue * _b2_var;          // neighbor element value at face
 };
