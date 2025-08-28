@@ -29,8 +29,8 @@
   [h_init]
     type = ParsedFunction
     # value = "if(x<0.5, hL, hR)"
-    expression = 'tanh((x-0.5)*20)*0.4+0.6'
-    # expression = 1
+    # expression = 'tanh((x-0.5)*20)*0.4+0.6'
+    expression = 1
   []
 []
 
@@ -42,8 +42,7 @@
     execute_on = 'INITIAL TIMESTEP_END'
   []
   [outlet]
-    # type = SWEFreeOutflowBoundaryFlux
-    type = SWEWallBoundaryFlux
+    type = SWECharacteristicOutflowBoundaryFlux
     execute_on = 'INITIAL TIMESTEP_END'
   []
   [wall]
