@@ -41,5 +41,10 @@ public:
 protected:
   const Real _g;
   const Real _h_eps;
+  /// If true, emit flux only when un>0 (outflow); otherwise zero flux for inflow
+  const bool _outflow_only;
+  /// Optional ramp time for turning on the advective flux smoothly starting from t=0
+  const Real _ramp_time;
+  /// Optional number of initial time steps to suppress outflow flux entirely
+  const unsigned int _ramp_steps;
 };
-

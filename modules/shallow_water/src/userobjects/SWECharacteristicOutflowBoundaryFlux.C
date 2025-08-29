@@ -18,6 +18,16 @@ SWECharacteristicOutflowBoundaryFlux::validParams()
   params.addClassDescription("Characteristic-inspired outflow flux for SWE (advective-only).");
   params.addParam<Real>("gravity", 9.81, "Gravitational acceleration g");
   params.addParam<Real>("dry_depth", 1e-6, "Depth threshold for dry state");
+  params.addParam<bool>(
+      "outflow_only", true, "If true, emit flux only when un>0 (outflow); zero flux otherwise");
+  params.addParam<Real>("ramp_time",
+                        0.0,
+                        "Optional ramp time from 0 to full advective flux starting at t=0."
+                        " If zero, no ramping is applied.");
+  params.addParam<unsigned int>(
+      "ramp_steps",
+      0,
+      "Optional number of initial time steps during which the outflow flux is fully suppressed.");
   return params;
 }
 
@@ -25,7 +35,10 @@ SWECharacteristicOutflowBoundaryFlux::SWECharacteristicOutflowBoundaryFlux(
     const InputParameters & parameters)
   : BoundaryFluxBase(parameters),
     _g(getParam<Real>("gravity")),
-    _h_eps(getParam<Real>("dry_depth"))
+    _h_eps(getParam<Real>("dry_depth")),
+    _outflow_only(getParam<bool>("outflow_only")),
+    _ramp_time(getParam<Real>("ramp_time")),
+    _ramp_steps(getParam<unsigned int>("ramp_steps"))
 {
 }
 
@@ -46,11 +59,30 @@ SWECharacteristicOutflowBoundaryFlux::calcFlux(unsigned int /*iside*/,
 
   const Real un = (h > _h_eps) ? (hu * nx + hv * ny) / h : 0.0;
 
-  // Advective-only flux projected on n
   flux.resize(3);
-  flux[0] = h * un;
-  flux[1] = hu * un;
-  flux[2] = hv * un;
+  // Fully suppress outflow for the first ramp_steps time steps
+  if (_fe_problem.timeStep() <= _ramp_steps)
+  {
+    flux.assign(3, 0.0);
+    return;
+  }
+
+  if (_outflow_only && un <= 0.0)
+  {
+    flux[0] = flux[1] = flux[2] = 0.0;
+    return;
+  }
+
+  // Advective-only flux projected on n (mass/momentum transport)
+  Real scale = 1.0;
+  if (_ramp_time > 0.0)
+    scale = std::max(0.0, std::min(1.0, _t / _ramp_time));
+
+  const Real adv = (_outflow_only ? std::max(un, 0.0) : un);
+
+  flux[0] = scale * (h * adv);
+  flux[1] = scale * (hu * adv) + 0.5 * _g * h * h * nx; // <-- add pressure
+  flux[2] = scale * (hv * adv) + 0.5 * _g * h * h * ny; // <-- add pressure
 }
 
 void
@@ -72,26 +104,36 @@ SWECharacteristicOutflowBoundaryFlux::calcJacobian(unsigned int /*iside*/,
   J.resize(3, 3);
   J.zero();
 
+  if (_fe_problem.timeStep() <= _ramp_steps || (_outflow_only && un <= 0.0))
+    return;
+
+  // Apply same ramp scaling to Jacobian
+  Real scale = 1.0;
+  if (_ramp_time > 0.0)
+    scale = std::max(0.0, std::min(1.0, _t / _ramp_time));
+
   if (h > _h_eps)
   {
     // Derivatives for advective flux F = [h un, hu un, hv un]
     // dF0/dh = 0 (un depends on h but we ignore for robustness)
-    J(0, 1) = nx;
-    J(0, 2) = ny;
+    J(0, 1) = scale * nx;
+    J(0, 2) = scale * ny;
 
     const Real d_un_dhu = nx * invh;
     const Real d_un_dhv = ny * invh;
     const Real d_un_dh = -(hu * nx + hv * ny) * invh * invh;
 
     // F1 = hu*un
-    J(1, 0) = hu * d_un_dh;
-    J(1, 1) = un + hu * d_un_dhu;
-    J(1, 2) = hu * d_un_dhv;
+    J(1, 0) = scale * (hu * d_un_dh);
+    J(1, 1) = scale * (un + hu * d_un_dhu);
+    J(1, 2) = scale * (hu * d_un_dhv);
 
     // F2 = hv*un
-    J(2, 0) = hv * d_un_dh;
-    J(2, 1) = hv * d_un_dhu;
-    J(2, 2) = un + hv * d_un_dhv;
+    J(2, 0) = scale * (hv * d_un_dh);
+    J(2, 1) = scale * (hv * d_un_dhu);
+    J(2, 2) = scale * (un + hv * d_un_dhv);
+
+    J(1, 0) += _g * h * nx;
+    J(2, 0) += _g * h * ny;
   }
 }
-
