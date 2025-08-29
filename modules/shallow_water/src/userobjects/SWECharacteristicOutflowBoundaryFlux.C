@@ -81,8 +81,8 @@ SWECharacteristicOutflowBoundaryFlux::calcFlux(unsigned int /*iside*/,
   const Real adv = (_outflow_only ? std::max(un, 0.0) : un);
 
   flux[0] = scale * (h * adv);
-  flux[1] = scale * (hu * adv) + 0.5 * _g * h * h * nx; // <-- add pressure
-  flux[2] = scale * (hv * adv) + 0.5 * _g * h * h * ny; // <-- add pressure
+  flux[1] = scale * ((hu * adv) + 0.5 * _g * h * h * nx); // <-- add pressure
+  flux[2] = scale * ((hv * adv) + 0.5 * _g * h * h * ny); // <-- add pressure
 }
 
 void
@@ -133,7 +133,7 @@ SWECharacteristicOutflowBoundaryFlux::calcJacobian(unsigned int /*iside*/,
     J(2, 1) = scale * (hv * d_un_dhu);
     J(2, 2) = scale * (un + hv * d_un_dhv);
 
-    J(1, 0) += _g * h * nx;
-    J(2, 0) += _g * h * ny;
+    J(1, 0) += scale * _g * h * nx;
+    J(2, 0) += scale * _g * h * ny;
   }
 }

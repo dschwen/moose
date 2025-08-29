@@ -45,8 +45,8 @@
     type = SWECharacteristicOutflowBoundaryFlux
     execute_on = 'INITIAL TIMESTEP_END'
     outflow_only = true
-    ramp_time = 2e-2
-    ramp_steps = 3
+    # ramp_time = 2e-2
+    # ramp_steps = 3
   []
   [wall]
     type = SWEWallBoundaryFlux
