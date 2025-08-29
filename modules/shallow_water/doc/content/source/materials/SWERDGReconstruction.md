@@ -12,6 +12,34 @@ Key parameters:
 
 !syntax parameters /Materials/SWERDGReconstruction
 
+Notes
+
+- For second-order MUSCL reconstruction, provide a slope limiting UserObject via `slope_limiting`.
+  For 1D comparisons, you can use `SlopeLimitingOneDSWE` (minmod/MC/superbee) which returns
+  limited x-slopes for `[h, hu, hv]`. Example:
+
+```
+[UserObjects]
+  [limiter]
+    type = SlopeLimitingOneDSWE
+    h = h
+    hu = hu
+    hv = hv
+    scheme = mc
+  []
+[]
+
+[Materials]
+  [recon]
+    type = SWERDGReconstruction
+    h = h
+    hu = hu
+    hv = hv
+    slope_limiting = limiter
+  []
+[]
+```
+
 !syntax inputs /Materials/SWERDGReconstruction
 
 !syntax children /Materials/SWERDGReconstruction

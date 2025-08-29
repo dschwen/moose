@@ -13,3 +13,4 @@ Objects currently available:
 - SWEWallBoundaryFlux: Reflective wall boundary.
 - SWEFreeOutflowBoundaryFlux: Physical flux F(U)·n outlet (basic).
 - SWEOpenBoundaryRiemannFlux: Ghost-state Riemann open/outflow using HLLC/HLL.
+- SlopeLimitingOneDSWE: 1D MUSCL slope limiter for [h, hu, hv] (minmod/MC/superbee).
