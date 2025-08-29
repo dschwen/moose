@@ -259,7 +259,7 @@ void SWENumericalFluxHLLC::initialize()
 void SWENumericalFluxHLLC::finalize()
 {
   if (_log_debug)
-    mooseInfo("HLLC step stats: HLLE fallback faces = ", _fallback_count,
+    mooseInfoRepeated("HLLC step stats: HLLE fallback faces = ", _fallback_count,
               ", blended faces = ", _blend_count);
   InternalSideFluxBase::finalize();
 }

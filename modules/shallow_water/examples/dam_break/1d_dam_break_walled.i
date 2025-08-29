@@ -1,7 +1,9 @@
+N = 200
+
 [Mesh]
   type = GeneratedMesh
   dim = 2
-  nx = 200
+  nx = ${N}
   ny = 3
   xmax = 1.0
   ymin = -0.05
@@ -46,15 +48,10 @@
 
 [UserObjects]
   [flux]
-    type = SWENumericalFluxHLLC
-    use_pvrs = true
-    degeneracy_eps = 1e-10
-    blend_alpha = 0.0
-    log_debug = true
+    type = SWENumericalFluxHLL
   []
   [wall]
     type = SWEWallBoundaryFlux
-    execute_on = 'INITIAL TIMESTEP_END'
   []
 []
 
@@ -179,10 +176,10 @@
 [VectorPostprocessors]
   [h]
     type = LineValueSampler
-    end_point = '${fparse 1-1/400} 0 0'
-    num_points = 200
+    end_point = '${fparse 1-0.5/N} 0 0'
+    num_points = ${N}
     sort_by = x
-    start_point = '${fparse 1/400} 0 0'
+    start_point = '${fparse 0.5/N} 0 0'
     variable = h
   []
 []

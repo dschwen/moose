@@ -61,7 +61,7 @@ SWECharacteristicOutflowBoundaryFlux::calcFlux(unsigned int /*iside*/,
 
   flux.resize(3);
   // Fully suppress outflow for the first ramp_steps time steps
-  if (_fe_problem.timeStep() <= _ramp_steps)
+  if (static_cast<unsigned int>(_fe_problem.timeStep()) <= _ramp_steps)
   {
     flux.assign(3, 0.0);
     return;
@@ -104,7 +104,7 @@ SWECharacteristicOutflowBoundaryFlux::calcJacobian(unsigned int /*iside*/,
   J.resize(3, 3);
   J.zero();
 
-  if (_fe_problem.timeStep() <= _ramp_steps || (_outflow_only && un <= 0.0))
+  if (static_cast<unsigned int>(_fe_problem.timeStep()) <= _ramp_steps || (_outflow_only && un <= 0.0))
     return;
 
   // Apply same ramp scaling to Jacobian

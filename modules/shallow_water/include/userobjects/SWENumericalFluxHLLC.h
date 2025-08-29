@@ -47,7 +47,7 @@ public:
                         const std::vector<Real> & uvec1,
                         const std::vector<Real> & uvec2,
                         const RealVectorValue & dwave,
-                        std::vector<Real> & flux) const ;
+                        std::vector<Real> & flux) const override;
 
   /**
    * Compute the Jacobian matrix
@@ -67,7 +67,7 @@ public:
                             const std::vector<Real> & uvec2,
                             const RealVectorValue & dwave,
                             DenseMatrix<Real> & jac1,
-                            DenseMatrix<Real> & jac2) const ;
+                            DenseMatrix<Real> & jac2) const override;
 
   // Optional debug accounting
   virtual void initialize() override;
