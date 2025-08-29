@@ -29,8 +29,8 @@
   [h_init]
     type = ParsedFunction
     # value = "if(x<0.5, hL, hR)"
-    # expression = 'tanh((x-0.5)*20)*0.4+0.6'
-    expression = 1
+    expression = 'tanh((x-0.5)*20)*0.4+0.6'
+    # expression = 1
   []
 []
 
@@ -42,11 +42,11 @@
     execute_on = 'INITIAL TIMESTEP_END'
   []
   [outlet]
-    type = SWECharacteristicOutflowBoundaryFlux
+    type = SWECharacteristicOutflowExactBoundaryFlux
     execute_on = 'INITIAL TIMESTEP_END'
-    outflow_only = true
-    # ramp_time = 2e-2
-    # ramp_steps = 3
+    target_depth = 0.2
+    target_un = 0.0
+    pressure_weight = 0.0   # start with advective-only; then try small values like 0.1–0.2
   []
   [wall]
     type = SWEWallBoundaryFlux

@@ -1,0 +1,8 @@
+[Tests]
+  [1d_dam_break_walled]
+    type = RunApp
+    input = '1d_dam_break_walled.i'
+    capabilities = 'method!=dbg'
+    check_input = True
+  []
+[]

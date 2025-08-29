@@ -48,5 +48,8 @@ protected:
 
   // boundary flux user object
   const BoundaryFluxBase & _flux;
-};
 
+  // Optional cell-constant bathymetry variable to pass as 4th entry to boundary flux UOs
+  const bool _has_b;
+  const VariableValue * _b_var_val;
+};

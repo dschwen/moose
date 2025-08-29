@@ -20,6 +20,9 @@ SWEFluxBC::validParams()
   params.addRequiredCoupledVar("hu", "Conserved variable: h*u");
   params.addRequiredCoupledVar("hv", "Conserved variable: h*v");
   params.addRequiredParam<UserObjectName>("boundary_flux", "Name of boundary flux user object");
+  params.addCoupledVar(
+      "b_var",
+      "Cell-constant bathymetry variable (MONOMIAL/CONSTANT) to pass to the boundary flux UO (optional)");
   return params;
 }
 
@@ -36,14 +39,18 @@ SWEFluxBC::SWEFluxBC(const InputParameters & parameters)
     _hv_var(coupled("hv")),
     _jmap({{_h_var, 0}, {_hu_var, 1}, {_hv_var, 2}}),
     _equation_index(_jmap.at(_var.number())),
-    _flux(getUserObject<BoundaryFluxBase>("boundary_flux"))
+    _flux(getUserObject<BoundaryFluxBase>("boundary_flux")),
+    _has_b(isCoupled("b_var")),
+    _b_var_val(_has_b ? &coupledValue("b_var") : nullptr)
 {
 }
 
 Real
 SWEFluxBC::computeQpResidual()
 {
-  const std::vector<Real> U = {_h1[_qp], _hu1[_qp], _hv1[_qp]};
+  std::vector<Real> U = {_h1[_qp], _hu1[_qp], _hv1[_qp]};
+  if (_has_b)
+    U.push_back((*_b_var_val)[_qp]);
   const auto & F = _flux.getFlux(_current_side, _current_elem->id(), U, _normals[_qp]);
   return F[_equation_index] * _test[_i][_qp];
 }
@@ -57,8 +64,9 @@ SWEFluxBC::computeQpJacobian()
 Real
 SWEFluxBC::computeQpOffDiagJacobian(unsigned int jvar)
 {
-  const std::vector<Real> U = {_h[_qp], _hu[_qp], _hv[_qp]};
+  std::vector<Real> U = {_h[_qp], _hu[_qp], _hv[_qp]};
+  if (_has_b)
+    U.push_back((*_b_var_val)[_qp]);
   const auto & J = _flux.getJacobian(_current_side, _current_elem->id(), U, _normals[_qp]);
   return J(_equation_index, _jmap.at(jvar)) * _phi[_j][_qp] * _test[_i][_qp];
 }
-

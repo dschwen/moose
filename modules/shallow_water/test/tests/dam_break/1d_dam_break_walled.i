@@ -2,9 +2,10 @@
   type = GeneratedMesh
   dim = 2
   nx = 200
-  ny = 1
+  ny = 3
   xmax = 1.0
-  ymax = 0.005
+  ymin = -0.05
+  ymax = 0.05
 []
 
 [GlobalParams]
@@ -32,11 +33,12 @@
   []
   [hR]
     type = ConstantFunction
-    value = 0.1
+    value = 0.5
   []
   [h_init]
     type = ParsedFunction
     value = "if(x<0.5, hL, hR)"
+    # expression = 'tanh((x-0.5)*10)*0.25+0.75'
     vars = 'hL hR'
     vals = 'hL hR'
   []
@@ -44,10 +46,10 @@
 
 [UserObjects]
   [flux]
-    type = SWENumericalFluxHLL
-    gravity = 9.81
-    dry_depth = 1e-6
-    execute_on = 'INITIAL TIMESTEP_END'
+    type = SWENumericalFluxHLLC
+    use_pvrs = true         # PVRS+q speeds (recommended)
+    degeneracy_eps = 1e-8   # widen to 1e-6 if Newton still stalls
+    blend_alpha = 0.0       # try 0.2–0.3 if you see grid-aligned shock wiggles
   []
   [wall]
     type = SWEWallBoundaryFlux
@@ -173,14 +175,35 @@
   []
 []
 
+[VectorPostprocessors]
+  [h]
+    type = LineValueSampler
+    end_point = '${fparse 1-1/400} 0 0'
+    num_points = 200
+    sort_by = x
+    start_point = '${fparse 1/400} 0 0'
+    variable = h
+  []
+[]
+
+# [Preconditioning]
+#   [fdp]
+#     type = FDP
+#     full = true
+#   []
+# []
+
 [Executioner]
-  type = ActuallyExplicitEuler
-  dt = 1e-4
-  num_steps = 500
+  type = Transient
+  dt = 1e-3
+  nl_abs_tol = 1e-12
+  num_steps = 100
+  petsc_options_iname = '-pc_type'
+  petsc_options_value = 'lu'
 []
 
 [Outputs]
-  exodus = true
+  csv = true
   print_linear_residuals = false
 []
 
