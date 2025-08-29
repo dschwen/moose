@@ -1,7 +1,9 @@
+N = 200
+
 [Mesh]
   type = GeneratedMesh
   dim = 1
-  nx = 200
+  nx = ${N}
   xmax = 1.0
 []
 
@@ -43,20 +45,7 @@
 
 [UserObjects]
   [flux]
-    type = SWENumericalFluxHLLC
-    use_pvrs = true
-    degeneracy_eps = 1e-10
-    blend_alpha = 0.0
-    log_debug = true
-  []
-  [limiter]
-    type = SlopeLimitingOneDSWE
-    h = h
-    hu = hu
-    hv = hv
-    scheme = mc
-    # Freeze slopes during Newton for stable Jacobian (no NONLINEAR here)
-    execute_on = 'INITIAL TIMESTEP_BEGIN TIMESTEP_END'
+    type = SWENumericalFluxHLL
   []
   [wall]
     type = SWEWallBoundaryFlux
@@ -87,7 +76,6 @@
     h = h
     hu = hu
     hv = hv
-    slope_limiting = limiter
   []
 []
 
@@ -185,10 +173,10 @@
 [VectorPostprocessors]
   [h]
     type = LineValueSampler
-    end_point = '${fparse 1-1/400} 0 0'
-    num_points = 200
+    end_point = '${fparse 1-0.5/N} 0 0'
+    num_points = ${N}
     sort_by = x
-    start_point = '${fparse 1/400} 0 0'
+    start_point = '${fparse 0.5/N} 0 0'
     variable = h
   []
 []
@@ -213,3 +201,4 @@
   csv = true
   print_linear_residuals = false
 []
+

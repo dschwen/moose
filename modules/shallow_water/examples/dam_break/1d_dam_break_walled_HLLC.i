@@ -2,12 +2,9 @@ N = 200
 
 [Mesh]
   type = GeneratedMesh
-  dim = 2
+  dim = 1
   nx = ${N}
-  ny = 3
   xmax = 1.0
-  ymin = -0.05
-  ymax = 0.05
 []
 
 [GlobalParams]
@@ -48,7 +45,20 @@ N = 200
 
 [UserObjects]
   [flux]
-    type = SWENumericalFluxHLL
+    type = SWENumericalFluxHLLC
+    use_pvrs = true
+    degeneracy_eps = 1e-10
+    blend_alpha = 0.0
+    log_debug = true
+  []
+  [limiter]
+    type = SlopeLimitingOneDSWE
+    h = h
+    hu = hu
+    hv = hv
+    scheme = mc
+    # Freeze slopes during Newton for stable Jacobian (no NONLINEAR here)
+    execute_on = 'INITIAL TIMESTEP_BEGIN TIMESTEP_END'
   []
   [wall]
     type = SWEWallBoundaryFlux
@@ -79,6 +89,7 @@ N = 200
     h = h
     hu = hu
     hv = hv
+    slope_limiting = limiter
   []
 []
 
@@ -132,7 +143,7 @@ N = 200
   [bch]
     type = SWEFluxBC
     variable = h
-    boundary = 'left right top bottom'
+    boundary = 'left right'
     h = h
     hu = hu
     hv = hv
@@ -141,7 +152,7 @@ N = 200
   [bchu]
     type = SWEFluxBC
     variable = hu
-    boundary = 'left right top bottom'
+    boundary = 'left right'
     h = h
     hu = hu
     hv = hv
@@ -150,7 +161,7 @@ N = 200
   [bchv]
     type = SWEFluxBC
     variable = hv
-    boundary = 'left right top bottom'
+    boundary = 'left right'
     h = h
     hu = hu
     hv = hv
