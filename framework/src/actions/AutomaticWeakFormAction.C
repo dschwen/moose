@@ -972,15 +972,32 @@ AutomaticWeakFormAction::addSplitConstraintKernels()
     else if (sv.derivative_order == 2)
     {
       if (_verbose)
-        _console << "    - Adding variational kernel for Hessian variable: " << sv.name << "\n";
+        _console << "    - Adding Laplacian constraint kernel for: " << sv.name << "\n";
 
-      // The split variable needs its own variational kernel
-      // The transformed energy now contains c_hess, so we need to compute δF/δ(c_hess)
-      // For now, we'll let the main kernel generation handle this
-      // We don't add a constraint kernel here since c_hess is treated as an independent variable
+      // Add Laplacian constraint: u_d2 = laplacian(u)
+      // Weak form: ∫ u_d2 * v dx = ∫ grad(u) · grad(v) dx
+      std::string kernel_name = sv.name + "_laplacian_constraint";
+
+      // Use VariationalKernelBase with the Laplacian constraint weak form
+      InputParameters params = _factory.getValidParams("VariationalKernelBase");
+      params.set<NonlinearVariableName>("variable") = sv.name;
+      params.set<std::vector<VariableName>>("coupled") = {sv.original_variable};
+
+      // The residual for the Laplacian constraint is:
+      // R = u_d2 * test - grad(u) · grad(test)
+      params.set<std::string>("residual_expression") = sv.name + " * test - dot(grad(" + sv.original_variable + "), grad(test))";
+      params.set<bool>("use_automatic_differentiation") = _use_automatic_differentiation;
+
+      // Pass parameters if available
+      if (isParamValid("parameters"))
+        params.set<std::map<std::string, Real>>("parameters") =
+            getParam<std::map<std::string, Real>>("parameters");
+
+      _problem->addKernel("VariationalKernelBase", kernel_name, params);
 
       if (_verbose)
-        _console << "    - Hessian variable " << sv.name << " will get its own variational kernel\n";
+        _console << "    - Added Laplacian constraint: " << kernel_name
+                 << " (enforces " << sv.name << " = laplacian(" << sv.original_variable << "))\n";
     }
   }
 }
@@ -1433,3 +1450,4 @@ AutomaticWeakFormAction::addExpressionKernels()
     _problem->addKernel("ExpressionEvaluationKernel", kernel_name, params);
   }
 }
+

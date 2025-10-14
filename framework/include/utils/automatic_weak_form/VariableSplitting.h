@@ -89,9 +89,11 @@ private:
   
   std::string generateSplitVariableName(const std::string & original_var,
                                          unsigned int derivative_order);
-  
+
   Shape computeSplitVariableShape(const Shape & original_shape,
                                    unsigned int derivative_order);
+
+  NodePtr findInnermostFieldVariable(const NodePtr & node);
 };
 
 class SplitVariableKernelGenerator

@@ -123,10 +123,20 @@ VariableSplittingAnalyzer::createSplitVariableDefinition(const std::string & ori
 {
   NodePtr var = fieldVariable(original_var);
 
-  for (unsigned int i = 0; i < derivative_order; ++i)
-    var = grad(var, _dim);
+  if (derivative_order == 2)
+  {
+    // Special case: 2nd order = Laplacian (scalar)
+    // This is more efficient than grad(grad(u)) which would be a tensor
+    return laplacian(var);
+  }
+  else
+  {
+    // General case: apply gradient operations successively
+    for (unsigned int i = 0; i < derivative_order; ++i)
+      var = grad(var, _dim);
 
-  return var;
+    return var;
+  }
 }
 
 bool
@@ -153,6 +163,14 @@ VariableSplittingAnalyzer::analyzeNode(const NodePtr & node,
       break;
     }
 
+    case NodeType::Variable:
+    {
+      auto var = std::static_pointer_cast<VariableNode>(node);
+      std::string name = var->name();
+      max_orders[name] = std::max(max_orders[name], current_derivative_level);
+      break;
+    }
+
     case NodeType::Gradient:
     case NodeType::Divergence:
     case NodeType::Curl:
@@ -170,8 +188,96 @@ VariableSplittingAnalyzer::analyzeNode(const NodePtr & node,
       break;
     }
 
+    // Handle binary operations that can contain cross-variable derivatives
+    case NodeType::Dot:
+    case NodeType::Cross:
+    case NodeType::Multiply:
+    case NodeType::Add:
+    case NodeType::Subtract:
+    case NodeType::Divide:
+    {
+      auto binary = std::static_pointer_cast<BinaryOpNode>(node);
+      // Analyze both operands with current derivative level
+      // This ensures we capture cases like dot(grad(u), grad(v))
+      analyzeNode(binary->left(), max_orders, current_derivative_level);
+      analyzeNode(binary->right(), max_orders, current_derivative_level);
+      break;
+    }
+
+    // Handle unary operations that preserve derivative level
+    case NodeType::Negate:
+    case NodeType::Norm:
+    case NodeType::Normalize:
+    case NodeType::Trace:
+    case NodeType::Determinant:
+    case NodeType::Inverse:
+    case NodeType::Transpose:
+    case NodeType::Symmetric:
+    case NodeType::Skew:
+    case NodeType::Deviatoric:
+    {
+      auto unary = std::static_pointer_cast<UnaryOpNode>(node);
+      analyzeNode(unary->operand(), max_orders, current_derivative_level);
+      break;
+    }
+
+    // Handle tensor operations that may involve derivatives
+    case NodeType::Contract:
+    case NodeType::Outer:
+    {
+      auto binary = std::static_pointer_cast<BinaryOpNode>(node);
+      analyzeNode(binary->left(), max_orders, current_derivative_level);
+      analyzeNode(binary->right(), max_orders, current_derivative_level);
+      break;
+    }
+
+    // Handle power operations
+    case NodeType::Power:
+    {
+      auto binary = std::static_pointer_cast<BinaryOpNode>(node);
+      // For u^n where n is constant, derivative level applies to base
+      analyzeNode(binary->left(), max_orders, current_derivative_level);
+      // Exponent typically doesn't involve field variables, but analyze anyway
+      analyzeNode(binary->right(), max_orders, 0);
+      break;
+    }
+
+    // Handle function calls
+    case NodeType::Function:
+    {
+      auto func = std::static_pointer_cast<FunctionNode>(node);
+      // Analyze all arguments with current derivative level
+      for (const auto & arg : func->children())
+        analyzeNode(arg, max_orders, current_derivative_level);
+      break;
+    }
+
+    // Handle vector/tensor component access
+    case NodeType::VectorComponent:
+    case NodeType::TensorComponent:
+    {
+      auto unary = std::static_pointer_cast<UnaryOpNode>(node);
+      analyzeNode(unary->operand(), max_orders, current_derivative_level);
+      break;
+    }
+
+    // Handle vector assembly
+    case NodeType::VectorAssembly:
+    {
+      for (const auto & child : node->children())
+        analyzeNode(child, max_orders, current_derivative_level);
+      break;
+    }
+
+    // Constants and other leaf nodes don't contribute to derivative orders
+    case NodeType::Constant:
+    case NodeType::TestFunction:
+    case NodeType::ShapeFunction:
+      break;
+
     default:
     {
+      // Fallback: analyze all children
       for (const auto & child : node->children())
         analyzeNode(child, max_orders, current_derivative_level);
       break;
@@ -187,23 +293,39 @@ VariableSplittingAnalyzer::transformNode(const NodePtr & node,
   if (!node)
     return node;
 
-  if (current_derivative_level > _fe_order)
+  // Check if this is a high-order derivative pattern that needs substitution
+  if (isDerivativeOperator(node->type()))
   {
-    if (node->type() == NodeType::Gradient)
+    auto unary = std::static_pointer_cast<UnaryOpNode>(node);
+    unsigned int increment = getDerivativeIncrement(node->type());
+    unsigned int total_level = current_derivative_level + increment;
+
+    // Look for patterns like grad(grad(...(field_var)...)) or div(grad(grad(u)))
+    NodePtr innermost_var = findInnermostFieldVariable(node);
+    if (innermost_var && total_level > _fe_order)
     {
-      auto unary = std::static_pointer_cast<UnaryOpNode>(node);
-      auto operand = unary->operand();
-
-      if (operand->type() == NodeType::FieldVariable)
+      std::string var_name;
+      if (innermost_var->type() == NodeType::FieldVariable)
       {
-        auto field = std::static_pointer_cast<FieldVariableNode>(operand);
-        std::string split_name = generateSplitVariableName(field->name(), current_derivative_level);
+        auto field = std::static_pointer_cast<FieldVariableNode>(innermost_var);
+        var_name = field->name();
+      }
+      else if (innermost_var->type() == NodeType::Variable)
+      {
+        auto var = std::static_pointer_cast<VariableNode>(innermost_var);
+        var_name = var->name();
+      }
+      else
+      {
+        return node; // Can't determine variable name
+      }
 
-        if (split_vars.count(split_name))
-        {
-          const auto & sv = split_vars.at(split_name);
-          return variable(sv.name, sv.shape);
-        }
+      std::string split_name = generateSplitVariableName(var_name, total_level);
+
+      if (split_vars.count(split_name))
+      {
+        const auto & sv = split_vars.at(split_name);
+        return variable(sv.name, sv.shape);
       }
     }
   }
@@ -211,11 +333,22 @@ VariableSplittingAnalyzer::transformNode(const NodePtr & node,
   switch (node->type())
   {
     case NodeType::Gradient:
+    case NodeType::Divergence:
+    case NodeType::Curl:
     {
       auto unary = std::static_pointer_cast<UnaryOpNode>(node);
+      unsigned int increment = getDerivativeIncrement(node->type());
       auto transformed_operand = transformNode(unary->operand(), split_vars,
-                                                current_derivative_level + 1);
-      return grad(transformed_operand, _dim);
+                                                current_derivative_level + increment);
+
+      switch (node->type())
+      {
+        case NodeType::Gradient: return grad(transformed_operand, _dim);
+        case NodeType::Divergence: return div(transformed_operand);
+        case NodeType::Curl: return curl(transformed_operand);
+        default: break;
+      }
+      break;
     }
 
     case NodeType::Laplacian:
@@ -226,10 +359,15 @@ VariableSplittingAnalyzer::transformNode(const NodePtr & node,
       return laplacian(transformed_operand);
     }
 
+    // Handle binary operations
     case NodeType::Add:
     case NodeType::Subtract:
     case NodeType::Multiply:
     case NodeType::Divide:
+    case NodeType::Dot:
+    case NodeType::Cross:
+    case NodeType::Contract:
+    case NodeType::Outer:
     {
       auto binary = std::static_pointer_cast<BinaryOpNode>(node);
       auto left = transformNode(binary->left(), split_vars, current_derivative_level);
@@ -241,15 +379,123 @@ VariableSplittingAnalyzer::transformNode(const NodePtr & node,
         case NodeType::Subtract: return subtract(left, right);
         case NodeType::Multiply: return multiply(left, right);
         case NodeType::Divide: return divide(left, right);
+        case NodeType::Dot: return dot(left, right);
+        case NodeType::Cross: return cross(left, right);
+        case NodeType::Contract: return contract(left, right);
+        case NodeType::Outer: return outer(left, right);
         default: break;
+      }
+      break;
+    }
+
+    case NodeType::Power:
+    {
+      auto binary = std::static_pointer_cast<BinaryOpNode>(node);
+      auto left = transformNode(binary->left(), split_vars, current_derivative_level);
+      auto right = transformNode(binary->right(), split_vars, 0); // Exponent doesn't inherit derivative level
+      return power(left, right);
+    }
+
+    // Handle unary operations that preserve derivative level
+    case NodeType::Negate:
+    case NodeType::Norm:
+    case NodeType::Normalize:
+    case NodeType::Trace:
+    case NodeType::Determinant:
+    case NodeType::Inverse:
+    case NodeType::Transpose:
+    case NodeType::Symmetric:
+    case NodeType::Skew:
+    case NodeType::Deviatoric:
+    {
+      auto unary = std::static_pointer_cast<UnaryOpNode>(node);
+      auto transformed_operand = transformNode(unary->operand(), split_vars, current_derivative_level);
+
+      switch (node->type())
+      {
+        case NodeType::Negate: return negate(transformed_operand);
+        case NodeType::Norm: return norm(transformed_operand);
+        case NodeType::Normalize: return normalize(transformed_operand);
+        case NodeType::Trace: return trace(transformed_operand);
+        case NodeType::Determinant: return det(transformed_operand);
+        case NodeType::Inverse: return inv(transformed_operand);
+        case NodeType::Transpose: return transpose(transformed_operand);
+        case NodeType::Symmetric: return sym(transformed_operand);
+        case NodeType::Skew: return skew(transformed_operand);
+        case NodeType::Deviatoric: return dev(transformed_operand);
+        default: break;
+      }
+      break;
+    }
+
+    case NodeType::Function:
+    {
+      auto func = std::static_pointer_cast<FunctionNode>(node);
+      std::vector<NodePtr> transformed_args;
+      for (const auto & arg : func->children())
+        transformed_args.push_back(transformNode(arg, split_vars, current_derivative_level));
+
+      return function(func->name(), transformed_args);
+    }
+
+    case NodeType::VectorComponent:
+    case NodeType::TensorComponent:
+    {
+      auto unary = std::static_pointer_cast<UnaryOpNode>(node);
+      auto transformed_operand = transformNode(unary->operand(), split_vars, current_derivative_level);
+      return node->clone(); // TODO: Implement component access transformation
+    }
+
+    case NodeType::VectorAssembly:
+    {
+      std::vector<NodePtr> transformed_components;
+      for (const auto & child : node->children())
+        transformed_components.push_back(transformNode(child, split_vars, current_derivative_level));
+
+      return std::make_shared<VectorAssemblyNode>(transformed_components, node->shape());
+    }
+
+    case NodeType::Variable:
+    {
+      // Variables might need to be replaced with split variables
+      auto var = std::static_pointer_cast<VariableNode>(node);
+      std::string var_name = var->name();
+
+      // Check if this variable should be replaced with a split variable
+      if (current_derivative_level > _fe_order)
+      {
+        std::string split_name = generateSplitVariableName(var_name, current_derivative_level);
+        if (split_vars.count(split_name))
+        {
+          const auto & sv = split_vars.at(split_name);
+          return variable(sv.name, sv.shape);
+        }
       }
 
       return node->clone();
     }
 
-    default:
+    // Leaf nodes - no transformation needed
+    case NodeType::Constant:
+    case NodeType::FieldVariable:
+    case NodeType::TestFunction:
+    case NodeType::ShapeFunction:
       return node->clone();
+
+    default:
+    {
+      // Generic fallback - transform all children
+      std::vector<NodePtr> transformed_children;
+      for (const auto & child : node->children())
+        transformed_children.push_back(transformNode(child, split_vars, current_derivative_level));
+
+      auto result = node->clone();
+      // TODO: Set transformed children on the cloned node
+      return result;
+    }
   }
+
+  return node->clone();
 }
 
 bool
@@ -298,19 +544,65 @@ VariableSplittingAnalyzer::computeSplitVariableShape(const Shape & original_shap
     if (derivative_order == 1)
       return VectorShape{_dim};
     else if (derivative_order == 2)
-      return TensorShape{_dim};
+    {
+      // Special case: Laplacian of scalar remains scalar!
+      // This is the key insight: u_d2 = laplacian(u) is scalar-valued
+      return ScalarShape{};
+    }
     else if (derivative_order == 3)
-      return RankThreeShape{_dim};
+      return VectorShape{_dim};  // grad(laplacian(u)) is vector
   }
   else if (std::holds_alternative<VectorShape>(original_shape))
   {
     if (derivative_order == 1)
       return TensorShape{_dim};
     else if (derivative_order == 2)
-      return RankThreeShape{_dim};
+      return VectorShape{_dim};  // Laplacian of vector is vector
   }
 
   mooseError("Cannot compute shape for derivative order ", derivative_order);
+}
+
+NodePtr
+VariableSplittingAnalyzer::findInnermostFieldVariable(const NodePtr & node)
+{
+  if (!node)
+    return nullptr;
+
+  if (node->type() == NodeType::FieldVariable || node->type() == NodeType::Variable)
+    return node;
+
+  // For unary operators (like gradient, divergence), recurse into operand
+  if (isDerivativeOperator(node->type()))
+  {
+    auto unary = std::static_pointer_cast<UnaryOpNode>(node);
+    return findInnermostFieldVariable(unary->operand());
+  }
+
+  // For other unary operators that preserve field variables
+  switch (node->type())
+  {
+    case NodeType::Negate:
+    case NodeType::Norm:
+    case NodeType::Normalize:
+    case NodeType::Trace:
+    case NodeType::Determinant:
+    case NodeType::Inverse:
+    case NodeType::Transpose:
+    case NodeType::Symmetric:
+    case NodeType::Skew:
+    case NodeType::Deviatoric:
+    case NodeType::VectorComponent:
+    case NodeType::TensorComponent:
+    {
+      auto unary = std::static_pointer_cast<UnaryOpNode>(node);
+      return findInnermostFieldVariable(unary->operand());
+    }
+    default:
+      break;
+  }
+
+  return nullptr;
 }
 
 std::vector<SplitVariableKernelGenerator::KernelInfo>

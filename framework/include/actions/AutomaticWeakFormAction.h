@@ -192,9 +192,9 @@ private:
   void buildNavierStokesEnergy();
   
   void setupMaterialProperties();
-  
+
   void addMaterialProperty(const std::string & name, const std::string & type);
-  
+
   std::string generateKernelName(const std::string & var_name, const std::string & suffix = "");
   
   std::string determineVariableFamily(const moose::automatic_weak_form::Shape & shape,
