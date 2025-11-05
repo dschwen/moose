@@ -85,6 +85,7 @@ VariationalKernelBase::VariationalKernelBase(const InputParameters & parameters)
 {
   _builder = std::make_unique<MooseExpressionBuilder>(_mesh.dimension());
   _weak_form_gen = std::make_unique<WeakFormGenerator>(_mesh.dimension());
+  _evaluator = std::make_unique<ExpressionEvaluator>(_mesh.dimension());
 
   if (isParamValid("energy_type"))
   {
@@ -134,7 +135,53 @@ VariationalKernelBase::VariationalKernelBase(const InputParameters & parameters)
   }
 
   initializeExpression();
+  initializeEvaluator();
   computeVariationalDerivative();
+}
+
+void
+VariationalKernelBase::initializeEvaluator()
+{
+  // Register the primary variable
+  _evaluator->registerVariable(_var.name(), _var.number());
+
+  // Register all coupled variables
+  unsigned int var_counter = _var.number() + 1;
+  for (const auto & var_name : _coupled_variable_names)
+  {
+    // If we don't already have a mapping, create one
+    if (_coupled_var_nums.find(var_name) == _coupled_var_nums.end())
+      _coupled_var_nums[var_name] = var_counter++;
+
+    _evaluator->registerVariable(var_name, _coupled_var_nums[var_name]);
+  }
+
+  // Register all parameters
+  for (const auto & [param_name, param_value] : _parameters)
+    _evaluator->setParameter(param_name, param_value);
+}
+
+void
+VariationalKernelBase::updateEvaluatorAtQP(unsigned int qp)
+{
+  // Update primary variable
+  _evaluator->setFieldValue(_var.number(), _u[qp]);
+  _evaluator->setFieldGradient(_var.number(), _grad_u[qp]);
+
+  // Update coupled variables
+  for (const auto & var_name : _coupled_variable_names)
+  {
+    unsigned int var_num = _coupled_var_nums[var_name];
+
+    if (_coupled_values.count(var_name))
+      _evaluator->setFieldValue(var_num, (*_coupled_values[var_name])[qp]);
+
+    if (_coupled_gradients.count(var_name))
+      _evaluator->setFieldGradient(var_num, (*_coupled_gradients[var_name])[qp]);
+
+    if (_fe_order >= 2 && _coupled_seconds.count(var_name))
+      _evaluator->setFieldHessian(var_num, (*_coupled_seconds[var_name])[qp]);
+  }
 }
 
 void
@@ -654,234 +701,131 @@ VariationalKernelBase::evaluateAtQP(const NodePtr & expr, unsigned int qp)
   if (!expr)
     return MooseValue(0.0);
 
+  // Validate that expression doesn't contain differential operators that should have been eliminated
+  // After integration by parts and variable splitting, we should only see:
+  // - Field variables (u, coupled_vars)
+  // - Gradients of field variables (grad(u), grad(coupled_var))
+  // - Parameters and constants
+  // We should NOT see:
+  // - div(field_var) - should be eliminated by integration by parts
+  // - laplacian(field_var) - should be eliminated by variable splitting
+  // - curl(field_var) - should be eliminated by variable splitting
+  validateDifferentialOperators(expr);
+
+  // Update the evaluator with values at this quadrature point
+  updateEvaluatorAtQP(qp);
+
+  // Use ExpressionEvaluator to evaluate the expression
+  // This handles all operations: arithmetic, vector ops, tensor ops, functions, etc.
+  try {
+    // ExpressionEvaluator has public methods for different return types
+    // For now, try to evaluate as scalar, vector, or tensor based on the expression shape
+    if (!expr->shape().index())  // ScalarShape
+    {
+      Real result = _evaluator->evaluate(expr);
+      return MooseValue(result);
+    }
+    else if (expr->shape().index() == 1)  // VectorShape
+    {
+      RealVectorValue result = _evaluator->evaluateVector(expr);
+      return MooseValue(result, _mesh.dimension());
+    }
+    else if (expr->shape().index() == 2)  // TensorShape
+    {
+      RankTwoTensor result = _evaluator->evaluateTensor(expr);
+      return MooseValue(result, _mesh.dimension());
+    }
+    else
+    {
+      mooseError("Unsupported expression shape index: ", expr->shape().index());
+    }
+  }
+  catch (const std::exception & e) {
+    // If evaluation fails, provide helpful error message
+    mooseError("Failed to evaluate expression at QP ", qp, ":\n",
+               "Expression: ", expr->toString(), "\n",
+               "Error: ", e.what());
+  }
+}
+
+void
+VariationalKernelBase::validateDifferentialOperators(const NodePtr & expr) const
+{
+  if (!expr)
+    return;
+
+  // Check this node
   switch (expr->type())
   {
-    case NodeType::Constant:
+    case NodeType::Divergence:
     {
-      auto const_node = std::static_pointer_cast<ConstantNode>(expr);
-      return const_node->value();
-    }
-
-    case NodeType::FieldVariable:
-    {
-      auto field_node = std::static_pointer_cast<FieldVariableNode>(expr);
-      std::string name = field_node->name();
-
-      if (_variable_cache.count(name))
-        return _variable_cache[name];
-
-      if (name == _var.name())
-        return MooseValue(_u[qp]);
-
-      if (_coupled_values.count(name))
-        return MooseValue((*_coupled_values[name])[qp]);
-
-      mooseError("Unknown field variable: ", name);
-    }
-    
-    case NodeType::Variable:
-    {
-      auto var_node = std::static_pointer_cast<VariableNode>(expr);
-      std::string name = var_node->name();
-
-      if (_variable_cache.count(name))
-        return _variable_cache[name];
-
-      if (name == _var.name())
-        return MooseValue(_u[qp]);
-
-      if (_coupled_values.count(name))
-        return MooseValue((*_coupled_values[name])[qp]);
-
-      mooseError("Unknown variable: ", name);
-    }
-
-    case NodeType::Add:
-    {
-      auto binary = std::static_pointer_cast<BinaryOpNode>(expr);
-      auto left_val = evaluateAtQP(binary->left(), qp);
-      auto right_val = evaluateAtQP(binary->right(), qp);
-      
-      return left_val + right_val;
-    }
-
-    case NodeType::Subtract:
-    {
-      auto binary = std::static_pointer_cast<BinaryOpNode>(expr);
-      auto left_val = evaluateAtQP(binary->left(), qp);
-      auto right_val = evaluateAtQP(binary->right(), qp);
-      return left_val - right_val;
-    }
-
-    case NodeType::Multiply:
-    {
-      auto binary = std::static_pointer_cast<BinaryOpNode>(expr);
-      auto left_val = evaluateAtQP(binary->left(), qp);
-      auto right_val = evaluateAtQP(binary->right(), qp);
-      
-      return left_val * right_val;
-    }
-
-    case NodeType::Power:
-    {
-      auto binary = std::static_pointer_cast<BinaryOpNode>(expr);
-      auto base_val = evaluateAtQP(binary->left(), qp);
-      auto exp_val = evaluateAtQP(binary->right(), qp);
-      if (base_val.isScalar() && exp_val.isScalar())
-        return MooseValue(std::pow(base_val.asScalar(), exp_val.asScalar()));
-      mooseError("Cannot evaluate power of non-scalar values");
-    }
-
-    case NodeType::Gradient:
-    {
+      // Check if divergence is applied to a field variable (not allowed)
       auto unary = std::static_pointer_cast<UnaryOpNode>(expr);
       auto operand = unary->operand();
 
-      // Handle direct field variables
-      if (operand->type() == NodeType::FieldVariable)
+      if (operand->type() == NodeType::FieldVariable || operand->type() == NodeType::Variable)
       {
-        auto field_node = std::static_pointer_cast<FieldVariableNode>(operand);
-        std::string name = field_node->name();
-
-        if (_variable_cache.count(name + "_grad"))
-          return _variable_cache[name + "_grad"];
-
-        if (name == _var.name())
-          return MooseValue(RealVectorValue(_grad_u[qp]), _mesh.dimension());
-
-        if (_coupled_gradients.count(name))
-          return MooseValue(RealVectorValue((*_coupled_gradients[name])[qp]), _mesh.dimension());
+        mooseError("div(", operand->toString(), ") appeared in weak form coefficient.\n",
+                   "Divergence of field variables should be eliminated by integration by parts.\n",
+                   "This indicates the weak form generator did not properly apply integration by parts.");
       }
-      // Handle symbolic variables (from differentiation)
-      else if (operand->type() == NodeType::Variable)
-      {
-        auto var_node = std::static_pointer_cast<VariableNode>(operand);
-        std::string name = var_node->name();
-        
-        if (_variable_cache.count(name + "_grad"))
-          return _variable_cache[name + "_grad"];
 
-        if (name == _var.name())
-          return MooseValue(RealVectorValue(_grad_u[qp]), _mesh.dimension());
-
-        if (_coupled_gradients.count(name))
-          return MooseValue(RealVectorValue((*_coupled_gradients[name])[qp]), _mesh.dimension());
-          
-        mooseError("Unknown variable in gradient: ", name);
-      }
-      // Handle multiplication by constant (e.g., grad(c * u))
-      else if (operand->type() == NodeType::Multiply)
+      // div(grad(u)) might appear and should be caught
+      if (operand->type() == NodeType::Gradient)
       {
-        auto mult_node = std::static_pointer_cast<BinaryOpNode>(operand);
-        auto left = mult_node->left();
-        auto right = mult_node->right();
-        
-        // Check if one side is a constant and the other is a field variable
-        if (left->type() == NodeType::Constant && right->type() == NodeType::FieldVariable)
+        auto grad_unary = std::static_pointer_cast<UnaryOpNode>(operand);
+        auto grad_operand = grad_unary->operand();
+        if (grad_operand->type() == NodeType::FieldVariable || grad_operand->type() == NodeType::Variable)
         {
-          auto const_val = evaluateAtQP(left, qp);
-          auto field_node = std::static_pointer_cast<FieldVariableNode>(right);
-          std::string name = field_node->name();
-          
-          MooseValue grad_val;
-          if (name == _var.name())
-            grad_val = MooseValue(RealVectorValue(_grad_u[qp]), _mesh.dimension());
-          else if (_coupled_gradients.count(name))
-            grad_val = MooseValue(RealVectorValue((*_coupled_gradients[name])[qp]), _mesh.dimension());
-          else
-            mooseError("Unknown field variable in gradient: ", name);
-            
-          return const_val * grad_val;
-        }
-        else if (right->type() == NodeType::Constant && left->type() == NodeType::FieldVariable)
-        {
-          auto const_val = evaluateAtQP(right, qp);
-          auto field_node = std::static_pointer_cast<FieldVariableNode>(left);
-          std::string name = field_node->name();
-          
-          MooseValue grad_val;
-          if (name == _var.name())
-            grad_val = MooseValue(RealVectorValue(_grad_u[qp]), _mesh.dimension());
-          else if (_coupled_gradients.count(name))
-            grad_val = MooseValue(RealVectorValue((*_coupled_gradients[name])[qp]), _mesh.dimension());
-          else
-            mooseError("Unknown field variable in gradient: ", name);
-            
-          return const_val * grad_val;
+          mooseError("div(grad(", grad_operand->toString(), ")) (laplacian) appeared in weak form coefficient.\n",
+                     "This second-order operator should be eliminated by either:\n",
+                     "  1. Variable splitting (introduce auxiliary variable q = grad(u))\n",
+                     "  2. Using higher-order finite elements\n",
+                     "Consider enabling 'enable_variable_splitting = true' in the input file.");
         }
       }
-      // For more complex expressions, use numerical differentiation or chain rule
-      else
-      {
-        // This is a limitation - we can't evaluate gradient of arbitrary expressions
-        // In practice, after differentiation we should only get simple cases
-        mooseError("Cannot evaluate gradient of complex expression. Expression type: ", 
-                   static_cast<int>(operand->type()));
-      }
-
-      mooseError("Cannot evaluate gradient of non-field variable");
+      break;
     }
 
-    case NodeType::Dot:
+    case NodeType::Laplacian:
     {
-      auto binary = std::static_pointer_cast<BinaryOpNode>(expr);
-      auto left_val = evaluateAtQP(binary->left(), qp);
-      auto right_val = evaluateAtQP(binary->right(), qp);
-      return moose::automatic_weak_form::dot(left_val, right_val);
-    }
-
-    case NodeType::Norm:
-    {
+      // Laplacian should never appear on field variables after splitting
       auto unary = std::static_pointer_cast<UnaryOpNode>(expr);
-      auto operand_val = evaluateAtQP(unary->operand(), qp);
-      return norm(operand_val);
+      auto operand = unary->operand();
+      if (operand->type() == NodeType::FieldVariable || operand->type() == NodeType::Variable)
+      {
+        mooseError("laplacian(", operand->toString(), ") appeared in weak form coefficient.\n",
+                   "Second-order operators should be eliminated by variable splitting.\n",
+                   "Enable 'enable_variable_splitting = true' and ensure max_fe_order is set appropriately.");
+      }
+      break;
     }
 
-    case NodeType::Function:
+    case NodeType::Curl:
     {
-      auto func_node = std::static_pointer_cast<FunctionNode>(expr);
-
-      if (func_node->name() == "dW_dc" && func_node->args().size() == 1)
+      // Curl of field variables requires special handling
+      auto unary = std::static_pointer_cast<UnaryOpNode>(expr);
+      auto operand = unary->operand();
+      if (operand->type() == NodeType::FieldVariable || operand->type() == NodeType::Variable)
       {
-        auto c_val = evaluateAtQP(func_node->args()[0], qp);
-        if (c_val.isScalar())
-        {
-          Real c = c_val.asScalar();
-          Real dW = 4.0 * c * (c * c - 1.0);
-          return MooseValue(dW);
-        }
+        mooseError("curl(", operand->toString(), ") appeared in weak form coefficient.\n",
+                   "Curl of field variables should be handled via variable splitting or edge elements.\n",
+                   "For H(curl) problems, use specialized finite element spaces.");
       }
-
-      mooseError("Unknown function: ", func_node->name());
-    }
-
-    case NodeType::VectorAssembly:
-    {
-      // Evaluate each component of the vector
-      auto vec_node = std::static_pointer_cast<VectorAssemblyNode>(expr);
-      std::vector<Real> components;
-
-      for (const auto & comp : vec_node->components())
-      {
-        MooseValue comp_val = evaluateAtQP(comp, qp);
-        if (!comp_val.isScalar())
-          mooseError("VectorAssembly components must be scalars");
-        components.push_back(comp_val.asScalar());
-      }
-
-      // Create a RealVectorValue from the components
-      if (components.size() == 2)
-        return MooseValue(RealVectorValue(components[0], components[1], 0.0), 3);
-      else if (components.size() == 3)
-        return MooseValue(RealVectorValue(components[0], components[1], components[2]), 3);
-      else
-        mooseError("VectorAssembly must have 2 or 3 components, got ", components.size());
+      break;
     }
 
     default:
-      mooseError("Cannot evaluate expression type: ", expr->toString());
+      break;
   }
+
+  // Recursively validate children
+  for (const auto & child : expr->children())
+    validateDifferentialOperators(child);
 }
+
+// Rest of the original evaluateAtQP implementation removed - now using ExpressionEvaluator
+// The old implementation can be found in git history if needed
 
 NodePtr
 VariationalKernelBase::differentiateWithRespectToField(const NodePtr & expr, const std::string & var_name)

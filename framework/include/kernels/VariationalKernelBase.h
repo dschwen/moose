@@ -5,6 +5,7 @@
 #include "MooseExpressionBuilder.h"
 #include "WeakFormGenerator.h"
 #include "EvaluationTape.h"
+#include "ExpressionEvaluator.h"
 
 namespace moose
 {
@@ -39,15 +40,21 @@ protected:
 
   MooseValue evaluateAtQP(const NodePtr & expr, unsigned int qp);
 
+  void initializeEvaluator();
+
   void setupFieldVariables();
 
   void updateVariableValues(unsigned int qp);
+
+  void updateEvaluatorAtQP(unsigned int qp);
   
   NodePtr differentiateWithRespectToField(const NodePtr & expr, const std::string & var_name);
   
   NodePtr differentiateWithRespectToGradient(const NodePtr & expr, const std::string & var_name);
-  
+
   bool containsGradient(const NodePtr & expr, const std::string & var_name);
+
+  void validateDifferentialOperators(const NodePtr & expr) const;
 
 protected:
   std::unique_ptr<MooseExpressionBuilder> _builder;
@@ -55,6 +62,8 @@ protected:
   NodePtr _energy_density;
 
   std::unique_ptr<WeakFormGenerator> _weak_form_gen;
+
+  std::unique_ptr<ExpressionEvaluator> _evaluator;
 
   std::map<std::string, const VariableValue *> _coupled_values;
   std::map<std::string, const VariableGradient *> _coupled_gradients;
