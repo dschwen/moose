@@ -975,25 +975,15 @@ AutomaticWeakFormAction::addSplitConstraintKernels()
         _console << "    - Adding Laplacian constraint kernel for: " << sv.name << "\n";
 
       // Add Laplacian constraint: u_d2 = laplacian(u)
-      // Weak form: ∫ u_d2 * v dx = ∫ grad(u) · grad(v) dx
+      // Weak form after integration by parts: ∫ u_d2 * v dx + ∫ grad(u) · grad(v) dx = 0
       std::string kernel_name = sv.name + "_laplacian_constraint";
 
-      // Use VariationalKernelBase with the Laplacian constraint weak form
-      InputParameters params = _factory.getValidParams("VariationalKernelBase");
+      // Use the dedicated LaplacianConstraintKernel
+      InputParameters params = _factory.getValidParams("LaplacianConstraintKernel");
       params.set<NonlinearVariableName>("variable") = sv.name;
-      params.set<std::vector<VariableName>>("coupled") = {sv.original_variable};
+      params.set<std::vector<VariableName>>("u") = {sv.original_variable};
 
-      // The residual for the Laplacian constraint is:
-      // R = u_d2 * test - grad(u) · grad(test)
-      params.set<std::string>("residual_expression") = sv.name + " * test - dot(grad(" + sv.original_variable + "), grad(test))";
-      params.set<bool>("use_automatic_differentiation") = _use_automatic_differentiation;
-
-      // Pass parameters if available
-      if (isParamValid("parameters"))
-        params.set<std::map<std::string, Real>>("parameters") =
-            getParam<std::map<std::string, Real>>("parameters");
-
-      _problem->addKernel("VariationalKernelBase", kernel_name, params);
+      _problem->addKernel("LaplacianConstraintKernel", kernel_name, params);
 
       if (_verbose)
         _console << "    - Added Laplacian constraint: " << kernel_name
