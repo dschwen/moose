@@ -115,6 +115,14 @@ AutomaticWeakFormAction::validParams()
   params.addParam<Real>("surface_energy", 1.0, "Surface energy coefficient");
   params.addParam<Real>("well_height", 1.0, "Double-well potential height");
 
+  // Boundary condition control
+  params.addParam<bool>("generate_natural_bcs", true,
+                        "Automatically generate natural boundary conditions from energy functional");
+  params.addParam<std::vector<BoundaryName>>("natural_bc_boundaries",
+                                               "Boundaries to apply natural BCs (default: all boundaries without Dirichlet BCs)");
+  params.addParam<std::vector<BoundaryName>>("exclude_bc_boundaries",
+                                               "Boundaries to exclude from automatic natural BC generation");
+
   return params;
 }
 
@@ -1190,6 +1198,204 @@ AutomaticWeakFormAction::addAuxKernels()
 void
 AutomaticWeakFormAction::addBoundaryConditions()
 {
+  // Check if natural BC generation is enabled
+  bool generate_natural_bcs = getParam<bool>("generate_natural_bcs");
+  if (!generate_natural_bcs)
+  {
+    if (_verbose)
+      _console << "\n[AutomaticWeakForm] Natural BC generation disabled\n";
+    return;
+  }
+
+  // Skip if no energy functional
+  if (!_energy_functional && _multiple_energies.empty())
+    return;
+
+  if (_verbose)
+    _console << "\n[AutomaticWeakForm] Extracting and adding natural boundary conditions\n";
+
+  // Transform energy if we have split variables
+  moose::automatic_weak_form::NodePtr transformed_energy = _energy_functional;
+  if (_enable_splitting && !_split_variables.empty() && _energy_functional)
+  {
+    moose::automatic_weak_form::ExpressionTransformer transformer(_split_variables, _problem->mesh().dimension());
+    transformed_energy = transformer.transform(_energy_functional);
+  }
+
+  // Process each variable
+  std::vector<std::string> vars_to_process = _variable_names;
+
+  // Also process split variables if they exist
+  for (const auto & [name, sv] : _split_variables)
+    vars_to_process.push_back(sv.name);
+
+  for (const auto & var_name : vars_to_process)
+  {
+    if (_verbose)
+      _console << "\n--- Extracting boundary terms for variable: " << var_name << " ---\n";
+
+    // Get the appropriate energy expression
+    moose::automatic_weak_form::NodePtr energy_to_use = transformed_energy;
+    if (!_multiple_energies.empty() && _multiple_energies.count(var_name) > 0)
+      energy_to_use = _multiple_energies.at(var_name);
+
+    if (!energy_to_use)
+    {
+      if (_verbose)
+        _console << "  No energy expression for " << var_name << ", skipping boundary terms\n";
+      continue;
+    }
+
+    // Compute contributions (includes boundary terms)
+    auto contributions = _weak_form_gen->computeContributions(energy_to_use, var_name);
+
+    if (contributions.boundary_terms.empty())
+    {
+      if (_verbose)
+        _console << "  No boundary terms found (pure bulk energy or Dirichlet-only problem)\n";
+      continue;
+    }
+
+    if (_verbose)
+      _console << "  Found " << contributions.boundary_terms.size() << " boundary term(s)\n";
+
+    // For each boundary term, create a VariationalBC
+    unsigned int bc_idx = 0;
+    for (const auto & bt : contributions.boundary_terms)
+    {
+      if (_verbose)
+      {
+        _console << "\n  Boundary term " << (bc_idx + 1) << ":\n";
+        _console << "    Variable: " << bt.variable_name << "\n";
+        _console << "    Coefficient: " << bt.coefficient->toString() << "\n";
+        _console << "    Field derivative order: " << bt.field_derivative_order << "\n";
+        _console << "    Test derivative order: " << bt.test_derivative_order << "\n";
+        _console << "    Sign: " << (bt.sign > 0 ? "+" : "-") << "\n";
+        _console << "    Description: " << bt.description << "\n";
+      }
+
+      // Build the boundary expression: sign * (coefficient · normal)
+      // The coefficient is already computed from variational derivative
+      // We need to contract it with the normal vector
+
+      std::string bc_name = var_name + "_natural_bc";
+      if (bc_idx > 0)
+        bc_name += "_" + std::to_string(bc_idx);
+
+      // Create the boundary expression string
+      // Format: sign * dot(coefficient, n)
+      std::string coeff_str = bt.coefficient->toString();
+      std::string sign_str = (bt.sign > 0) ? "" : "-";
+      std::string boundary_expr = sign_str + "dot(" + coeff_str + ", n)";
+
+      if (_verbose)
+        _console << "    Generated boundary expression: " << boundary_expr << "\n";
+
+      // Create VariationalBC parameters
+      InputParameters params = _factory.getValidParams("VariationalBC");
+      params.set<NonlinearVariableName>("variable") = bt.variable_name;
+
+      // Determine which boundaries to apply natural BCs to
+      std::vector<BoundaryName> bc_boundaries;
+
+      if (isParamValid("natural_bc_boundaries"))
+      {
+        // User explicitly specified which boundaries to use
+        bc_boundaries = getParam<std::vector<BoundaryName>>("natural_bc_boundaries");
+
+        if (_verbose)
+          _console << "    Using user-specified boundaries for natural BC\n";
+      }
+      else
+      {
+        // Default: apply to all boundaries
+        bc_boundaries = {"all"};
+
+        if (_verbose)
+          _console << "    Using default 'all' boundaries for natural BC\n";
+      }
+
+      // Remove any excluded boundaries
+      if (isParamValid("exclude_bc_boundaries"))
+      {
+        const auto & excluded = getParam<std::vector<BoundaryName>>("exclude_bc_boundaries");
+
+        if (_verbose && !excluded.empty())
+        {
+          _console << "    Excluding boundaries: ";
+          for (size_t i = 0; i < excluded.size(); ++i)
+          {
+            if (i > 0) _console << ", ";
+            _console << excluded[i];
+          }
+          _console << "\n";
+        }
+
+        // Remove excluded boundaries from the list
+        bc_boundaries.erase(
+          std::remove_if(bc_boundaries.begin(), bc_boundaries.end(),
+            [&excluded](const BoundaryName& bn) {
+              return std::find(excluded.begin(), excluded.end(), bn) != excluded.end();
+            }),
+          bc_boundaries.end());
+      }
+
+      // Skip if no boundaries remain after exclusions
+      if (bc_boundaries.empty())
+      {
+        if (_verbose)
+          _console << "    No boundaries remaining after exclusions, skipping natural BC\n";
+        bc_idx++;
+        continue;
+      }
+
+      params.set<std::vector<BoundaryName>>("boundary") = bc_boundaries;
+
+      params.set<std::string>("boundary_expression") = boundary_expr;
+      params.set<bool>("use_automatic_differentiation") = _use_automatic_differentiation;
+
+      // Pass parameters if any
+      if (isParamValid("parameters"))
+        params.set<std::map<std::string, Real>>("parameters") =
+            getParam<std::map<std::string, Real>>("parameters");
+
+      // Pass coupled variables
+      std::vector<VariableName> coupled_vars;
+      for (const auto & name : _variable_names)
+      {
+        if (name != bt.variable_name)
+          coupled_vars.push_back(name);
+      }
+      for (const auto & name : _coupled_variable_names)
+      {
+        if (name != bt.variable_name &&
+            std::find(coupled_vars.begin(), coupled_vars.end(), name) == coupled_vars.end())
+          coupled_vars.push_back(name);
+      }
+
+      if (!coupled_vars.empty())
+        params.set<std::vector<VariableName>>("coupled_variables") = coupled_vars;
+
+      // Add the boundary condition
+      _problem->addBoundaryCondition("VariationalBC", bc_name, params);
+
+      if (_verbose)
+      {
+        _console << "    Added VariationalBC: " << bc_name << " on boundaries: ";
+        for (size_t i = 0; i < bc_boundaries.size(); ++i)
+        {
+          if (i > 0) _console << ", ";
+          _console << bc_boundaries[i];
+        }
+        _console << "\n";
+      }
+
+      bc_idx++;
+    }
+  }
+
+  if (_verbose)
+    _console << "\n[AutomaticWeakForm] Natural boundary condition generation complete\n";
 }
 
 std::string

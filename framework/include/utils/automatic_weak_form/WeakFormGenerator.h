@@ -109,15 +109,63 @@ public:
                                        const std::string & trial_var,
                                        bool use_shape_functions = true);
   
+  /**
+   * Boundary term from integration by parts
+   *
+   * When we integrate by parts to transfer derivatives from field variables
+   * to test functions, boundary integrals appear. These represent natural
+   * boundary conditions that should be enforced (or left free).
+   *
+   * Example: For energy F = ∫ ½k|∇u|² dx
+   *   - Coefficient C¹ = k∇u (from variational derivative)
+   *   - After IBP: ∫ k∇u·∇v dx - ∫_∂Ω k(∇u·n)v ds
+   *   - The boundary term is: k(∇u·n)v
+   *
+   * The term is stored in the form: coefficient * test_function
+   * where test_function may have derivatives (e.g., ∂v/∂n for bending moments)
+   */
+  struct BoundaryTerm
+  {
+    /// The coefficient expression (e.g., k*grad(u)*n for Neumann BC)
+    NodePtr coefficient;
+
+    /// Variable this BC applies to
+    std::string variable_name;
+
+    /// Derivative order of test function (0 = v, 1 = ∂v/∂n, etc.)
+    unsigned int test_derivative_order;
+
+    /// Derivative order of field variable in original expression
+    unsigned int field_derivative_order;
+
+    /// Sign from integration by parts (alternates with order)
+    int sign;  // +1 or -1
+
+    /// Human-readable description for documentation
+    std::string description;
+  };
+
   struct WeakFormContributions
   {
+    /// Coefficient of zeroth derivative (bulk term)
     NodePtr c0_term;
+
+    /// Coefficient of first derivative (gradient term)
     NodePtr c1_term;
+
+    /// Coefficient of second derivative (Hessian/Laplacian term)
     NodePtr c2_term;
+
+    /// Coefficient of third derivative
     NodePtr c3_term;
-    
+
+    /// Total weak form residual (after applying test functions)
     NodePtr total_residual;
-    
+
+    /// Boundary terms from integration by parts (natural BCs)
+    std::vector<BoundaryTerm> boundary_terms;
+
+    /// Maximum derivative order appearing
     unsigned int max_order;
   };
   

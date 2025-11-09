@@ -239,15 +239,17 @@ TEST_F(VariableSplittingAnalyzerTest, ExpressionTransformation)
     auto split_vars = analyzer->generateSplitVariables(expr);
     auto transformed = analyzer->transformExpression(expr, split_vars);
 
-    EXPECT_NE(transformed, nullptr);
-    // The transformed expression should reference the split variable
-    std::string transformed_str = transformed->toString();
+    ASSERT_NE(transformed, nullptr);
 
     // laplacian(u) should transform to u_hess (scalar split variable)
-    EXPECT_NE(transformed_str.find("u_hess"), std::string::npos);
+    // Exact string comparison for clarity
+    std::string transformed_str = transformed->toString();
+    EXPECT_EQ(transformed_str, "u_hess")
+        << "Expected exact transformation: laplacian(u) -> u_hess";
 
     // The original expression should be different from the transformed one
     std::string original_str = expr->toString();
+    EXPECT_EQ(original_str, "laplacian(u)");
     EXPECT_NE(original_str, transformed_str);
   }
 
@@ -257,15 +259,27 @@ TEST_F(VariableSplittingAnalyzerTest, ExpressionTransformation)
     auto split_vars = analyzer->generateSplitVariables(expr);
     auto transformed = analyzer->transformExpression(expr, split_vars);
 
-    EXPECT_NE(transformed, nullptr);
+    ASSERT_NE(transformed, nullptr);
     std::string transformed_str = transformed->toString();
 
     // u should be split (laplacian = 2nd order), v should not (grad = 1st order)
-    if (split_vars.count("u_hess"))
-      EXPECT_NE(transformed_str.find("u_hess"), std::string::npos);
+    // Exact string comparison - u_hess replaces laplacian(u), grad(v) stays as is
+    EXPECT_EQ(transformed_str, "(u_hess + dot(grad(v), grad(v)))")
+        << "Expected: laplacian(u) -> u_hess, grad(v) unchanged";
+  }
 
-    // v should not be split at FE order 1
-    EXPECT_EQ(transformed_str.find("v_grad"), std::string::npos);
+  // Fourth-order transformation
+  {
+    auto expr = parser->parse("dot(grad(grad(c)), grad(grad(c)))");
+    auto split_vars = analyzer->generateSplitVariables(expr);
+    auto transformed = analyzer->transformExpression(expr, split_vars);
+
+    ASSERT_NE(transformed, nullptr);
+    std::string transformed_str = transformed->toString();
+
+    // With splitting: c_hess = grad(c), so grad(grad(c)) becomes grad(c_hess)
+    EXPECT_EQ(transformed_str, "dot(grad(c_hess), grad(c_hess))")
+        << "Expected: grad(c) -> c_hess, so grad(grad(c)) -> grad(c_hess)";
   }
 }
 
@@ -279,9 +293,11 @@ TEST_F(VariableSplittingAnalyzerTest, ConstraintGeneration)
   EXPECT_EQ(constraints.size(), 1);
   EXPECT_NE(constraints[0], nullptr);
 
-  // The constraint should be of the form: u_hess - grad(grad(u)) = 0
+  // The constraint should be of the form: u_hess - laplacian(u) = 0
+  // Exact string comparison for clarity
   std::string constraint_str = constraints[0]->toString();
-  EXPECT_NE(constraint_str.find("u_hess"), std::string::npos);
+  EXPECT_EQ(constraint_str, "(u_hess - laplacian(u))")
+      << "Expected constraint equation: u_hess = laplacian(u)";
 }
 
 // Test with different FE orders

@@ -890,23 +890,130 @@ NodePtr WeakFormGenerator::computeResidualContribution(
   return result;
 }
 
+/**
+ * Extract boundary terms from variational derivative
+ *
+ * MATHEMATICAL FOUNDATION:
+ * =======================
+ * When computing weak forms, we transfer derivatives from field variables onto
+ * test functions via integration by parts (IBP). This produces boundary terms.
+ *
+ * General IBP formula in multi-D:
+ *   ∫_Ω C^k : ∇^k v dx = (-1)^k ∫_Ω (∇^k · C^k) v dx
+ *                        + ∑_{i=0}^{k-1} (-1)^i ∫_∂Ω (n · ∇^i C^k) ∇^{k-1-i} v ds
+ *
+ * where:
+ *   - C^k = ∂f/∂(∇^k u) is the coefficient at derivative order k
+ *   - n is the outward unit normal on the boundary
+ *   - The sum represents nested boundary terms
+ *
+ * EXAMPLES:
+ * =========
+ * 1. First-order (gradient) term:
+ *    Energy: F = ∫ ½k|∇u|² dx
+ *    Coefficient: C¹ = k∇u
+ *    After IBP: ∫ k∇u·∇v dx = -∫ ∇·(k∇u) v dx + ∫_∂Ω k(∇u·n) v ds
+ *    Boundary term: k(∇u·n)v  (Neumann BC)
+ *
+ * 2. Second-order (Laplacian/Hessian) term:
+ *    Energy: F = ∫ ½λ|∇²u|² dx  (bending energy)
+ *    Coefficient: C² = λ∇²u
+ *    After IBP: produces TWO boundary terms:
+ *      - λ(∇²u·n)v        (moment/shear BC)
+ *      - λ(∇u·n)(∇v·n)    (slope BC)
+ *
+ * WHY THIS MATTERS:
+ * ================
+ * These boundary terms represent NATURAL boundary conditions that arise from
+ * the energy minimization. They tell us what forces/fluxes exist on boundaries
+ * that aren't constrained by Dirichlet conditions.
+ *
+ * For users, this means:
+ *   - No need to manually derive Neumann BCs
+ *   - Automatic detection of required BC types
+ *   - Clear connection between energy and boundary physics
+ */
+NodePtr WeakFormGenerator::extractBoundaryTerms(
+    const Differential & diff,
+    const std::string & var_name)
+{
+  // Create a symbolic normal vector for boundary term expressions
+  auto normal = variable("n");  // Represents outward unit normal
+
+  NodePtr result = nullptr;
+
+  // Process each derivative order coefficient
+  for (const auto & [order, coeff] : diff.coefficients)
+  {
+    if (!coeff || order == 0)
+      continue;  // Skip if no coefficient or zeroth order (no boundary terms)
+
+    // For each derivative order k > 0, we get boundary terms from IBP
+    // The simplest case: just take the coefficient and contract with normal
+    //
+    // For order 1: C¹·n (flux across boundary)
+    // For order 2: C²·n (moment/curvature on boundary)
+    // etc.
+    //
+    // Sign alternates: order 1 → -, order 2 → +, order 3 → -, ...
+    int sign = (order % 2 == 1) ? -1 : 1;
+
+    NodePtr boundary_flux = dot(coeff, normal);
+
+    if (sign < 0)
+      boundary_flux = negate(boundary_flux);
+
+    if (result)
+      result = add(result, boundary_flux);
+    else
+      result = boundary_flux;
+  }
+
+  return result;
+}
+
 WeakFormGenerator::WeakFormContributions WeakFormGenerator::computeContributions(
     const NodePtr & energy_density,
     const std::string & var_name)
 {
   DifferentiationVisitor dv(var_name);
   Differential diff = dv.differentiate(energy_density);
-  
+
   WeakFormContributions contributions;
   contributions.max_order = diff.maxOrder();
-  
+
   contributions.c0_term = diff.getCoefficient(0);
   contributions.c1_term = diff.getCoefficient(1);
   contributions.c2_term = diff.getCoefficient(2);
   contributions.c3_term = diff.getCoefficient(3);
-  
+
   contributions.total_residual = computeResidualContribution(diff, var_name);
-  
+
+  // Extract boundary terms from integration by parts
+  // These represent natural boundary conditions
+  for (const auto & [order, coeff] : diff.coefficients)
+  {
+    if (!coeff || order == 0)
+      continue;  // Zeroth order has no spatial derivatives, so no boundary terms
+
+    BoundaryTerm bt;
+    bt.coefficient = coeff;
+    bt.variable_name = var_name;
+    bt.field_derivative_order = order;
+    bt.test_derivative_order = order - 1;  // IBP transfers one derivative to test function
+    bt.sign = (order % 2 == 1) ? -1 : 1;   // Alternating signs from IBP
+
+    // Generate human-readable description
+    if (order == 1)
+      bt.description = "Neumann BC (flux): normal component of " + coeff->toString();
+    else if (order == 2)
+      bt.description = "Moment/curvature BC: normal component of " + coeff->toString();
+    else
+      bt.description = "Higher-order BC (order " + std::to_string(order) + "): " + coeff->toString();
+
+    contributions.boundary_terms.push_back(bt);
+  }
+
   return contributions;
 }
 
