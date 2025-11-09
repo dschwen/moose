@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MooseAST.h"
+#include "WeakFormGenerator.h"
 #include <string>
 #include <map>
 #include <vector>
@@ -175,6 +176,9 @@ private:
   // Common energy functions
   NodePtr parseDoubleWell(const std::vector<NodePtr> & args);
   NodePtr parseGinzburgLandau(const std::vector<NodePtr> & args);
+
+  // Variational derivative operator
+  NodePtr parseVarDiff(const std::vector<NodePtr> & args);
 };
 
 // Convenience function for parsing
@@ -571,6 +575,8 @@ inline NodePtr StringExpressionParser::parseFunction(const std::string & name, T
     return parsePow(args);
   else if (name == "W" || name == "doublewell")
     return parseDoubleWell(args);
+  else if (name == "var_diff" || name == "variational_derivative")
+    return parseVarDiff(args);
   else if (_custom_functions.count(name))
     return expandCustomFunction(name, args);
   else
@@ -712,7 +718,7 @@ inline NodePtr StringExpressionParser::parseVec(const std::vector<NodePtr> & arg
 {
   if (args.size() < 2 || args.size() > 3)
     mooseError("vec() requires 2 or 3 arguments (for 2D or 3D vectors)");
-  
+
   // Create a vector from scalar components
   if (args.size() == 2)
   {
@@ -724,6 +730,45 @@ inline NodePtr StringExpressionParser::parseVec(const std::vector<NodePtr> & arg
     // 3D vector
     return vec3(args[0], args[1], args[2]);
   }
+}
+
+inline NodePtr StringExpressionParser::parseVarDiff(const std::vector<NodePtr> & args)
+{
+  if (args.size() != 2)
+    mooseError("var_diff() requires exactly 2 arguments: var_diff(energy_density, variable_name)");
+
+  // First argument is the energy density expression
+  NodePtr energy_density = args[0];
+
+  // Second argument should be a variable name
+  // It could be either a VariableNode or FieldVariableNode
+  std::string var_name;
+  if (args[1]->type() == NodeType::Variable)
+  {
+    auto var_node = std::static_pointer_cast<VariableNode>(args[1]);
+    var_name = var_node->name();
+  }
+  else if (args[1]->type() == NodeType::FieldVariable)
+  {
+    auto field_node = std::static_pointer_cast<FieldVariableNode>(args[1]);
+    var_name = field_node->name();
+  }
+  else
+  {
+    mooseError("Second argument to var_diff() must be a variable name, got: " + args[1]->toString());
+  }
+
+  // Compute the variational derivative using DifferentiationVisitor
+  // This computes δF/δu where F = ∫ energy_density dx
+  DifferentiationVisitor diff_visitor(var_name);
+  Differential diff = diff_visitor.differentiate(energy_density);
+
+  // Convert to Euler-Lagrange equation (strong form)
+  // The Euler-Lagrange equation is: C⁰ - ∇·C¹ + ∇²:C² - ...
+  WeakFormGenerator wfg(_dim);
+  NodePtr euler_lagrange = wfg.computeEulerLagrange(diff);
+
+  return euler_lagrange;
 }
 
 // Tokenizer implementation
