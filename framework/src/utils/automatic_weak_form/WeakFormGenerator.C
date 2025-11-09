@@ -987,7 +987,10 @@ WeakFormGenerator::WeakFormContributions WeakFormGenerator::computeContributions
   contributions.c2_term = diff.getCoefficient(2);
   contributions.c3_term = diff.getCoefficient(3);
 
-  contributions.total_residual = computeResidualContribution(diff, var_name);
+  // Only compute residual with test functions for orders <= 1
+  // Higher-order problems should use variable splitting before reaching this point
+  bool use_test_functions = (diff.maxOrder() <= 1);
+  contributions.total_residual = computeResidualContribution(diff, var_name, use_test_functions);
 
   // Extract boundary terms from integration by parts
   // These represent natural boundary conditions

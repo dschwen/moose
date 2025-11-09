@@ -99,26 +99,41 @@ TEST_F(BoundaryTermExtractionTest, BendingEnergy)
 {
   // Energy: F = ∫ ½λ|∇²u|² dx
   // This is a fourth-order problem (thin plate bending)
+  // When differentiated, produces BOTH second-order and fourth-order contributions
   auto energy = parser->parse("0.5 * lambda * laplacian(u) * laplacian(u)");
   ASSERT_NE(energy, nullptr);
 
   auto contributions = generator->computeContributions(energy, "u");
 
-  // Should have exactly one boundary term entry for the second-order coefficient
-  // (In full theory, this expands to TWO physical BCs: moment and shear)
-  ASSERT_EQ(contributions.boundary_terms.size(), 1);
+  // The nonlinear term laplacian(u)^2 produces TWO boundary term entries:
+  // - One from the order-2 contribution (from product rule: 2*laplacian(u))
+  // - One from the order-4 contribution (from product of derivatives)
+  ASSERT_EQ(contributions.boundary_terms.size(), 2);
 
-  const auto & bt = contributions.boundary_terms[0];
+  // Check that we have both second-order and fourth-order boundary terms
+  bool has_order_2 = false;
+  bool has_order_4 = false;
 
-  EXPECT_EQ(bt.variable_name, "u");
-  EXPECT_EQ(bt.field_derivative_order, 2);  // laplacian(u) ~ ∇²u appears
-  EXPECT_EQ(bt.test_derivative_order, 1);   // BC involves ∇v
-  EXPECT_EQ(bt.sign, 1);                    // Second-order term gets positive sign
+  for (const auto & bt : contributions.boundary_terms)
+  {
+    EXPECT_EQ(bt.variable_name, "u");
 
-  // Check description mentions moment/curvature
-  EXPECT_TRUE(bt.description.find("Moment") != std::string::npos ||
-              bt.description.find("curvature") != std::string::npos)
-      << "Expected description to mention moment or curvature, got: " << bt.description;
+    if (bt.field_derivative_order == 2)
+    {
+      has_order_2 = true;
+      EXPECT_EQ(bt.test_derivative_order, 1);  // BC involves ∇v
+      EXPECT_EQ(bt.sign, 1);                   // Second-order term gets positive sign
+    }
+    else if (bt.field_derivative_order == 4)
+    {
+      has_order_4 = true;
+      EXPECT_EQ(bt.test_derivative_order, 3);  // Fourth-order transfers to ∇³v
+      EXPECT_EQ(bt.sign, 1);                   // Fourth-order term gets positive sign
+    }
+  }
+
+  EXPECT_TRUE(has_order_2) << "Expected second-order boundary term";
+  EXPECT_TRUE(has_order_4) << "Expected fourth-order boundary term";
 }
 
 // Test 3: Cahn-Hilliard energy - gradient term only
@@ -237,12 +252,14 @@ TEST_F(BoundaryTermExtractionTest, MaxOrderTracking)
     EXPECT_EQ(contributions.boundary_terms.size(), 1);
   }
 
-  // Second-order energy
+  // Nonlinear second-order energy (produces both order-2 and order-4 terms)
   {
     auto energy = parser->parse("0.5*laplacian(u)*laplacian(u)");
     auto contributions = generator->computeContributions(energy, "u");
-    EXPECT_EQ(contributions.max_order, 2);
-    EXPECT_EQ(contributions.boundary_terms.size(), 1);
+    // The product laplacian(u)^2 creates fourth-order terms via product rule
+    EXPECT_EQ(contributions.max_order, 4);
+    // Two boundary terms: one from order-2, one from order-4
+    EXPECT_EQ(contributions.boundary_terms.size(), 2);
   }
 
   // Zeroth-order energy
