@@ -298,6 +298,9 @@ AutomaticWeakFormAction::buildEnergyFromType()
       // Use the new string parser for arbitrary expressions
       moose::automatic_weak_form::StringExpressionParser parser(_problem->mesh().dimension());
 
+      // Enable verbose mode if requested
+      parser.setVerbose(_verbose);
+
       // Register parameters if provided
       if (isParamValid("parameters"))
       {
@@ -1490,6 +1493,9 @@ AutomaticWeakFormAction::parseStrongForms()
 {
   // Create parser
   moose::automatic_weak_form::StringExpressionParser parser(_problem->mesh().dimension());
+
+  // Enable verbose mode if requested
+  parser.setVerbose(_verbose);
 
   // Set up parameters
   if (isParamValid("parameters"))

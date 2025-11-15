@@ -18,7 +18,10 @@ namespace automatic_weak_form
 class StringExpressionParser
 {
 public:
-  StringExpressionParser(unsigned int dim = 3) : _dim(dim) {}
+  StringExpressionParser(unsigned int dim = 3) : _dim(dim), _verbose(false) {}
+
+  // Enable/disable verbose output
+  void setVerbose(bool verbose) { _verbose = verbose; }
   
   // Parse a complete energy functional expression
   // Example: "W(c) + 0.5*kappa*dot(grad(c), grad(c)) + 0.5*lambda*norm(hessian(c))^2"
@@ -73,6 +76,7 @@ public:
   
 private:
   unsigned int _dim;
+  bool _verbose;
   std::map<std::string, Real> _parameters;
   std::map<std::string, RealVectorValue> _vector_parameters;
   std::map<std::string, RankTwoTensor> _tensor_parameters;
@@ -758,15 +762,47 @@ inline NodePtr StringExpressionParser::parseVarDiff(const std::vector<NodePtr> &
     mooseError("Second argument to var_diff() must be a variable name, got: " + args[1]->toString());
   }
 
+  if (_verbose)
+  {
+    Moose::out << "\n[AutomaticWeakForm] Evaluating var_diff() operator\n";
+    Moose::out << "  Input: var_diff(" << energy_density->toString()
+               << ", " << var_name << ")\n";
+    Moose::out << "  Energy density: " << energy_density->toString() << "\n";
+    Moose::out << "  Variable: " << var_name << "\n\n";
+    Moose::out << "  Step 1: Computing variational derivative δF/δ" << var_name << "\n";
+  }
+
   // Compute the variational derivative using DifferentiationVisitor
   // This computes δF/δu where F = ∫ energy_density dx
   DifferentiationVisitor diff_visitor(var_name);
   Differential diff = diff_visitor.differentiate(energy_density);
 
+  if (_verbose)
+  {
+    Moose::out << "    Found coefficients for derivative orders 0 to " << diff.maxOrder() << "\n";
+    for (unsigned int order = 0; order <= diff.maxOrder(); ++order)
+    {
+      if (diff.getCoefficient(order))
+      {
+        Moose::out << "    ∂f/∂(∇^" << order << var_name << "): "
+                   << diff.getCoefficient(order)->toString() << "\n";
+      }
+    }
+    Moose::out << "\n  Step 2: Constructing Euler-Lagrange equation\n";
+    Moose::out << "    Applying integration by parts: C⁰ - ∇·C¹ + ∇²:C² - ...\n";
+  }
+
   // Convert to Euler-Lagrange equation (strong form)
   // The Euler-Lagrange equation is: C⁰ - ∇·C¹ + ∇²:C² - ...
   WeakFormGenerator wfg(_dim);
   NodePtr euler_lagrange = wfg.computeEulerLagrange(diff);
+
+  if (_verbose)
+  {
+    Moose::out << "\n  ✓ Result (Euler-Lagrange equation): "
+               << euler_lagrange->toString() << "\n";
+    Moose::out << "    This is the strong form PDE derived from the energy functional.\n\n";
+  }
 
   return euler_lagrange;
 }
