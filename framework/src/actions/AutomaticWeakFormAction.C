@@ -192,8 +192,11 @@ AutomaticWeakFormAction::AutomaticWeakFormAction(const InputParameters & params)
 void
 AutomaticWeakFormAction::act()
 {
-  Moose::out << "\n[DEBUG] AutomaticWeakFormAction::act() called with task: " << _current_task << "\n";
-  Moose::out << "  _enable_splitting = " << _enable_splitting << "\n";
+  if (_verbose)
+  {
+    _console << "\n[AutomaticWeakForm] Processing task: " << _current_task << "\n";
+    _console << "  Variable splitting: " << (_enable_splitting ? "ENABLED" : "DISABLED") << "\n";
+  }
 
   // Check if we're using strong forms instead of energy functionals
   bool using_strong_forms =
@@ -216,7 +219,6 @@ AutomaticWeakFormAction::act()
 
   if (_current_task == "add_variable")
   {
-    Moose::out << "  [DEBUG] In add_variable task\n";
     if (using_strong_forms)
     {
       parseStrongForms();
@@ -224,12 +226,9 @@ AutomaticWeakFormAction::act()
     }
     else if (!_energy_functional)
     {
-      Moose::out << "  [DEBUG] Parsing energy functional\n";
       parseEnergyFunctional();
     }
-    Moose::out << "  [DEBUG] Calling analyzeVariables()\n";
     analyzeVariables();
-    Moose::out << "  [DEBUG] Calling addPrimaryVariables()\n";
     addPrimaryVariables();
 
     if (_enable_splitting)
@@ -239,19 +238,20 @@ AutomaticWeakFormAction::act()
         parseEnergyFunctional();
       if (_split_variables.empty() && _energy_functional)
       {
-        Moose::out << "  [DEBUG] Re-generating split variables in add_variable\n";
         _split_variables = _split_analyzer->generateSplitVariables(_energy_functional);
       }
-      Moose::out << "  [DEBUG] add_variable: _split_variables.size() = " << _split_variables.size() << "\n";
       addSplitVariables();
     }
   }
   else if (_current_task == "add_kernel")
   {
-    _console << "\n[AutomaticWeakFormAction] add_kernel task triggered\n";
-    _console << "  using_strong_forms = " << (using_strong_forms ? "true" : "false") << "\n";
-    _console << "  energy_type = " << static_cast<int>(_energy_type) << "\n";
-    _console << "  energy_functional exists = " << (_energy_functional ? "yes" : "no") << "\n";
+    if (_verbose)
+    {
+      _console << "\n[AutomaticWeakForm] add_kernel task triggered\n";
+      _console << "  using_strong_forms = " << (using_strong_forms ? "true" : "false") << "\n";
+      _console << "  energy_type = " << static_cast<int>(_energy_type) << "\n";
+      _console << "  energy_functional exists = " << (_energy_functional ? "yes" : "no") << "\n";
+    }
 
     if (using_strong_forms)
     {
@@ -260,7 +260,8 @@ AutomaticWeakFormAction::act()
     }
     else
     {
-      _console << "  Calling addKernels()\n";
+      if (_verbose)
+        _console << "  Calling addKernels()\n";
       addKernels();
     }
   }
@@ -509,12 +510,8 @@ AutomaticWeakFormAction::buildNavierStokesEnergy()
 void
 AutomaticWeakFormAction::analyzeVariables()
 {
-  Moose::out << "  [DEBUG] analyzeVariables() called\n";
-  Moose::out << "  [DEBUG] _variable_names.size() = " << _variable_names.size() << "\n";
-
   for (const auto & var_name : _variable_names)
   {
-    Moose::out << "    [DEBUG] Processing variable: " << var_name << "\n";
     VariableInfo info;
     info.name = var_name;
     info.family = "LAGRANGE";
@@ -530,42 +527,22 @@ AutomaticWeakFormAction::analyzeVariables()
 
   if (_enable_splitting)
   {
-    Moose::out << "  [DEBUG] Variable splitting is enabled, calling setupVariableSplitting()\n";
     setupVariableSplitting();
-  }
-  else
-  {
-    Moose::out << "  [DEBUG] Variable splitting is disabled\n";
   }
 }
 
 void
 AutomaticWeakFormAction::setupVariableSplitting()
 {
-  Moose::out << "  [DEBUG] setupVariableSplitting() called\n";
-
   if (_verbose)
     _console << "\n[AutomaticWeakForm] Analyzing expression for variable splitting...\n";
 
-  Moose::out << "  [DEBUG] Energy functional before split analysis: " << (_energy_functional ? _energy_functional->toString() : "null") << "\n";
-
   if (!_energy_functional)
   {
-    Moose::out << "  [DEBUG] ERROR: _energy_functional is null!\n";
     return;
   }
 
   _split_variables = _split_analyzer->generateSplitVariables(_energy_functional);
-
-  Moose::out << "  [DEBUG] Number of split variables generated: " << _split_variables.size() << "\n";
-
-  for (const auto & [name, sv] : _split_variables)
-  {
-    Moose::out << "    [DEBUG] Split variable: " << sv.name
-               << " (order " << sv.derivative_order << " of " << sv.original_variable << ")\n";
-    if (sv.definition)
-      Moose::out << "      Definition: " << sv.definition->toString() << "\n";
-  }
 
   if (_verbose)
   {
@@ -617,8 +594,6 @@ AutomaticWeakFormAction::addPrimaryVariables()
 void
 AutomaticWeakFormAction::addSplitVariables()
 {
-  Moose::out << "  [DEBUG] addSplitVariables() called with " << _split_variables.size() << " split variables\n";
-
   if (_verbose && !_split_variables.empty())
     _console << "\n[AutomaticWeakForm] Adding split variables to nonlinear system\n";
 
@@ -644,40 +619,15 @@ AutomaticWeakFormAction::addSplitVariables()
 
     if (_problem->hasVariable(sv.name))
     {
-      Moose::out << "    [DEBUG] Variable " << sv.name << " already exists\n";
       continue;
     }
 
-    Moose::out << "    [DEBUG] Adding split variable: " << sv.name << " (tensor=" << info.is_tensor << ")\n";
-
     // For tensor variables (Hessian), we need to handle them specially
     // In 1D, the Hessian is just a scalar (d²u/dx²)
-    if (info.is_tensor && _problem->mesh().dimension() == 1)
-    {
-      // In 1D, Hessian is just a scalar
-      InputParameters params = _factory.getValidParams("MooseVariable");
-      params.set<MooseEnum>("family") = info.family;
-      params.set<MooseEnum>("order") = info.order;
-      _problem->addVariable("MooseVariable", sv.name, params);
-      Moose::out << "      Added as scalar (1D Hessian)\n";
-    }
-    else if (info.is_tensor)
-    {
-      // For higher dimensions, we'd need to add multiple component variables
-      // For now, just add as scalar
-      InputParameters params = _factory.getValidParams("MooseVariable");
-      params.set<MooseEnum>("family") = info.family;
-      params.set<MooseEnum>("order") = info.order;
-      _problem->addVariable("MooseVariable", sv.name, params);
-      Moose::out << "      WARNING: Tensor variable added as scalar for now\n";
-    }
-    else
-    {
-      InputParameters params = _factory.getValidParams("MooseVariable");
-      params.set<MooseEnum>("family") = info.family;
-      params.set<MooseEnum>("order") = info.order;
-      _problem->addVariable("MooseVariable", sv.name, params);
-    }
+    InputParameters params = _factory.getValidParams("MooseVariable");
+    params.set<MooseEnum>("family") = info.family;
+    params.set<MooseEnum>("order") = info.order;
+    _problem->addVariable("MooseVariable", sv.name, params);
 
     if (_verbose)
       _console << "  - Added split variable '" << sv.name
@@ -697,10 +647,6 @@ AutomaticWeakFormAction::addKernels()
     if (_energy_functional)
       _split_variables = _split_analyzer->generateSplitVariables(_energy_functional);
   }
-
-  Moose::out << "  [DEBUG] AutomaticWeakFormAction::addKernels() called\n";
-  Moose::out << "    _enable_splitting = " << _enable_splitting << "\n";
-  Moose::out << "    _split_variables.size() = " << _split_variables.size() << "\n";
 
   if (_verbose)
     _console << "\n========================================\n"
@@ -743,51 +689,6 @@ AutomaticWeakFormAction::addKernels()
           _console << "  Transformed energy for split variables\n";
       }
 
-      // Debug: Check shape of energy before generating weak form
-      if (true) // Always debug for now
-      {
-        _console << "  [DEBUG] About to generate weak form for " << var_name << "\n";
-        _console << "  Energy expression: " << transformed_energy->toString() << "\n";
-
-        // Try to find grad(grad(c)) in the expression tree
-        std::function<void(const moose::automatic_weak_form::NodePtr&)> checkShape;
-        checkShape = [&](const moose::automatic_weak_form::NodePtr& node) {
-          if (node->type() == moose::automatic_weak_form::NodeType::Gradient)
-          {
-            auto unary = static_cast<const moose::automatic_weak_form::UnaryOpNode*>(node.get());
-            if (unary->operand()->type() == moose::automatic_weak_form::NodeType::Gradient)
-            {
-              _console << "  Found grad(grad(...)) with shape: ";
-              if (node->isVector())
-              {
-                auto shape = node->shape();
-                if (std::holds_alternative<moose::automatic_weak_form::VectorShape>(shape))
-                  _console << "VECTOR(dim=" << std::get<moose::automatic_weak_form::VectorShape>(shape).dim << ")\n";
-                else
-                  _console << "VECTOR(unknown)\n";
-              }
-              else if (node->isTensor())
-              {
-                auto shape = node->shape();
-                if (std::holds_alternative<moose::automatic_weak_form::TensorShape>(shape))
-                  _console << "TENSOR(dim=" << std::get<moose::automatic_weak_form::TensorShape>(shape).dim << ")\n";
-                else
-                  _console << "TENSOR(unknown)\n";
-              }
-              else
-                _console << "UNKNOWN\n";
-            }
-          }
-
-          // Recursively check children
-          for (const auto& child : node->children())
-            if (child)
-              checkShape(child);
-        };
-
-        checkShape(transformed_energy);
-      }
-
       auto weak_form = _weak_form_gen->generateWeakForm(transformed_energy, var_name);
       _weak_forms[var_name] = weak_form;
 
@@ -819,69 +720,23 @@ AutomaticWeakFormAction::addKernels()
       moose::automatic_weak_form::NodePtr transformed_energy = _energy_functional;
       if (_enable_splitting && !_split_variables.empty())
       {
-        Moose::out << "    [DEBUG] Transforming energy with " << _split_variables.size() << " split variables\n";
-        for (const auto & [name, sv] : _split_variables)
+        if (_verbose)
         {
-          Moose::out << "      Split var: " << name << " = " << sv.name << " (order " << sv.derivative_order << ")\n";
+          _console << "  Transforming energy with " << _split_variables.size() << " split variables\n";
+          for (const auto & [name, sv] : _split_variables)
+          {
+            _console << "    Split var: " << name << " = " << sv.name << " (order " << sv.derivative_order << ")\n";
+          }
         }
+
         moose::automatic_weak_form::ExpressionTransformer transformer(_split_variables, _problem->mesh().dimension());
         transformed_energy = transformer.transform(_energy_functional);
 
-        Moose::out << "    [DEBUG] Original energy: " << _energy_functional->toString() << "\n";
-        Moose::out << "    [DEBUG] Transformed energy: " << transformed_energy->toString() << "\n";
-
-        if (_verbose && transformed_energy != _energy_functional)
-          _console << "  Transformed energy functional for split variables\n";
-      }
-      else
-      {
-        Moose::out << "    [DEBUG] Not transforming - splitting=" << _enable_splitting
-                   << ", split_vars=" << _split_variables.size() << "\n";
-      }
-
-      // Debug: Check shape of energy before generating weak form
-      if (true) // Always debug for now
-      {
-        _console << "  [DEBUG] About to generate weak form for " << var_name << "\n";
-        _console << "  Energy expression: " << transformed_energy->toString() << "\n";
-
-        // Try to find grad(grad(c)) in the expression tree
-        std::function<void(const moose::automatic_weak_form::NodePtr&)> checkShape;
-        checkShape = [&](const moose::automatic_weak_form::NodePtr& node) {
-          if (node->type() == moose::automatic_weak_form::NodeType::Gradient)
-          {
-            auto unary = static_cast<const moose::automatic_weak_form::UnaryOpNode*>(node.get());
-            if (unary->operand()->type() == moose::automatic_weak_form::NodeType::Gradient)
-            {
-              _console << "  Found grad(grad(...)) with shape: ";
-              if (node->isVector())
-              {
-                auto shape = node->shape();
-                if (std::holds_alternative<moose::automatic_weak_form::VectorShape>(shape))
-                  _console << "VECTOR(dim=" << std::get<moose::automatic_weak_form::VectorShape>(shape).dim << ")\n";
-                else
-                  _console << "VECTOR(unknown)\n";
-              }
-              else if (node->isTensor())
-              {
-                auto shape = node->shape();
-                if (std::holds_alternative<moose::automatic_weak_form::TensorShape>(shape))
-                  _console << "TENSOR(dim=" << std::get<moose::automatic_weak_form::TensorShape>(shape).dim << ")\n";
-                else
-                  _console << "TENSOR(unknown)\n";
-              }
-              else
-                _console << "UNKNOWN\n";
-            }
-          }
-
-          // Recursively check children
-          for (const auto& child : node->children())
-            if (child)
-              checkShape(child);
-        };
-
-        checkShape(transformed_energy);
+        if (_verbose)
+        {
+          _console << "  Original energy: " << _energy_functional->toString() << "\n";
+          _console << "  Transformed energy: " << transformed_energy->toString() << "\n";
+        }
       }
 
       auto weak_form = _weak_form_gen->generateWeakForm(transformed_energy, var_name);
@@ -899,10 +754,13 @@ AutomaticWeakFormAction::addKernels()
       // Also generate kernels for split variables (inside the loop where transformed_energy exists)
       if (_enable_splitting && !_split_variables.empty())
       {
-        Moose::out << "  [DEBUG] Generating kernels for split variables\n";
+        if (_verbose)
+          _console << "  Generating kernels for split variables\n";
+
         for (const auto & [name, sv] : _split_variables)
         {
-          Moose::out << "    [DEBUG] Generating kernel for split variable: " << sv.name << "\n";
+          if (_verbose)
+            _console << "    Generating kernel for split variable: " << sv.name << "\n";
 
           // Generate weak form for the split variable
           auto split_weak_form = _weak_form_gen->generateWeakForm(transformed_energy, sv.name);
@@ -913,9 +771,9 @@ AutomaticWeakFormAction::addKernels()
             _console << "Generated weak form for split variable " << sv.name << ": " << split_weak_form->toString() << "\n";
             generateKernelForVariable(sv.name, split_weak_form, transformed_energy);
           }
-          else
+          else if (_verbose)
           {
-            Moose::out << "      WARNING: No weak form generated for " << sv.name << "\n";
+            _console << "      WARNING: No weak form generated for " << sv.name << "\n";
           }
         }
       }
