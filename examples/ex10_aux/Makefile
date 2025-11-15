@@ -19,8 +19,6 @@ TEST := test_ignore
 include $(FRAMEWORK_DIR)/build.mk
 include $(FRAMEWORK_DIR)/moose.mk
 
-APPLICATION_NAME := ex10
-
 # dep apps
 APPLICATION_DIR    := $(shell pwd)
 APPLICATION_NAME   := ex10
