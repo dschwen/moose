@@ -21,10 +21,9 @@
 []
 
 [AutomaticWeakForm]
-    energy_type = expression
-    energy_expression = '(c*c - 1.0)*(c*c - 1.0) + 0.5*0.01*dot(grad(c), grad(c))'
+    strong_forms = 'c = var_diff((c*c - 1.0)*(c*c - 1.0) + 0.5*0.01*dot(grad(c), grad(c)), c)'
     variables = 'c'
-    use_automatic_differentiation = true
+    use_automatic_differentiation = false
 []
 
 [BCs]

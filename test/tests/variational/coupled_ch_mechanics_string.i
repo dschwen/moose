@@ -34,7 +34,6 @@
 []
 
 [AutomaticWeakForm]
-  energy_type = expression
 
   # Combined energy functional for coupled Cahn-Hilliard and mechanics
   # Chemical energy: W(c) + κ/2|∇c|^2
@@ -43,12 +42,14 @@
 
   # Simplified expression without proper tensor mechanics
   # Using gradient penalty as a placeholder for elastic energy
-  energy_expression = 'W(c) + 0.5*kappa*dot(grad(c), grad(c)) + 0.5*lambda*(dot(grad(disp_x), grad(disp_x)) + dot(grad(disp_y), grad(disp_y))) + alpha*c*(disp_x + disp_y)'
+  strong_forms = 'c = var_diff(W(c) + 0.5*kappa*dot(grad(c), grad(c)) + 0.5*lambda*(dot(grad(disp_x), grad(disp_x)) + dot(grad(disp_y), grad(disp_y))) + alpha*c*(disp_x + disp_y), c);
+                  disp_x = var_diff(W(c) + 0.5*kappa*dot(grad(c), grad(c)) + 0.5*lambda*(dot(grad(disp_x), grad(disp_x)) + dot(grad(disp_y), grad(disp_y))) + alpha*c*(disp_x + disp_y), disp_x);
+                  disp_y = var_diff(W(c) + 0.5*kappa*dot(grad(c), grad(c)) + 0.5*lambda*(dot(grad(disp_x), grad(disp_x)) + dot(grad(disp_y), grad(disp_y))) + alpha*c*(disp_x + disp_y), disp_y)'
 
   parameters = 'kappa 0.01 lambda 100 mu 75 alpha 10'
   variables = 'c disp_x disp_y'
 
-  use_automatic_differentiation = true
+  use_automatic_differentiation = false
 []
 
 [ICs]

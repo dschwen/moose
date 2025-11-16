@@ -43,17 +43,13 @@
 []
 
 [AutomaticWeakForm]
-  energy_type = EXPRESSION
 
   # Complete coupled energy functional
   # Cahn-Hilliard part: double-well for c + gradient energy
   # Allen-Cahn part: double-well for eta + gradient energy
   # Coupling: Promotes alignment between concentration and phase
-  energy_expression = '((c*c - 1.0)*(c*c - 1.0)) +
-                       0.5*kappa_c*dot(grad(c), grad(c)) +
-                       ((eta*eta - 1.0)*(eta*eta - 1.0)) +
-                       0.5*kappa_eta*dot(grad(eta), grad(eta)) +
-                       lambda*c*eta*(1.0 - eta*eta)'
+  strong_forms = 'c = var_diff(((c*c - 1.0)*(c*c - 1.0)) + 0.5*kappa_c*dot(grad(c), grad(c)) + ((eta*eta - 1.0)*(eta*eta - 1.0)) + 0.5*kappa_eta*dot(grad(eta), grad(eta)) + lambda*c*eta*(1.0 - eta*eta), c);
+                  eta = var_diff(((c*c - 1.0)*(c*c - 1.0)) + 0.5*kappa_c*dot(grad(c), grad(c)) + ((eta*eta - 1.0)*(eta*eta - 1.0)) + 0.5*kappa_eta*dot(grad(eta), grad(eta)) + lambda*c*eta*(1.0 - eta*eta), eta)'
 
   # Material parameters
   parameters = 'kappa_c 0.5 kappa_eta 0.5 lambda 2.0'
@@ -62,7 +58,7 @@
   variables = 'c eta'
 
   # Use automatic differentiation for exact Jacobians
-  use_automatic_differentiation = true
+  use_automatic_differentiation = false
 
   # Enable verbose output to see generated kernels
   verbose = false

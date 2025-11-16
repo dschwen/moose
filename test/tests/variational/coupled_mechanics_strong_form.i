@@ -44,7 +44,7 @@
 
 [AutomaticWeakForm]
     type = AutomaticWeakFormAction
-    energy_type = expression
+    
     
     # Intermediate expressions for clarity and reuse
     expressions = 'u = vec(disp_x, disp_y);
@@ -71,8 +71,7 @@
     # Primary variables
     variables = 'c mu disp_x disp_y'
     
-    # Enable automatic differentiation
-    use_automatic_differentiation = true
+    use_automatic_differentiation = false
     
     # Variable splitting for higher-order terms if needed
     enable_splitting = false

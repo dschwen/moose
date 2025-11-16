@@ -22,10 +22,8 @@
 []
 
 [AutomaticWeakForm]
-  energy_type = expression
-  # Energy with 4th-order term requiring splitting
-  # Using (∇²c)² which gives a 4th-order PDE
-  energy_expression = '(c*c - 1.0)*(c*c - 1.0) + 0.5*kappa*dot(grad(c), grad(c)) + 0.5*lambda*dot(grad(grad(c)), grad(grad(c)))'
+  # Energy with 4th-order term requiring splitting; use var_diff in strong form
+  strong_forms = 'c = var_diff((c*c - 1.0)*(c*c - 1.0) + 0.5*kappa*dot(grad(c), grad(c)) + 0.5*lambda*dot(grad(grad(c)), grad(grad(c))), c)'
   variables = 'c'
   parameters = 'kappa 0.01 lambda 0.001'
   
@@ -37,8 +35,7 @@
   verbose = true
   debug_print_weak_form = true
   
-  # Use automatic differentiation
-  use_automatic_differentiation = true
+  use_automatic_differentiation = false
 []
 
 [BCs]

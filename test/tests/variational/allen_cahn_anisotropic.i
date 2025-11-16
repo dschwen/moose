@@ -36,7 +36,6 @@
 []
 
 [AutomaticWeakForm]
-  energy_type = EXPRESSION
 
   # Anisotropic Allen-Cahn energy
   # The anisotropic term uses the components of the gradient
@@ -50,9 +49,7 @@
   # But for simplicity, we'll use a different form that's easier to express
 
   # Simple anisotropic form with different x and y gradient coefficients
-  energy_expression = 'W(eta) +
-                       0.5*kappa_x*pow(dot(grad(eta), vec(1.0, 0.0)), 2.0) +
-                       0.5*kappa_y*pow(dot(grad(eta), vec(0.0, 1.0)), 2.0)'
+  strong_forms = 'eta = var_diff(W(eta) + 0.5*kappa_x*pow(dot(grad(eta), vec(1.0, 0.0)), 2.0) + 0.5*kappa_y*pow(dot(grad(eta), vec(0.0, 1.0)), 2.0), eta)'
 
   # Parameters: different gradient coefficients in x and y directions
   # This creates rectangular/elliptical interfaces
@@ -60,7 +57,7 @@
 
   variables = 'eta'
 
-  use_automatic_differentiation = true
+  use_automatic_differentiation = false
 []
 
 [ICs]

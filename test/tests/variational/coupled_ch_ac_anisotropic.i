@@ -43,7 +43,6 @@
 []
 
 [AutomaticWeakForm]
-  energy_type = EXPRESSION
 
   # Energy functional with anisotropic interface energy
   # Note: We approximate the anisotropic term using a Taylor expansion
@@ -63,14 +62,8 @@
   # For now, we use a simpler coupled model with isotropic interfaces
   # but with spatially varying gradient coefficient
 
-  energy_expression = '
-    0.25*(c*c - 1.0)*(c*c - 1.0) +
-    0.25*(eta*eta - 1.0)*(eta*eta - 1.0) +
-    0.5*kappa_c*dot(grad(c), grad(c)) +
-    0.5*kappa_eta*dot(grad(eta), grad(eta)) +
-    lambda*c*c*(1.0 - eta*eta) +
-    alpha*c*eta +
-    epsilon*kappa_c*eta*eta*dot(grad(c), grad(c))'
+  strong_forms = 'c = var_diff(0.25*(c*c - 1.0)*(c*c - 1.0) + 0.5*kappa_c*dot(grad(c), grad(c)) + 0.5*kappa_eta*dot(grad(eta), grad(eta)) + lambda*c*c*(1.0 - eta*eta) + alpha*c*eta + epsilon*kappa_c*eta*eta*dot(grad(c), grad(c)), c);
+                  eta = var_diff(0.25*(c*c - 1.0)*(c*c - 1.0) + 0.5*kappa_c*dot(grad(c), grad(c)) + 0.5*kappa_eta*dot(grad(eta), grad(eta)) + lambda*c*c*(1.0 - eta*eta) + alpha*c*eta + epsilon*kappa_c*eta*eta*dot(grad(c), grad(c)), eta)'
 
   # Parameters:
   # kappa_c, kappa_eta: Interface energies
@@ -82,7 +75,7 @@
 
   variables = 'c eta'
 
-  use_automatic_differentiation = true
+  use_automatic_differentiation = false
 
   # Can enable for debugging
   verbose = false

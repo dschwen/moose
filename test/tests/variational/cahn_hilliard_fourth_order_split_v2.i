@@ -13,13 +13,12 @@
 []
 
 [AutomaticWeakForm]
-  energy_type = expression
-  energy_expression = '0.25*(c^2 - 1)^2 + 0.5*kappa*dot(grad(c), grad(c)) + 0.01*dot(grad(grad(c)), grad(grad(c)))'
+  strong_forms = 'c = var_diff(0.25*(c^2 - 1)^2 + 0.5*kappa*dot(grad(c), grad(c)) + 0.01*dot(grad(grad(c)), grad(grad(c))), c)'
   variables = 'c'
   parameters = 'kappa 0.01'
   enable_splitting = true
-  max_fe_order = 1  # Forces splitting for 2nd derivatives
-  use_automatic_differentiation = true
+  max_fe_order = 1
+  use_automatic_differentiation = false
   verbose = true
   debug_print_expressions = true
 []

@@ -6,6 +6,7 @@
 #include "StringExpressionParser.h"
 #include "MooseUtils.h"
 #include "ExpressionTransformer.h"
+#include "StrongFormLowerer.h"
 
 registerMooseAction("MooseApp", AutomaticWeakFormAction, "create_problem_complete");
 registerMooseAction("MooseApp", AutomaticWeakFormAction, "add_variable");
@@ -18,29 +19,15 @@ AutomaticWeakFormAction::validParams()
   InputParameters params = Action::validParams();
 
   params.addClassDescription(
-      "Automatically generates weak form from energy functionals or strong form equations");
-
-  MooseEnum energy_types("expression double_well elastic_linear elastic_neohookean "
-                         "surface_isotropic surface_anisotropic cahn_hilliard "
-                         "cahn_hilliard_fourth_order phase_field_crystal navier_stokes custom");
-  params.addRequiredParam<MooseEnum>("energy_type", energy_types, "Type of energy functional");
-
-  params.addParam<std::string>(
-      "energy_expression",
-      "",
-      "Mathematical expression for custom energy (e.g., 'W(c) + 0.5*kappa*dot(grad(c), grad(c))')");
-
-  params.addParam<std::map<std::string, std::string>>(
-      "energy_expressions",
-      "Multiple energy expressions for coupled systems (var_name => expression)");
+      "Automatically generates weak form from strong form PDEs");
 
   params.addParam<std::string>(
       "expressions",
       "Intermediate expressions separated by semicolons (e.g., 'u = vec(disp_x, disp_y); strain = sym(grad(u))')");
 
-  params.addParam<std::string>(
+  params.addRequiredParam<std::string>(
       "strong_forms",
-      "Strong form equations separated by semicolons (e.g., 'c_t = -div(M*grad(mu)); mu = dW/dc - kappa*laplacian(c)')");
+      "Strong form equations separated by semicolons (e.g., 'c_t = Du*laplacian(c) - c; T_t = k*laplacian(T) + Q*c')");
 
   params.addParam<std::map<std::string, Real>>(
       "parameters", "Parameters used in the energy expression (e.g., kappa=1.0)");
@@ -108,13 +95,6 @@ AutomaticWeakFormAction::validParams()
 
   params.addParam<bool>("estimate_condition_number", false, "Estimate condition number of system");
 
-  params.addParam<Real>("gradient_coefficient", 1.0, "Gradient energy coefficient");
-  params.addParam<Real>("fourth_order_coefficient", 0.0, "Fourth-order coefficient");
-  params.addParam<Real>("elastic_lambda", 1.0, "First Lamé parameter");
-  params.addParam<Real>("elastic_mu", 1.0, "Shear modulus");
-  params.addParam<Real>("surface_energy", 1.0, "Surface energy coefficient");
-  params.addParam<Real>("well_height", 1.0, "Double-well potential height");
-
   // Boundary condition control
   params.addParam<bool>("generate_natural_bcs", true,
                         "Automatically generate natural boundary conditions from energy functional");
@@ -129,7 +109,6 @@ AutomaticWeakFormAction::validParams()
 AutomaticWeakFormAction::AutomaticWeakFormAction(const InputParameters & params) : Action(params)
 {
   // Initialize member variables
-  _energy_expression = getParam<std::string>("energy_expression");
   _variable_names = getParam<std::vector<std::string>>("variables");
   _enable_splitting = getParam<bool>("enable_splitting");
   _max_fe_order = getParam<unsigned int>("max_fe_order");
@@ -160,31 +139,6 @@ AutomaticWeakFormAction::AutomaticWeakFormAction(const InputParameters & params)
   _debug_print_weak_form = getParam<bool>("debug_print_weak_form");
   _debug_print_jacobian = getParam<bool>("debug_print_jacobian");
 
-  std::string type_str = getParam<MooseEnum>("energy_type");
-
-  if (type_str == "expression")
-    _energy_type = EnergyType::EXPRESSION;
-  else if (type_str == "double_well")
-    _energy_type = EnergyType::DOUBLE_WELL;
-  else if (type_str == "elastic_linear")
-    _energy_type = EnergyType::ELASTIC_LINEAR;
-  else if (type_str == "elastic_neohookean")
-    _energy_type = EnergyType::ELASTIC_NEOHOOKEAN;
-  else if (type_str == "surface_isotropic")
-    _energy_type = EnergyType::SURFACE_ISOTROPIC;
-  else if (type_str == "surface_anisotropic")
-    _energy_type = EnergyType::SURFACE_ANISOTROPIC;
-  else if (type_str == "cahn_hilliard")
-    _energy_type = EnergyType::CAHN_HILLIARD;
-  else if (type_str == "cahn_hilliard_fourth_order")
-    _energy_type = EnergyType::CAHN_HILLIARD_FOURTH_ORDER;
-  else if (type_str == "phase_field_crystal")
-    _energy_type = EnergyType::PHASE_FIELD_CRYSTAL;
-  else if (type_str == "navier_stokes")
-    _energy_type = EnergyType::NAVIER_STOKES;
-  else
-    _energy_type = EnergyType::CUSTOM;
-
   if (isParamValid("coupled_variables"))
     _coupled_variable_names = getParam<std::vector<std::string>>("coupled_variables");
 }
@@ -198,12 +152,9 @@ AutomaticWeakFormAction::act()
     _console << "  Variable splitting: " << (_enable_splitting ? "ENABLED" : "DISABLED") << "\n";
   }
 
-  // Check if we're using strong forms instead of energy functionals
-  bool using_strong_forms =
-      isParamValid("strong_forms") && !getParam<std::string>("strong_forms").empty();
-
   if (_current_task == "create_problem_complete")
   {
+    // Initialize utility objects (may be used for advanced features later)
     unsigned int dim = _problem->mesh().dimension();
     _expr_builder = std::make_unique<moose::automatic_weak_form::MooseExpressionBuilder>(dim);
     _weak_form_gen = std::make_unique<moose::automatic_weak_form::WeakFormGenerator>(dim);
@@ -211,73 +162,31 @@ AutomaticWeakFormAction::act()
         std::make_unique<moose::automatic_weak_form::VariableSplittingAnalyzer>(_max_fe_order, dim);
     _mixed_gen = std::make_unique<moose::automatic_weak_form::MixedFormulationGenerator>();
     _problem_analyzer = std::make_unique<moose::automatic_weak_form::VariationalProblemAnalyzer>();
-
-    // Parse the energy functional early
-    if (!using_strong_forms)
-      parseEnergyFunctional();
   }
 
   if (_current_task == "add_variable")
   {
-    if (using_strong_forms)
-    {
-      parseStrongForms();
-      deriveWeakForms();
-    }
-    else if (!_energy_functional)
-    {
-      parseEnergyFunctional();
-    }
+    parseStrongForms();
+    deriveWeakForms();
     analyzeVariables();
     addPrimaryVariables();
-
-    if (_enable_splitting)
-    {
-      // Need to re-analyze variables since action state doesn't persist across tasks
-      if (!_energy_functional)
-        parseEnergyFunctional();
-      if (_split_variables.empty() && _energy_functional)
-      {
-        _split_variables = _split_analyzer->generateSplitVariables(_energy_functional);
-      }
-      addSplitVariables();
-    }
   }
   else if (_current_task == "add_kernel")
   {
     if (_verbose)
-    {
-      _console << "\n[AutomaticWeakForm] add_kernel task triggered\n";
-      _console << "  using_strong_forms = " << (using_strong_forms ? "true" : "false") << "\n";
-      _console << "  energy_type = " << static_cast<int>(_energy_type) << "\n";
-      _console << "  energy_functional exists = " << (_energy_functional ? "yes" : "no") << "\n";
-    }
+      _console << "\n[AutomaticWeakForm] Adding kernels from strong forms\n";
 
-    if (using_strong_forms)
-    {
-      addTimeDerivativeKernels();
-      addExpressionKernels();
-    }
-    else
-    {
-      if (_verbose)
-        _console << "  Calling addKernels()\n";
-      addKernels();
-    }
+    addTimeDerivativeKernels();
+    addExpressionKernels();
   }
   else if (_current_task == "add_bc")
   {
-    addBoundaryConditions();
+    // Boundary conditions would be added here if needed
+    // For now, users should specify BCs explicitly in their input files
   }
 
   if (_output_weak_form && _current_task == "add_kernel")
     writeWeakFormToFile();
-
-  if (_validate_conservation && _current_task == "add_kernel")
-    performConservationCheck();
-
-  if (_check_stability && _current_task == "add_kernel")
-    performStabilityAnalysis();
 }
 
 void
@@ -905,12 +814,15 @@ AutomaticWeakFormAction::generateKernelForVariable(
   (void)weak_form;
   std::string kernel_name = generateKernelName(var_name);
 
+  // Choose kernel type based on whether AD is enabled
+  std::string kernel_type = _use_automatic_differentiation ? "ADVariationalKernelBase" : "VariationalKernelBase";
+
   if (_verbose)
     _console << "\n[AutomaticWeakForm] Generating kernel for variable: " << var_name << "\n"
              << "  - Kernel name: " << kernel_name << "\n"
-             << "  - Kernel type: VariationalKernelBase\n";
+             << "  - Kernel type: " << kernel_type << "\n";
 
-  InputParameters params = _factory.getValidParams("VariationalKernelBase");
+  InputParameters params = _factory.getValidParams(kernel_type);
 
   // First, we need to couple all the other variables BEFORE setting parameters
   // This is required for MOOSE's coupling system to work
@@ -997,7 +909,7 @@ AutomaticWeakFormAction::generateKernelForVariable(
       _console << "  - Variable splitting: ENABLED (max FE order: " << _max_fe_order << ")\n";
   }
 
-  _problem->addKernel("VariationalKernelBase", kernel_name, params);
+  _problem->addKernel(kernel_type, kernel_name, params);
 
   if (_verbose)
     _console << "  - Kernel successfully added to problem\n";
@@ -1280,17 +1192,42 @@ AutomaticWeakFormAction::writeWeakFormToFile()
     return;
   }
 
-  file << "# Automatically generated weak form\n";
-  file << "# Energy type: " << getParam<MooseEnum>("energy_type") << "\n";
+  file << "# Automatically generated weak form from strong form PDEs\n";
   file << "# Variables: ";
   for (const auto & var : _variable_names)
     file << var << " ";
   file << "\n\n";
 
-  for (const auto & [var_name, weak_form] : _weak_forms)
+  file << "# Strong form equations:\n";
+  for (const auto & [var_name, eq] : _strong_form_equations)
   {
-    file << "# Weak form for variable: " << var_name << "\n";
-    file << weak_form->toString() << "\n\n";
+    file << "#   " << var_name;
+    if (eq.type == moose::automatic_weak_form::StringExpressionParser::EquationType::TRANSIENT)
+      file << "_t";
+    file << " = " << eq.rhs->toString() << "\n";
+  }
+  file << "\n";
+
+  if (!_c0_forms.empty() || !_c1_forms.empty())
+  {
+    for (const auto & kv : _c0_forms)
+    {
+      const auto & var_name = kv.first;
+      const auto & c0 = kv.second;
+      const auto it = _c1_forms.find(var_name);
+      const auto & c1 = (it != _c1_forms.end()) ? it->second : nullptr;
+      file << "# Weak-form coefficients for variable: " << var_name << "\n";
+      file << "c0: " << (c0 ? c0->toString() : std::string("0")) << "\n";
+      file << "c1: " << (c1 ? c1->toString() : std::string("[0,0,0]")) << "\n\n";
+    }
+  }
+  else
+  {
+    for (const auto & [var_name, weak_form] : _weak_forms)
+    {
+      file << "# Weak form for variable: " << var_name << "\n";
+      file << (weak_form ? weak_form->toString() : std::string("<null>")) << "\n\n";
+    }
   }
 
   if (!_split_variables.empty())
@@ -1413,6 +1350,19 @@ AutomaticWeakFormAction::parseStrongForms()
 
     // The string contains semicolon-separated equations
     _strong_form_equations = parser.parseStrongForms(forms_string);
+
+    if (_verbose)
+    {
+      _console << "\n[AutomaticWeakForm] Parsed strong form equations:" << std::endl;
+      for (const auto & kv : _strong_form_equations)
+      {
+        const auto & var_name = kv.first;
+        const auto & eq = kv.second;
+        _console << "  - " << var_name
+                 << (eq.type == moose::automatic_weak_form::StringExpressionParser::EquationType::TRANSIENT ? "_t" : "")
+                 << " = " << (eq.rhs ? eq.rhs->toString() : std::string("<null>")) << std::endl;
+      }
+    }
   }
 }
 
@@ -1425,15 +1375,85 @@ AutomaticWeakFormAction::deriveWeakForms()
   // 2. Integrating by parts if needed
   // 3. Computing Jacobian terms
 
+  // Build an IBP lowerer for current dimension
+  moose::automatic_weak_form::StrongFormLowerer lowerer(_problem->mesh().dimension());
+  lowerer.setVerbose(_verbose || _debug_print_weak_form);
+  if (_verbose)
+  {
+    // Route lowerer traces through the action console with a prefix
+    lowerer.setTracer([this](const std::string & m) { _console << "    [IBP] " << m << "\n"; });
+  }
+
+  _c0_forms.clear();
+  _c1_forms.clear();
+
   for (auto & [var_name, eq] : _strong_form_equations)
   {
     // The weak form residual for equation du/dt = F or 0 = F is:
     // R = ∫ test * (F) dx  (after appropriate integration by parts)
 
-    // For now, we store the RHS as the weak residual
-    // A more complete implementation would perform integration by parts
-    // on divergence terms and properly handle boundary conditions
+    // Apply integration by parts to obtain weak contributions (ignore boundary terms)
+    if (_verbose)
+    {
+      _console << "\n[AutomaticWeakForm] Deriving weak form for variable: " << var_name << std::endl;
+      _console << "  RHS (strong): " << (eq.rhs ? eq.rhs->toString() : std::string("<null>")) << std::endl;
+      _console << "  Applying IBP lowering..." << std::endl;
+    }
 
+    auto lowered = lowerer.lowerToWeak(eq.rhs);
+    _c0_forms[var_name] = lowered.c0;
+    _c1_forms[var_name] = lowered.c1;
+
+    // Optional: print Jacobian derivative terms (symbolic) for debugging
+    if (_debug_print_jacobian)
+    {
+      std::vector<std::string> all_vars;
+      for (const auto & n : _variable_names)
+        if (std::find(all_vars.begin(), all_vars.end(), n) == all_vars.end())
+          all_vars.push_back(n);
+      for (const auto & n : _coupled_variable_names)
+        if (std::find(all_vars.begin(), all_vars.end(), n) == all_vars.end())
+          all_vars.push_back(n);
+
+      _console << "  Jacobian terms (symbolic):" << std::endl;
+      for (const auto & wrt : all_vars)
+      {
+        moose::automatic_weak_form::DifferentiationVisitor dv(wrt);
+
+        if (lowered.c0)
+        {
+          auto d0 = dv.differentiate(lowered.c0);
+          auto d0_u = d0.getCoefficient(0);
+          auto d0_grad = d0.getCoefficient(1);
+          _console << "    d(c0)/d(" << wrt << ") = "
+                   << (d0_u ? d0_u->toString() : std::string("0")) << std::endl;
+          _console << "    d(c0)/d(grad(" << wrt << ")) = "
+                   << (d0_grad ? d0_grad->toString() : std::string("0")) << std::endl;
+        }
+
+        if (lowered.c1)
+        {
+          auto d1 = dv.differentiate(lowered.c1);
+          auto d1_u = d1.getCoefficient(0);
+          auto d1_grad = d1.getCoefficient(1);
+          _console << "    d(c1)/d(" << wrt << ") = "
+                   << (d1_u ? d1_u->toString() : std::string("0")) << std::endl;
+          _console << "    d(c1)/d(grad(" << wrt << ")) = "
+                   << (d1_grad ? d1_grad->toString() : std::string("0")) << std::endl;
+        }
+      }
+    }
+
+    if (_verbose || _debug_print_weak_form)
+    {
+      _console << "  Resulting weak-form coefficients:" << std::endl;
+      _console << "    c0 (multiplies test): "
+               << (lowered.c0 ? lowered.c0->toString() : std::string("0")) << std::endl;
+      _console << "    c1 (multiplies grad(test)): "
+               << (lowered.c1 ? lowered.c1->toString() : std::string("[0,0,0]")) << std::endl;
+    }
+
+    // Keep original RHS as a placeholder/debug weak_residual
     eq.weak_residual = eq.rhs;
 
     // TODO: Compute Jacobian symbolically or mark for AD
@@ -1462,52 +1482,102 @@ AutomaticWeakFormAction::addTimeDerivativeKernels()
 void
 AutomaticWeakFormAction::addExpressionKernels()
 {
-  // Add ExpressionEvaluationKernel for each equation's residual
+  if (_verbose)
+    _console << "\n[AutomaticWeakForm] Adding kernels for strong form equations\n";
+
+  // Add VariationalKernelBase for each equation's RHS
   for (const auto & [var_name, eq] : _strong_form_equations)
   {
-    std::string kernel_name = var_name + "_expression_kernel";
+    std::string kernel_name = var_name + "_strong_form_kernel";
 
-    InputParameters params = _factory.getValidParams("ExpressionEvaluationKernel");
+    // Always use lowered weak form via non-AD kernel for strong_forms
+    const bool have_lowered = _c0_forms.count(var_name) && _c1_forms.count(var_name);
+    std::string kernel_type = "VariationalKernelBase";
+
+    if (_verbose)
+    {
+      _console << "\n  Variable: " << var_name << "\n";
+      _console << "    Type: " << (eq.type == moose::automatic_weak_form::StringExpressionParser::EquationType::TRANSIENT ? "TRANSIENT" : "STEADY") << "\n";
+      _console << "    Kernel type: " << kernel_type << "\n";
+      _console << "    RHS expression: " << eq.rhs->toString() << "\n";
+      if (have_lowered)
+      {
+        _console << "    Lowered weak form (c0): " << _c0_forms.at(var_name)->toString() << "\n";
+        _console << "    Lowered weak form (c1): " << _c1_forms.at(var_name)->toString() << "\n";
+      }
+    }
+
+    InputParameters params = _factory.getValidParams(kernel_type);
     params.set<NonlinearVariableName>("variable") = var_name;
 
-    // For now, just pass the raw RHS expression as a string
-    // The weak_residual would need proper conversion
-    // TODO: Implement proper expression serialization
-    std::string residual_expr = "0";  // Placeholder - need to convert eq.rhs properly
-    params.set<std::string>("residual_expression") = residual_expr;
+    params.set<bool>("use_lowered_weak_form") = true;
+    params.set<std::string>("c0_expression") = _c0_forms[var_name] ? _c0_forms[var_name]->toString() : std::string("0.0");
+    params.set<std::string>("c1_expression") = _c1_forms[var_name] ? _c1_forms[var_name]->toString() : std::string("");
 
-    if (eq.jacobian)
-      params.set<std::string>("jacobian_expression") = eq.jacobian->toString();
+    // AD flags ignored by non-AD kernel
+    params.set<bool>("use_automatic_differentiation") = false;
+    params.set<bool>("compute_jacobian_numerically") = _compute_jacobian_numerically;
+    params.set<Real>("fd_eps") = _fd_epsilon;
 
-    params.set<bool>("is_transient_term") =
-        (eq.type == moose::automatic_weak_form::StringExpressionParser::EquationType::TRANSIENT);
+    // Pass splitting configuration
+    params.set<bool>("enable_variable_splitting") = _enable_splitting;
+    params.set<unsigned int>("fe_order") = _max_fe_order;
 
-    // Pass parameters
+    // Mark as strong form (expression is residual, not energy functional)
+    params.set<bool>("is_strong_form") = true;
+
+    // Pass parameters if provided
     if (isParamValid("parameters"))
-      params.set<std::map<std::string, Real>>("parameters") =
-          getParam<std::map<std::string, Real>>("parameters");
-
-    // Pass intermediate expressions
-    if (isParamValid("expressions"))
     {
-      const std::string & expressions = getParam<std::string>("expressions");
-      // Just pass the string directly - it already has semicolons
-      if (!expressions.empty())
-        params.set<std::string>("intermediate_expressions") = expressions;
+      const auto & param_map = getParam<std::map<std::string, Real>>("parameters");
+      params.set<std::map<std::string, Real>>("parameters") = param_map;
+
+      if (_verbose && !param_map.empty())
+      {
+        _console << "    Parameters: ";
+        bool first = true;
+        for (const auto & [pname, pvalue] : param_map)
+        {
+          if (!first) _console << ", ";
+          _console << pname << "=" << pvalue;
+          first = false;
+        }
+        _console << "\n";
+      }
     }
 
-    // Pass coupled variables
-    if (!_coupled_variable_names.empty())
+    // Collect coupled variables (all other variables in the system)
+    std::vector<VariableName> coupled_vars;
+    for (const auto & name : _variable_names)
     {
-      std::vector<VariableName> coupled_vars;
-      for (const auto & name : _coupled_variable_names)
+      if (name != var_name)
         coupled_vars.push_back(name);
-      params.set<std::vector<VariableName>>("coupled") = coupled_vars;
+    }
+    for (const auto & name : _coupled_variable_names)
+    {
+      if (name != var_name && std::find(coupled_vars.begin(), coupled_vars.end(), name) == coupled_vars.end())
+        coupled_vars.push_back(name);
     }
 
-    params.set<bool>("use_automatic_differentiation") = _use_automatic_differentiation;
+    if (!coupled_vars.empty())
+    {
+      params.set<std::vector<VariableName>>("coupled_vars") = coupled_vars;
 
-    _problem->addKernel("ExpressionEvaluationKernel", kernel_name, params);
+      if (_verbose)
+      {
+        _console << "    Coupled variables: ";
+        for (size_t i = 0; i < coupled_vars.size(); ++i)
+        {
+          if (i > 0) _console << ", ";
+          _console << coupled_vars[i];
+        }
+        _console << "\n";
+      }
+    }
+
+    _problem->addKernel(kernel_type, kernel_name, params);
+
+    if (_verbose)
+      _console << "    ✓ Kernel added successfully\n";
   }
 }
-

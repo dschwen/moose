@@ -22,21 +22,12 @@
 []
 
 [AutomaticWeakForm]
-    # Use expression type with string parsing
-    energy_type = expression
+    # Strong form via var_diff of energy functional
+    strong_forms = 'c = var_diff(((c*c - 1.0)*(c*c - 1.0)) + 0.5*0.01*dot(grad(c), grad(c)), c)'
     
-    # Energy functional as a string expression
-    # Using explicit double-well form for now
-    energy_expression = '((c*c - 1.0)*(c*c - 1.0)) + 0.5*0.01*dot(grad(c), grad(c))'
-    
-    # Parameters used in the expression
     parameters = 'kappa 0.01'
-    
-    # Primary variable
     variables = 'c'
-    
-    # Enable automatic differentiation for Jacobian
-    use_automatic_differentiation = true
+    use_automatic_differentiation = false
 []
 
 [ICs]

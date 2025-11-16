@@ -15,17 +15,15 @@
 []
 
 [AutomaticWeakForm]
-  energy_type = expression
-  # Energy that produces grad(grad(c)) directly
-  # Using trace to get a scalar from the Hessian
-  energy_expression = 'trace(grad(grad(c)))'
+  # Strong form with second derivatives via var_diff
+  strong_forms = 'c = var_diff(trace(grad(grad(c))), c)'
   variables = 'c'
   
   verbose = true
   debug_print_expressions = true
   debug_print_weak_form = true
   
-  use_automatic_differentiation = true
+  use_automatic_differentiation = false
 []
 
 [Executioner]

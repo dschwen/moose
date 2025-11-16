@@ -1,10 +1,8 @@
 #pragma once
 
-#include "Kernel.h"
+#include "GenericKernel.h"
 #include "MooseAST.h"
 #include "MooseExpressionBuilder.h"
-#include "WeakFormGenerator.h"
-#include "EvaluationTape.h"
 #include "ExpressionEvaluator.h"
 
 namespace moose
@@ -12,44 +10,44 @@ namespace moose
 namespace automatic_weak_form
 {
 
-class VariationalKernelBase : public Kernel
+// Forward declaration of the template
+template <bool is_ad>
+class VariationalKernelBaseTempl;
+
+// Typedefs for convenience
+typedef VariationalKernelBaseTempl<false> VariationalKernelBase;
+typedef VariationalKernelBaseTempl<true> ADVariationalKernelBase;
+
+template <bool is_ad>
+class VariationalKernelBaseTempl : public GenericKernel<is_ad>
 {
 public:
   static InputParameters validParams();
 
-  VariationalKernelBase(const InputParameters & parameters);
+  VariationalKernelBaseTempl(const InputParameters & parameters);
 
 protected:
-  virtual Real computeQpResidual() override;
+  virtual GenericReal<is_ad> computeQpResidual() override;
   virtual Real computeQpJacobian() override;
   virtual Real computeQpOffDiagJacobian(unsigned int jvar) override;
 
   void initializeExpression();
-
-  void computeVariationalDerivative();
-
-  Real evaluateC0Contribution();
-
-  Real evaluateC1Contribution();
-
-  Real evaluateC2Contribution();
-
-  Real evaluateC3Contribution();
+  void precomputeDerivativesLowered();
 
   MooseValue evaluateExpression(const NodePtr & expr);
-
   MooseValue evaluateAtQP(const NodePtr & expr, unsigned int qp);
 
-  void initializeEvaluator();
+  // AD-compatible evaluation (used when is_ad=true)
+  GenericReal<is_ad> evaluateExpressionAD(const NodePtr & expr, unsigned int qp);
 
-  void setupFieldVariables();
+  void initializeEvaluator();
 
   void updateVariableValues(unsigned int qp);
 
   void updateEvaluatorAtQP(unsigned int qp);
-  
+
   NodePtr differentiateWithRespectToField(const NodePtr & expr, const std::string & var_name);
-  
+
   NodePtr differentiateWithRespectToGradient(const NodePtr & expr, const std::string & var_name);
 
   bool containsGradient(const NodePtr & expr, const std::string & var_name);
@@ -57,85 +55,47 @@ protected:
   void validateDifferentialOperators(const NodePtr & expr) const;
 
 protected:
+  // Expression parsing/evaluation
   std::unique_ptr<MooseExpressionBuilder> _builder;
-
-  NodePtr _energy_density;
-
-  std::unique_ptr<WeakFormGenerator> _weak_form_gen;
-
   std::unique_ptr<ExpressionEvaluator> _evaluator;
 
+  // Coupled variable data
   std::map<std::string, const VariableValue *> _coupled_values;
   std::map<std::string, const VariableGradient *> _coupled_gradients;
   std::map<std::string, const VariableSecond *> _coupled_seconds;
-
   std::map<std::string, unsigned int> _coupled_var_nums;
-
   std::map<std::string, MooseValue> _variable_cache;
 
   unsigned int _max_derivative_order;
-
-  bool _has_time_derivatives;
-
   bool _compute_jacobian_numerically;
-
   Real _fd_eps;
 
-  enum class EnergyType
-  {
-    DOUBLE_WELL,
-    ELASTIC,
-    NEO_HOOKEAN,
-    SURFACE,
-    CAHN_HILLIARD,
-    FOURTH_ORDER,
-    CUSTOM
-  } _energy_type;
-
-  std::string _energy_expression;
-
-  Real _gradient_coefficient;
-  Real _fourth_order_coefficient;
-  Real _elastic_lambda;
-  Real _elastic_mu;
-  Real _surface_energy_coefficient;
-  
   std::map<std::string, Real> _parameters;
-
   std::vector<std::string> _coupled_variable_names;
 
   bool _use_automatic_differentiation;
-
   bool _enable_variable_splitting;
-
   unsigned int _fe_order;
 
   std::map<std::string, NodePtr> _split_variables;
 
-  struct ContributionCache
-  {
-    bool computed = false;
-    std::map<unsigned int, MooseValue> values;
-    bool tape_attempted = false;
-    std::unique_ptr<EvaluationTape> tape;
-    std::vector<std::string> tape_inputs;
-  } _c0_cache, _c1_cache, _c2_cache, _c3_cache;
+  void clearCache() { _variable_cache.clear(); }
 
-  void clearCache()
-  {
-    _c0_cache.computed = false;
-    _c1_cache.computed = false;
-    _c2_cache.computed = false;
-    _c3_cache.computed = false;
-    _variable_cache.clear();
-  }
+  bool _is_strong_form;
 
-  void initializeCoefficientTapes(const WeakFormGenerator::WeakFormContributions & contributions);
-  void initializeTapeForContribution(const NodePtr & expr, ContributionCache & cache);
-  bool evaluateTapeContribution(const ContributionCache & cache,
-                                TapeValue & value_out) const;
+  // Lowered strong-form weak contributions (optional)
+  bool _use_lowered_weak_form = false;
+  NodePtr _c0_expr; // scalar
+  NodePtr _c1_expr; // vector
 
-  bool _use_evaluation_tape;
+  // Cached symbolic derivatives for lowered weak form (per variable name)
+  std::map<std::string, NodePtr> _dc0_du;
+  std::map<std::string, NodePtr> _dc0_dgradu;
+  std::map<std::string, NodePtr> _dc1_du;
+  std::map<std::string, NodePtr> _dc1_dgradu;
+
+  // Using statements for base class members
+  usingGenericKernelMembers;
 };
 
 }

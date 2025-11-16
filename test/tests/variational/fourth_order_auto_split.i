@@ -28,8 +28,7 @@
 
 [AutomaticWeakForm]
   # Fourth-order energy with automatic splitting enabled
-  energy_type = EXPRESSION
-  energy_expression = 'W(c) + 0.5*kappa*dot(grad(c), grad(c)) + 0.5*lambda*dot(grad(grad(c)), grad(grad(c)))'
+  strong_forms = 'c = var_diff(W(c) + 0.5*kappa*dot(grad(c), grad(c)) + 0.5*lambda*dot(grad(grad(c)), grad(grad(c))), c)'
   parameters = 'kappa 0.01 lambda 0.001'
   variables = 'c'
 
@@ -37,7 +36,7 @@
   enable_splitting = true
   max_fe_order = 1  # Force splitting of second-order terms
 
-  use_automatic_differentiation = true
+  use_automatic_differentiation = false
   verbose = true  # Show what split variables are created
 []
 

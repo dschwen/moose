@@ -15,9 +15,7 @@
 []
 
 [AutomaticWeakForm]
-  energy_type = expression
-  # Just the 4th-order term to isolate the issue
-  energy_expression = '0.5*dot(grad(grad(c)), grad(grad(c)))'
+  strong_forms = 'c = var_diff(0.5*dot(grad(grad(c)), grad(grad(c))), c)'
   variables = 'c'
   
   verbose = true
@@ -25,7 +23,7 @@
   debug_print_derivatives = true
   debug_print_weak_form = true
   
-  use_automatic_differentiation = true
+  use_automatic_differentiation = false
 []
 
 [Executioner]

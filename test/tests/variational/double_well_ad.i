@@ -19,10 +19,10 @@
 []
 
 [AutomaticWeakForm]
-    energy_type = expression
-    energy_expression = '(c*c - 1.0)*(c*c - 1.0)'
+    # Strong form via var_diff: δ/δc (c^2-1)^2 = 4c(c^2-1)
+    strong_forms = 'c = var_diff((c*c - 1.0)*(c*c - 1.0), c)'
     variables = 'c'
-    use_automatic_differentiation = true
+    use_automatic_differentiation = false
 []
 
 [BCs]

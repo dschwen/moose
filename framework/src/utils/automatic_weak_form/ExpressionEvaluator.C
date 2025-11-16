@@ -171,6 +171,7 @@ ExpressionEvaluator::evaluateNode(const Node * node)
       return visitFieldVariable(static_cast<const FieldVariableNode *>(node));
     case NodeType::Negate:
     case NodeType::Gradient:
+    case NodeType::Laplacian:
     case NodeType::Norm:
     case NodeType::Trace:
     case NodeType::Determinant:
@@ -197,7 +198,9 @@ ExpressionEvaluator::evaluateNode(const Node * node)
     case NodeType::TensorComponent:
       return visitComponent(static_cast<const ComponentNode *>(node));
     default:
-      mooseError("Unsupported node type in ExpressionEvaluator");
+      mooseError("Unsupported node type in ExpressionEvaluator: ",
+                 static_cast<int>(node->type()),
+                 " (", node->toString(), ")");
   }
 }
 
@@ -262,6 +265,22 @@ ExpressionEvaluator::visitUnaryOp(const UnaryOpNode * node)
       if (it == _field_gradients.end())
         mooseError("No gradient registered for variable: ", name);
       return MooseValue(it->second, _dim);
+    }
+    case NodeType::Laplacian:
+    {
+      const NodePtr & operand = node->operand();
+      if (operand->type() != NodeType::Variable && operand->type() != NodeType::FieldVariable)
+        mooseError("Laplacian currently supports field variables only");
+      std::string name = (operand->type() == NodeType::Variable)
+                             ? static_cast<const VariableNode &>(*operand).name()
+                             : static_cast<const FieldVariableNode &>(*operand).name();
+      unsigned int var_num = getVarNum(name);
+      auto it = _field_hessians.find(var_num);
+      if (it == _field_hessians.end())
+        mooseError("No Hessian (second derivatives) registered for variable: ", name,
+                   ". Laplacian requires second derivatives which may not be available with first-order elements.");
+      // Laplacian is the trace of the Hessian: ∇²u = ∂²u/∂x² + ∂²u/∂y² + ∂²u/∂z²
+      return MooseValue(it->second.tr());
     }
     case NodeType::Norm:
     case NodeType::Trace:
@@ -340,9 +359,20 @@ ExpressionEvaluator::applyUnaryOp(NodeType op, const MooseValue & operand)
   switch (op)
   {
     case NodeType::Negate:
-      if (!operand.isScalar())
-        mooseError("Unary negation currently supports scalar values only");
-      return MooseValue(-operand.asScalar());
+      if (operand.isScalar())
+        return MooseValue(-operand.asScalar());
+      if (operand.isVector())
+      {
+        RealVectorValue v = operand.asVector();
+        return MooseValue(-v, operand.getDimension());
+      }
+      if (operand.isTensor())
+      {
+        RankTwoTensor t = operand.asTensor();
+        t *= -1.0;
+        return MooseValue(t, operand.getDimension());
+      }
+      mooseError("Unary negation not supported for this operand shape");
     case NodeType::Norm:
       return norm(operand);
     case NodeType::Trace:

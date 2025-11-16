@@ -35,7 +35,6 @@
 []
 
 [AutomaticWeakForm]
-  energy_type = EXPRESSION
 
   # Fourfold anisotropic Allen-Cahn energy
   # We decompose the gradient using vec() to create basis vectors
@@ -52,10 +51,10 @@
   # The anisotropic term favors interfaces aligned with coordinate axes
   # Using a simpler formulation that avoids division issues
   # This creates an effective anisotropic gradient energy
-  energy_expression = 'W(eta) +
-                       0.5*kappa_0*dot(grad(eta), grad(eta)) +
-                       0.5*kappa_1*(pow(dot(grad(eta), vec(1.0, 0.0)), 4.0) +
-                                    pow(dot(grad(eta), vec(0.0, 1.0)), 4.0))'
+  strong_forms = 'eta = var_diff(W(eta) +
+                                 0.5*kappa_0*dot(grad(eta), grad(eta)) +
+                                 0.5*kappa_1*(pow(dot(grad(eta), vec(1.0, 0.0)), 4.0) +
+                                              pow(dot(grad(eta), vec(0.0, 1.0)), 4.0)), eta)'
 
   # Parameters:
   # kappa_0: base interface energy
@@ -64,7 +63,7 @@
 
   variables = 'eta'
 
-  use_automatic_differentiation = true
+  use_automatic_differentiation = false
 []
 
 [ICs]

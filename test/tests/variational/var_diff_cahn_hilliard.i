@@ -46,12 +46,12 @@
   [mu_residual]
     type = VariationalKernelBase
     variable = mu
-    energy_type = expression
-    # Using var_diff to compute: μ = δF/δc = dW/dc - κ∇²c
-    energy_expression = 'var_diff(W(c) + 0.5*kappa*dot(grad(c), grad(c)), c) - mu'
+    use_lowered_weak_form = true
+    c0_expression = 'var_diff(W(c) + 0.5*kappa*dot(grad(c), grad(c)), c) - mu'
+    c1_expression = ''
     parameters = 'kappa 0.01'
     coupled_vars = 'c'
-    use_automatic_differentiation = true
+    use_automatic_differentiation = false
   []
 []
 

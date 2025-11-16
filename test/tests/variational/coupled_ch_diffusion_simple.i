@@ -29,20 +29,20 @@
 []
 
 [AutomaticWeakForm]
-  energy_type = expression
 
   # Combined energy functional for coupled Cahn-Hilliard and thermal diffusion
   # Chemical energy: W(c) + κ/2|∇c|^2
   # Thermal energy: k_th/2|∇T|^2
   # Coupling: β*c*T
-  energy_expression = 'W(c) + 0.5*kappa*dot(grad(c), grad(c)) + 0.5*k_th*dot(grad(T), grad(T)) + beta*c*T'
+  strong_forms = 'c = var_diff(W(c) + 0.5*kappa*dot(grad(c), grad(c)) + 0.5*k_th*dot(grad(T), grad(T)) + beta*c*T, c);
+                  T = var_diff(W(c) + 0.5*kappa*dot(grad(c), grad(c)) + 0.5*k_th*dot(grad(T), grad(T)) + beta*c*T, T)'
 
   parameters = 'kappa 0.01 k_th 1.0 beta 0.1'
   variables = 'c T'
   # Need to specify which variables are coupled for the kernel generation
   coupled_variables = 'c T'
 
-  use_automatic_differentiation = true
+  use_automatic_differentiation = false
 []
 
 [ICs]

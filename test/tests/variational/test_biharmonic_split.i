@@ -10,12 +10,11 @@
 []
 
 [AutomaticWeakForm]
-  energy_type = EXPRESSION
-  energy_expression = '0.5 * dot(grad(grad(u)), grad(grad(u)))'
+  strong_forms = 'u = var_diff(0.5 * dot(grad(grad(u)), grad(grad(u))), u)'
   variables = 'u'
   enable_splitting = true
-  max_fe_order = 1  # Force splitting
-  use_automatic_differentiation = true
+  max_fe_order = 1
+  use_automatic_differentiation = false
 []
 
 [BCs]

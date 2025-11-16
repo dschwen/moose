@@ -33,24 +33,20 @@
 []
 
 [AutomaticWeakForm]
-  energy_type = EXPRESSION
 
   # Simple coupled energy functional
   # Double-well potentials: (c²-1)² and (η²-1)²
   # Gradient energies: κ/2|∇c|² and κ/2|∇η|²
   # Coupling: g*c*η encourages c and η to have same sign
-  energy_expression = '(c*c - 1.0)*(c*c - 1.0) +
-                       (eta*eta - 1.0)*(eta*eta - 1.0) +
-                       0.5*kappa*dot(grad(c), grad(c)) +
-                       0.5*kappa*dot(grad(eta), grad(eta)) +
-                       g*c*eta'
+  strong_forms = 'c = var_diff((c*c - 1.0)*(c*c - 1.0) + (eta*eta - 1.0)*(eta*eta - 1.0) + 0.5*kappa*dot(grad(c), grad(c)) + 0.5*kappa*dot(grad(eta), grad(eta)) + g*c*eta, c);
+                  eta = var_diff((c*c - 1.0)*(c*c - 1.0) + (eta*eta - 1.0)*(eta*eta - 1.0) + 0.5*kappa*dot(grad(c), grad(c)) + 0.5*kappa*dot(grad(eta), grad(eta)) + g*c*eta, eta)'
 
   # Use same gradient coefficient for simplicity
   parameters = 'kappa 1.0 g 0.5'
 
   variables = 'c eta'
 
-  use_automatic_differentiation = true
+  use_automatic_differentiation = false
 []
 
 [ICs]

@@ -10,32 +10,16 @@ namespace moose
 namespace automatic_weak_form
 {
 
-registerMooseObject("MooseApp", VariationalKernelBase);
+// Template instantiations and registrations at end of file
 
+template <bool is_ad>
 InputParameters
-VariationalKernelBase::validParams()
+VariationalKernelBaseTempl<is_ad>::validParams()
 {
-  InputParameters params = Kernel::validParams();
+  InputParameters params = GenericKernel<is_ad>::validParams();
 
   params.addClassDescription("Base class for variational derivative kernels that automatically "
                               "generate weak forms from energy functionals");
-
-  MooseEnum energy_types("double_well elastic neo_hookean surface cahn_hilliard fourth_order custom");
-  params.addParam<MooseEnum>("energy_type", energy_types, "Type of energy functional");
-
-  params.addParam<std::string>("energy_expression", "",
-                                "Mathematical expression for the energy density");
-
-  params.addParam<Real>("gradient_coefficient", 1.0,
-                         "Gradient energy coefficient (kappa)");
-  params.addParam<Real>("fourth_order_coefficient", 0.0,
-                         "Fourth-order regularization coefficient (lambda)");
-
-  params.addParam<Real>("elastic_lambda", 1.0, "First Lamé parameter");
-  params.addParam<Real>("elastic_mu", 1.0, "Second Lamé parameter (shear modulus)");
-
-  params.addParam<Real>("surface_energy_coefficient", 1.0,
-                         "Surface energy coefficient (gamma)");
 
   // Add a generic coupled variable parameter that can handle multiple variables
   params.addCoupledVar("coupled_vars", "List of coupled variables from the energy expression");
@@ -61,86 +45,64 @@ VariationalKernelBase::validParams()
   params.addParam<bool>("has_time_derivatives", false,
                          "Whether the problem includes time derivatives");
 
-  params.addParam<bool>("use_evaluation_tape", false,
-                        "Use prebuilt evaluation tapes for coefficient evaluation when supported");
+  params.addParam<bool>("is_strong_form", false,
+                        "If true, expression is a strong form residual (use directly); "
+                        "if false, expression is an energy functional (compute variational derivative)");
+
+  // Optional: accept pre-lowered weak-form pieces (c0, c1)
+  params.addParam<bool>("use_lowered_weak_form", false,
+                        "If true, use provided c0/c1 expressions to assemble weak form");
+  params.addParam<std::string>("c0_expression", "",
+                                "Scalar c0(u,grad(u),...) used as c0*test in weak residual");
+  params.addParam<std::string>("c1_expression", "",
+                                "Vector c1(u,grad(u),...) used as c1·grad(test) in weak residual");
 
   return params;
 }
 
-VariationalKernelBase::VariationalKernelBase(const InputParameters & parameters)
-  : Kernel(parameters),
-    _has_time_derivatives(getParam<bool>("has_time_derivatives")),
-    _compute_jacobian_numerically(getParam<bool>("compute_jacobian_numerically")),
-    _fd_eps(getParam<Real>("fd_eps")),
-    _gradient_coefficient(getParam<Real>("gradient_coefficient")),
-    _fourth_order_coefficient(getParam<Real>("fourth_order_coefficient")),
-    _elastic_lambda(getParam<Real>("elastic_lambda")),
-    _elastic_mu(getParam<Real>("elastic_mu")),
-    _surface_energy_coefficient(getParam<Real>("surface_energy_coefficient")),
-    _parameters(isParamValid("parameters") ? getParam<std::map<std::string, Real>>("parameters") : std::map<std::string, Real>()),
-    _use_automatic_differentiation(getParam<bool>("use_automatic_differentiation")),
-    _enable_variable_splitting(getParam<bool>("enable_variable_splitting")),
-    _fe_order(getParam<unsigned int>("fe_order")),
-    _use_evaluation_tape(getParam<bool>("use_evaluation_tape"))
+template <bool is_ad>
+VariationalKernelBaseTempl<is_ad>::VariationalKernelBaseTempl(const InputParameters & parameters)
+  : GenericKernel<is_ad>(parameters),
+    _compute_jacobian_numerically(this->template getParam<bool>("compute_jacobian_numerically")),
+    _fd_eps(this->template getParam<Real>("fd_eps")),
+    _parameters(this->isParamValid("parameters") ? this->template getParam<std::map<std::string, Real>>("parameters") : std::map<std::string, Real>()),
+    _use_automatic_differentiation(this->template getParam<bool>("use_automatic_differentiation")),
+    _enable_variable_splitting(this->template getParam<bool>("enable_variable_splitting")),
+    _fe_order(this->template getParam<unsigned int>("fe_order")),
+    _is_strong_form(this->template getParam<bool>("is_strong_form"))
 {
-  _builder = std::make_unique<MooseExpressionBuilder>(_mesh.dimension());
-  _weak_form_gen = std::make_unique<WeakFormGenerator>(_mesh.dimension());
-  _evaluator = std::make_unique<ExpressionEvaluator>(_mesh.dimension());
+  _builder = std::make_unique<MooseExpressionBuilder>(this->_mesh.dimension());
+  _evaluator = std::make_unique<ExpressionEvaluator>(this->_mesh.dimension());
 
-  if (isParamValid("energy_type"))
-  {
-    std::string type_str = getParam<MooseEnum>("energy_type");
-    if (type_str == "double_well")
-      _energy_type = EnergyType::DOUBLE_WELL;
-    else if (type_str == "elastic")
-      _energy_type = EnergyType::ELASTIC;
-    else if (type_str == "neo_hookean")
-      _energy_type = EnergyType::NEO_HOOKEAN;
-    else if (type_str == "surface")
-      _energy_type = EnergyType::SURFACE;
-    else if (type_str == "cahn_hilliard")
-      _energy_type = EnergyType::CAHN_HILLIARD;
-    else if (type_str == "fourth_order")
-      _energy_type = EnergyType::FOURTH_ORDER;
-    else
-      _energy_type = EnergyType::CUSTOM;
-  }
-  else
-    _energy_type = EnergyType::CUSTOM;
-
-  if (isParamValid("energy_expression"))
-  {
-    _energy_expression = getParam<std::string>("energy_expression");
-    Moose::out << "[DEBUG] VariationalKernelBase received energy expression: " << _energy_expression << "\n";
-  }
 
   // Get the list of coupled variables from the generic parameter
-  if (isCoupled("coupled_vars"))
+  if (this->isCoupled("coupled_vars"))
   {
-    unsigned int n_coupled = coupledComponents("coupled_vars");
+    unsigned int n_coupled = this->coupledComponents("coupled_vars");
     _coupled_variable_names.clear();
 
     for (unsigned int i = 0; i < n_coupled; ++i)
     {
-      auto var_name = getFieldVar("coupled_vars", i)->name();
+      auto var_name = this->getFieldVar("coupled_vars", i)->name();
       _coupled_variable_names.push_back(var_name);
 
       // Store the coupled values and gradients
-      _coupled_values[var_name] = &coupledValue("coupled_vars", i);
-      _coupled_gradients[var_name] = &coupledGradient("coupled_vars", i);
+      _coupled_values[var_name] = &this->coupledValue("coupled_vars", i);
+      _coupled_gradients[var_name] = &this->coupledGradient("coupled_vars", i);
 
-      if (_fe_order >= 2)
-        _coupled_seconds[var_name] = &coupledSecond("coupled_vars", i);
+      // For strong forms or higher-order elements, store second derivatives
+      if (_is_strong_form || _fe_order >= 2)
+        _coupled_seconds[var_name] = &this->coupledSecond("coupled_vars", i);
     }
   }
 
   initializeExpression();
   initializeEvaluator();
-  computeVariationalDerivative();
 }
 
+template <bool is_ad>
 void
-VariationalKernelBase::initializeEvaluator()
+VariationalKernelBaseTempl<is_ad>::initializeEvaluator()
 {
   // Register the primary variable
   _evaluator->registerVariable(_var.name(), _var.number());
@@ -161,12 +123,30 @@ VariationalKernelBase::initializeEvaluator()
     _evaluator->setParameter(param_name, param_value);
 }
 
+template <bool is_ad>
 void
-VariationalKernelBase::updateEvaluatorAtQP(unsigned int qp)
+VariationalKernelBaseTempl<is_ad>::updateEvaluatorAtQP(unsigned int qp)
 {
+  // This method is only called in non-AD path for symbolic evaluation
+  if constexpr (is_ad)
+  {
+    this->mooseError("updateEvaluatorAtQP should not be called with AD");
+    return;
+  }
+  else
+  {
   // Update primary variable
-  _evaluator->setFieldValue(_var.number(), _u[qp]);
-  _evaluator->setFieldGradient(_var.number(), _grad_u[qp]);
+  _evaluator->setFieldValue(_var.number(), this->_u[qp]);
+  _evaluator->setFieldGradient(_var.number(), this->_grad_u[qp]);
+
+  // For strong forms with Laplacian, we need second derivatives.
+  // Skip when using lowered weak form (c0/c1 only needs values/gradients).
+  if (_is_strong_form && !_use_lowered_weak_form)
+  {
+    // Access second derivatives through the variable interface
+    const auto & second_u = _var.secondSln();
+    _evaluator->setFieldHessian(_var.number(), second_u[qp]);
+  }
 
   // Update coupled variables
   for (const auto & var_name : _coupled_variable_names)
@@ -179,216 +159,80 @@ VariationalKernelBase::updateEvaluatorAtQP(unsigned int qp)
     if (_coupled_gradients.count(var_name))
       _evaluator->setFieldGradient(var_num, (*_coupled_gradients[var_name])[qp]);
 
-    if (_fe_order >= 2 && _coupled_seconds.count(var_name))
+    // For strong forms (non-lowered) or higher-order elements, set second derivatives when available
+    if (((_is_strong_form && !_use_lowered_weak_form) || _fe_order >= 2) && _coupled_seconds.count(var_name))
       _evaluator->setFieldHessian(var_num, (*_coupled_seconds[var_name])[qp]);
   }
-}
-
-void
-VariationalKernelBase::initializeExpression()
-{
-  switch (_energy_type)
-  {
-    case EnergyType::DOUBLE_WELL:
-    {
-      auto c = _builder->field(_var.name());
-      _energy_density = _builder->doubleWell(c);
-      break;
-    }
-
-    case EnergyType::ELASTIC:
-    {
-      auto u = _builder->field(_var.name());
-      auto eps = _builder->strain(_var.name());
-      _energy_density = _builder->elasticEnergy(eps, _elastic_lambda, _elastic_mu);
-      break;
-    }
-
-    case EnergyType::NEO_HOOKEAN:
-    {
-      auto u = _builder->field(_var.name());
-      auto F = _builder->deformationGradient(_var.name());
-      _energy_density = _builder->neoHookean(F, _elastic_mu, _elastic_lambda);
-      break;
-    }
-
-    case EnergyType::SURFACE:
-    {
-      auto phi = _builder->field(_var.name());
-      _energy_density = _builder->surfaceEnergy(phi, _surface_energy_coefficient);
-      break;
-    }
-
-    case EnergyType::CAHN_HILLIARD:
-    {
-      auto c = _builder->field(_var.name());
-      auto grad_c = grad(c, _mesh.dimension());
-      auto bulk = _builder->doubleWell(c);
-      auto gradient = multiply(constant(0.5 * _gradient_coefficient), moose::automatic_weak_form::dot(grad_c, grad_c));
-      _energy_density = add(bulk, gradient);
-      break;
-    }
-
-    case EnergyType::FOURTH_ORDER:
-    {
-      auto c = _builder->field(_var.name());
-      auto grad_c = grad(c, _mesh.dimension());
-      auto bulk = _builder->doubleWell(c);
-      auto gradient = multiply(constant(0.5 * _gradient_coefficient), moose::automatic_weak_form::dot(grad_c, grad_c));
-      auto fourth = _builder->fourthOrderRegularization(c, _fourth_order_coefficient);
-      _energy_density = add(add(bulk, gradient), fourth);
-      break;
-    }
-
-    case EnergyType::CUSTOM:
-    {
-      if (!_energy_expression.empty())
-      {
-        // Pass parameters to the expression parser
-        if (!_parameters.empty())
-          _energy_density = _builder->parseExpression(_energy_expression, _parameters);
-        else
-          _energy_density = _builder->parseExpression(_energy_expression);
-      }
-      else
-        mooseError("Custom energy type requires energy_expression parameter");
-      break;
-    }
-
-    default:
-      mooseError("Unknown energy type");
   }
 }
 
+template <bool is_ad>
 void
-VariationalKernelBase::computeVariationalDerivative()
+VariationalKernelBaseTempl<is_ad>::initializeExpression()
 {
-  if (!_energy_density)
-    mooseError("Energy density not initialized");
-
-  // First check if splitting is needed
-  DifferentiationVisitor dv(_var.name());
-  auto diff = dv.differentiate(_energy_density);
-
-  if (_enable_variable_splitting && _weak_form_gen->requiresVariableSplitting(diff, _fe_order))
+  // If using lowered weak form, parse c0/c1 expressions now
+  if (this->isParamValid("use_lowered_weak_form") && this->template getParam<bool>("use_lowered_weak_form"))
   {
-    // When splitting is enabled and required, we expect the energy expression
-    // to have been transformed to use split variables by the action.
-    // For now, we'll issue an error with helpful information.
-    unsigned int max_order = 0;
-    for (const auto & [order, coeff] : diff.coefficients)
-      if (order > max_order)
-        max_order = order;
+    _use_lowered_weak_form = true;
 
-    mooseError("Variable splitting is enabled but the energy expression still contains ",
-               "derivatives of order ", max_order, " which exceeds the FE order ", _fe_order, ".\n",
-               "The energy expression should have been transformed to use split variables.\n",
-               "Energy expression: ", _energy_density->toString());
+    const auto & c0s = this->template getParam<std::string>("c0_expression");
+    const auto & c1s = this->template getParam<std::string>("c1_expression");
+
+    if (!c0s.empty())
+      _c0_expr = _builder->parseExpression(c0s, _parameters);
+    if (!c1s.empty())
+      _c1_expr = _builder->parseExpression(c1s, _parameters);
+
+    // Precompute symbolic derivatives for Jacobian (huge runtime savings)
+    precomputeDerivativesLowered();
   }
-
-  auto contributions = _weak_form_gen->computeContributions(_energy_density, _var.name());
-  _max_derivative_order = contributions.max_order;
-
-  initializeCoefficientTapes(contributions);
 }
 
+template <bool is_ad>
 void
-VariationalKernelBase::initializeCoefficientTapes(
-    const WeakFormGenerator::WeakFormContributions & contributions)
+VariationalKernelBaseTempl<is_ad>::precomputeDerivativesLowered()
 {
-  if (!_use_evaluation_tape)
+  if (!_use_lowered_weak_form)
     return;
 
-  initializeTapeForContribution(contributions.c0_term, _c0_cache);
-}
+  // Collect all variable names involved: primary + coupled
+  std::vector<std::string> vars;
+  vars.push_back(this->_var.name());
+  for (const auto & n : _coupled_variable_names)
+    vars.push_back(n);
 
-void
-VariationalKernelBase::initializeTapeForContribution(const NodePtr & expr, ContributionCache & cache)
-{
-  if (!_use_evaluation_tape || cache.tape_attempted)
-    return;
-
-  cache.tape_attempted = true;
-
-  if (!expr)
-    return;
-
-  std::vector<std::string> extras;
-  extras.reserve(2 * _coupled_variable_names.size() + _parameters.size());
-  for (const auto & name : _coupled_variable_names)
+  for (const auto & name : vars)
   {
-    extras.push_back(name);
-    extras.push_back(name + "_grad");
-  }
-
-  for (const auto & [name, _] : _parameters)
-    extras.push_back(name);
-
-  auto result = buildScalarTape(expr, _var.name(), extras);
-  if (result.success)
-  {
-    cache.tape = std::make_unique<EvaluationTape>(std::move(result.tape));
-    cache.tape_inputs = std::move(result.inputs);
-  }
-}
-
-bool
-VariationalKernelBase::evaluateTapeContribution(const ContributionCache & cache,
-                                                TapeValue & value_out) const
-{
-  if (!_use_evaluation_tape || !cache.tape)
-    return false;
-
-  std::unordered_map<std::string, TapeValue> inputs;
-  inputs.reserve(cache.tape_inputs.size());
-
-  for (const auto & name : cache.tape_inputs)
-  {
-    auto cache_it = _variable_cache.find(name);
-    if (cache_it != _variable_cache.end())
+    if (_c0_expr)
     {
-      const MooseValue & value = cache_it->second;
-      if (value.isScalar())
-        inputs[name] = value.asScalar();
-      else if (value.isVector())
-        inputs[name] = value.asVector();
-      else if (value.isTensor())
-        inputs[name] = value.asTensor();
-      else if (value.isRankThree())
-        inputs[name] = value.asRankThree();
-      else if (value.isRankFour())
-        inputs[name] = value.asRankFour();
-      else
-        return false;
-      continue;
+      _dc0_du[name] = differentiateWithRespectToField(_c0_expr, name);
+      _dc0_dgradu[name] = differentiateWithRespectToGradient(_c0_expr, name);
     }
-
-    if (auto param_it = _parameters.find(name); param_it != _parameters.end())
+    if (_c1_expr)
     {
-      inputs[name] = param_it->second;
-      continue;
+      _dc1_du[name] = differentiateWithRespectToField(_c1_expr, name);
+      _dc1_dgradu[name] = differentiateWithRespectToGradient(_c1_expr, name);
     }
-
-    return false;
   }
-
-  auto eval = cache.tape->evaluate(inputs);
-  if (!eval.has_value())
-    return false;
-
-  value_out = *eval;
-  return true;
 }
 
+template <bool is_ad>
 void
-VariationalKernelBase::updateVariableValues(unsigned int qp)
+VariationalKernelBaseTempl<is_ad>::updateVariableValues(unsigned int qp)
 {
+  // This method is only called in non-AD path for symbolic evaluation
+  if constexpr (is_ad)
+  {
+    this->mooseError("updateVariableValues should not be called with AD");
+  }
+  else
+  {
   _variable_cache.clear();
 
-  _variable_cache[_var.name()] = MooseValue(_u[qp]);
+  _variable_cache[_var.name()] = MooseValue(this->_u[qp]);
 
-  RealVectorValue grad_u(_grad_u[qp]);
-  _variable_cache[_var.name() + "_grad"] = MooseValue(grad_u, _mesh.dimension());
+  RealVectorValue grad_u(this->_grad_u[qp]);
+  _variable_cache[_var.name() + "_grad"] = MooseValue(grad_u, this->_mesh.dimension());
 
   for (const auto & [name, value_ptr] : _coupled_values)
   {
@@ -397,312 +241,294 @@ VariationalKernelBase::updateVariableValues(unsigned int qp)
     if (_coupled_gradients.count(name))
     {
       RealVectorValue grad((*_coupled_gradients[name])[qp]);
-      _variable_cache[name + "_grad"] = MooseValue(grad, _mesh.dimension());
+      _variable_cache[name + "_grad"] = MooseValue(grad, this->_mesh.dimension());
     }
+  }
   }
 }
 
-Real
-VariationalKernelBase::computeQpResidual()
+template <bool is_ad>
+GenericReal<is_ad>
+VariationalKernelBaseTempl<is_ad>::computeQpResidual()
 {
-  clearCache();
-  updateVariableValues(_qp);
+  // Lowered weak form (assemble c0*test + c1·grad(test))
+  if (_use_lowered_weak_form)
+  {
+    if constexpr (is_ad)
+    {
+      // AD vector evaluation not implemented; use non-AD evaluator for values and
+      // rely on AD only through field variables inside expressions.
+      // To keep compile-time correctness, we error out for now to avoid incorrect AD Jacobians.
+      this->mooseError("Lowered weak form is not yet supported with AD kernel. Use non-AD kernel.");
+      return 0.0;
+    }
+    else
+    {
+      clearCache();
+      updateVariableValues(_qp);
 
-  Real residual = 0.0;
-
-  residual += evaluateC0Contribution();
-
-  // After integration by parts, -div(C^1) becomes +C^1·∇ψ
-  residual += evaluateC1Contribution();
-
-  if (_max_derivative_order >= 2)
-    residual += evaluateC2Contribution();
-
-  if (_max_derivative_order >= 3)
-    residual += evaluateC3Contribution();
-
-  return residual;
+      Real residual = 0.0;
+      if (_c0_expr)
+      {
+        MooseValue v = evaluateExpression(_c0_expr);
+        if (v.isScalar())
+          residual += v.asScalar() * this->_test[this->_i][this->_qp];
+      }
+      if (_c1_expr)
+      {
+        MooseValue v = evaluateExpression(_c1_expr);
+        if (v.isVector())
+        {
+          residual += v.asVector() * this->_grad_test[this->_i][this->_qp];
+        }
+      }
+      return residual;
+    }
+  }
+  this->mooseError("Lowered weak form not provided; only strong_forms with IBP lowering are supported.");
+  return 0.0;
 }
 
+template <bool is_ad>
 Real
-VariationalKernelBase::computeQpJacobian()
+VariationalKernelBaseTempl<is_ad>::computeQpJacobian()
 {
+  // When using AD (is_ad=true), MOOSE computes Jacobian automatically via dual numbers
+  // This method is not called, but must still compile
+  if constexpr (is_ad)
+  {
+    // This shouldn't be called when is_ad=true
+    this->mooseError("computeQpJacobian should not be called when using AD");
+    return 0.0;
+  }
+  else  // Only compile non-AD path
+  {
+  // Lowered weak form Jacobian (non-AD)
+  if (_use_lowered_weak_form)
+  {
+    clearCache();
+    updateVariableValues(_qp);
+
+    Real jac = 0.0;
+
+    // c0 term: (∂c0/∂u) φ_j ψ_i + (∂c0/∂∇u) · ∇φ_j ψ_i
+    if (_c0_expr)
+    {
+      auto dc0_du = _dc0_du.count(this->_var.name()) ? _dc0_du[this->_var.name()] : nullptr;
+      if (dc0_du)
+      {
+        MooseValue v = evaluateExpression(dc0_du);
+        if (v.isScalar())
+          jac += v.asScalar() * this->_phi[this->_j][this->_qp] * this->_test[this->_i][this->_qp];
+      }
+      auto dc0_dgrad = _dc0_dgradu.count(this->_var.name()) ? _dc0_dgradu[this->_var.name()] : nullptr;
+      if (dc0_dgrad)
+      {
+        MooseValue v = evaluateExpression(dc0_dgrad);
+        if (v.isVector())
+          jac += v.asVector() * this->_grad_phi[this->_j][this->_qp] * this->_test[this->_i][this->_qp];
+      }
+    }
+
+    // c1 term: (∂c1/∂u) · (φ_j ∇ψ_i) + (∂c1/∂∇u) : (∇φ_j ⊗ ∇ψ_i)
+    if (_c1_expr)
+    {
+      auto dc1_du = _dc1_du.count(this->_var.name()) ? _dc1_du[this->_var.name()] : nullptr;
+      if (dc1_du)
+      {
+        MooseValue v = evaluateExpression(dc1_du);
+        if (v.isVector())
+          jac += v.asVector() * this->_grad_test[this->_i][this->_qp] * this->_phi[this->_j][this->_qp];
+      }
+      auto dc1_dgrad = _dc1_dgradu.count(this->_var.name()) ? _dc1_dgradu[this->_var.name()] : nullptr;
+      if (dc1_dgrad)
+      {
+        MooseValue v = evaluateExpression(dc1_dgrad);
+        if (v.isScalar())
+        {
+          // Scalar coefficient (e.g., κ) * (∇φ_j · ∇ψ_i)
+          jac += v.asScalar() * this->_grad_phi[this->_j][this->_qp] * this->_grad_test[this->_i][this->_qp];
+        }
+        else if (v.isTensor())
+        {
+          RankTwoTensor T = v.asTensor();
+          RealVectorValue tmp = T * this->_grad_phi[this->_j][this->_qp];
+          jac += tmp * this->_grad_test[this->_i][this->_qp];
+        }
+      }
+    }
+
+    return jac;
+  }
+
   if (_compute_jacobian_numerically)
   {
     // Numerical Jacobian computation disabled - _u is const in MOOSE
     // Use automatic differentiation or analytical Jacobian instead
     mooseWarning("Numerical Jacobian computation not available, using base class implementation");
-    return Kernel::computeQpJacobian();
+    return GenericKernel<is_ad>::computeQpJacobian();
   }
-
-  if (!_use_automatic_differentiation)
+  // Lowered weak form Jacobian (non-AD)
+  if (_use_lowered_weak_form)
   {
-    // For now, provide a simple analytical Jacobian for the diffusion case
-    // This handles the weak form: -∇·(κ∇u) which gives Jacobian: κ∇φ_j·∇ψ_i
-    
-    // For simple diffusion, the Jacobian from -∇·(κ∇u) is κ∇φ_j·∇ψ_i
-    // For now, assume κ=1 for testing
-    return _grad_phi[_j][_qp] * _grad_test[_i][_qp];
-  }
+    clearCache();
+    updateVariableValues(_qp);
 
-  // Automatic differentiation for Jacobian
-  clearCache();
-  updateVariableValues(_qp);
-  
-  Real jacobian = 0.0;
-  
-  // Optional debug output
-  bool debug = false; // (_qp == 0 && _i == 0 && _j == 0); // Debug first element
-  
-  // Get the differential coefficients C^k from the energy functional
-  DifferentiationVisitor dv(_var.name());
-  auto diff = dv.differentiate(_energy_density);
-  
-  // Jacobian from C^0 term: ∂C^0/∂u · φ_j · ψ_i
-  if (diff.hasOrder(0))
-  {
-    auto c0 = diff.getCoefficient(0);
-    
-    if (debug && _qp == 0 && _i == 0 && _j == 0)
-      mooseInfo("  C^0 expression: ", c0->toString());
-    
-    // Differentiate C^0 with respect to the field variable
-    auto dc0_du = differentiateWithRespectToField(c0, _var.name());
-    
-    if (debug && _qp == 0 && _i == 0 && _j == 0)
+    Real jac = 0.0;
+
+    // c0 term: (∂c0/∂u) φ_j ψ_i + (∂c0/∂∇u) · ∇φ_j ψ_i
+    if (_c0_expr)
     {
+      auto dc0_du = differentiateWithRespectToField(_c0_expr, _var.name());
       if (dc0_du)
-        mooseInfo("  dc0/du: ", dc0_du->toString());
-      else
-        mooseInfo("  dc0/du: null");
-    }
-    
-    if (dc0_du)
-    {
-      MooseValue dc0_val = evaluateExpression(dc0_du);
-      if (dc0_val.isScalar())
       {
-        Real contrib = dc0_val.asScalar() * _phi[_j][_qp] * _test[_i][_qp];
-        jacobian += contrib;
-        
-        if (debug && _qp == 0 && _i == 0 && _j == 0)
-          mooseInfo("  C^0 Jacobian contribution: ", contrib);
+        MooseValue v = evaluateExpression(dc0_du);
+        if (v.isScalar())
+          jac += v.asScalar() * this->_phi[this->_j][this->_qp] * this->_test[this->_i][this->_qp];
+      }
+      auto dc0_dgrad = differentiateWithRespectToGradient(_c0_expr, _var.name());
+      if (dc0_dgrad)
+      {
+        MooseValue v = evaluateExpression(dc0_dgrad);
+        if (v.isVector())
+          jac += v.asVector() * this->_grad_phi[this->_j][this->_qp] * this->_test[this->_i][this->_qp];
       }
     }
-  }
-  
-  // Jacobian from C^1 term: ∂C^1/∂u · φ_j · ∇ψ_i + ∂C^1/∂(∇u) · ∇φ_j · ∇ψ_i
-  if (diff.hasOrder(1))
-  {
-    auto c1 = diff.getCoefficient(1);
-    
-    if (debug && _qp == 0 && _i == 0 && _j == 0)
-      mooseInfo("  C^1 expression: ", c1->toString());
-    
-    // Contribution from ∂C^1/∂u
-    auto dc1_du = differentiateWithRespectToField(c1, _var.name());
-    if (dc1_du)
+
+    // c1 term: (∂c1/∂u) · (φ_j ∇ψ_i) + (∂c1/∂∇u) : (∇φ_j ⊗ ∇ψ_i)
+    if (_c1_expr)
     {
-      MooseValue dc1_val = evaluateExpression(dc1_du);
-      if (dc1_val.isVector())
-        jacobian += dc1_val.asVector() * _grad_test[_i][_qp] * _phi[_j][_qp];
-    }
-    
-    // Contribution from ∂C^1/∂(∇u)
-    auto dc1_dgradu = differentiateWithRespectToGradient(c1, _var.name());
-    
-    if (debug && _qp == 0 && _i == 0 && _j == 0)
-    {
-      if (dc1_dgradu)
-        mooseInfo("  dc1/d(grad u): ", dc1_dgradu->toString());
-      else
-        mooseInfo("  dc1/d(grad u): null");
-    }
-    
-    if (dc1_dgradu)
-    {
-      MooseValue dc1_grad_val = evaluateExpression(dc1_dgradu);
-      if (dc1_grad_val.isTensor())
+      auto dc1_du = differentiateWithRespectToField(_c1_expr, _var.name());
+      if (dc1_du)
       {
-        // Contract the tensor with ∇φ_j and then dot with ∇ψ_i
-        RankTwoTensor tensor = dc1_grad_val.asTensor();
-        RealVectorValue result = tensor * _grad_phi[_j][_qp];
-        jacobian += result * _grad_test[_i][_qp];
-        
-        if (debug && _qp == 0 && _i == 0 && _j == 0)
-          mooseInfo("  Tensor contribution: ", result * _grad_test[_i][_qp]);
+        MooseValue v = evaluateExpression(dc1_du);
+        if (v.isVector())
+          jac += v.asVector() * this->_grad_test[this->_i][this->_qp] * this->_phi[this->_j][this->_qp];
       }
-      else if (dc1_grad_val.isScalar())
+
+      auto dc1_dgrad = differentiateWithRespectToGradient(_c1_expr, _var.name());
+      if (dc1_dgrad)
       {
-        // For simple cases like C^1 = κ∇u, ∂C^1/∂(∇u) = κI
-        // The scalar represents the coefficient κ
-        Real coeff = dc1_grad_val.asScalar();
-        Real contrib = coeff * _grad_phi[_j][_qp] * _grad_test[_i][_qp];
-        jacobian += contrib;
-        
-        if (debug && _qp == 0 && _i == 0 && _j == 0)
+        MooseValue v = evaluateExpression(dc1_dgrad);
+        if (v.isScalar())
         {
-          mooseInfo("  Scalar grad contribution: ", contrib);
-          mooseInfo("    dc1_grad_val: ", dc1_grad_val.asScalar());
+          jac += v.asScalar() * this->_grad_phi[this->_j][this->_qp] * this->_grad_test[this->_i][this->_qp];
+        }
+        else if (v.isTensor())
+        {
+          RankTwoTensor T = v.asTensor();
+          RealVectorValue tmp = T * this->_grad_phi[this->_j][this->_qp];
+          jac += tmp * this->_grad_test[this->_i][this->_qp];
         }
       }
     }
-  }
-  
-  // TODO: Add C^2 and higher order terms if needed
-  
-  return jacobian;
-}
 
-Real
-VariationalKernelBase::computeQpOffDiagJacobian(unsigned int jvar)
-{
-  if (!_use_automatic_differentiation)
-    return 0.0;
-
-  std::string coupled_var_name;
-  for (const auto & [name, var_num] : _coupled_var_nums)
-  {
-    if (var_num == jvar)
-    {
-      coupled_var_name = name;
-      break;
-    }
+    return jac;
   }
 
-  if (coupled_var_name.empty())
-    return 0.0;
-
-  clearCache();
-  updateVariableValues(_qp);
-
-  DifferentiationVisitor dv(coupled_var_name);
-  auto residual_expr = _weak_form_gen->generateWeakForm(_energy_density, _var.name());
-  auto jacobian_diff = dv.differentiate(residual_expr);
-
-  if (jacobian_diff.hasOrder(0))
-  {
-    auto jacobian_expr = jacobian_diff.getCoefficient(0);
-    MooseValue jac_val = evaluateExpression(jacobian_expr);
-
-    if (jac_val.isScalar())
-      return jac_val.asScalar() * _phi[_j][_qp] * _test[_i][_qp];
-  }
-
+  this->mooseError("Lowered weak form not provided; only strong_forms with IBP lowering are supported.");
   return 0.0;
+  }  // end else (!is_ad)
 }
 
+template <bool is_ad>
 Real
-VariationalKernelBase::evaluateC0Contribution()
+VariationalKernelBaseTempl<is_ad>::computeQpOffDiagJacobian(unsigned int jvar)
 {
-  TapeValue tape_value;
-  if (evaluateTapeContribution(_c0_cache, tape_value))
+  // When using AD (is_ad=true), MOOSE computes Jacobian automatically via dual numbers
+  // This method is not called, but must still compile
+  if constexpr (is_ad)
   {
-    if (std::holds_alternative<TapeScalar>(tape_value))
-      return std::get<TapeScalar>(tape_value) * _test[_i][_qp];
+    this->mooseError("computeQpOffDiagJacobian should not be called when using AD");
     return 0.0;
   }
-
-  if (!_c0_cache.computed)
+  else
   {
-    DifferentiationVisitor dv(_var.name());
-    auto diff = dv.differentiate(_energy_density);
+    // Only supported for lowered weak form
+    if (!_use_lowered_weak_form)
+      return 0.0;
 
-    if (diff.hasOrder(0))
+    // Resolve the coupled variable name for jvar
+    std::string coupled_var_name;
+    for (const auto & [name, var_num] : _coupled_var_nums)
     {
-      auto c0 = diff.getCoefficient(0);
-      _c0_cache.values[_qp] = evaluateExpression(c0);
+      if (var_num == jvar)
+      {
+        coupled_var_name = name;
+        break;
+      }
     }
-    else
+    if (coupled_var_name.empty())
+      return 0.0;
+
+    clearCache();
+    updateVariableValues(this->_qp);
+
+    Real jac = 0.0;
+
+    // c0 contribution: (∂c0/∂v) φ_j ψ_i + (∂c0/∂∇v) · ∇φ_j ψ_i
+    if (_c0_expr)
     {
-      _c0_cache.values[_qp] = MooseValue(0.0);
+      if (auto it = _dc0_du.find(coupled_var_name); it != _dc0_du.end())
+      {
+        MooseValue v = evaluateExpression(it->second);
+        if (v.isScalar())
+          jac += v.asScalar() * this->_phi[this->_j][this->_qp] * this->_test[this->_i][this->_qp];
+      }
+      if (auto it2 = _dc0_dgradu.find(coupled_var_name); it2 != _dc0_dgradu.end())
+      {
+        MooseValue v = evaluateExpression(it2->second);
+        if (v.isVector())
+          jac += v.asVector() * this->_grad_phi[this->_j][this->_qp] * this->_test[this->_i][this->_qp];
+      }
     }
-    _c0_cache.computed = true;
-  }
 
-  if (_c0_cache.values[_qp].isScalar())
-    return _c0_cache.values[_qp].asScalar() * _test[_i][_qp];
+    // c1 contribution: (∂c1/∂v) · (φ_j ∇ψ_i) + (∂c1/∂∇v) : (∇φ_j ⊗ ∇ψ_i)
+    if (_c1_expr)
+    {
+      if (auto it = _dc1_du.find(coupled_var_name); it != _dc1_du.end())
+      {
+        MooseValue v = evaluateExpression(it->second);
+        if (v.isVector())
+          jac += v.asVector() * this->_grad_test[this->_i][this->_qp] * this->_phi[this->_j][this->_qp];
+      }
+      if (auto it2 = _dc1_dgradu.find(coupled_var_name); it2 != _dc1_dgradu.end())
+      {
+        MooseValue v = evaluateExpression(it2->second);
+        if (v.isScalar())
+          jac += v.asScalar() * this->_grad_phi[this->_j][this->_qp] * this->_grad_test[this->_i][this->_qp];
+        else if (v.isTensor())
+        {
+          RankTwoTensor T = v.asTensor();
+          RealVectorValue tmp = T * this->_grad_phi[this->_j][this->_qp];
+          jac += tmp * this->_grad_test[this->_i][this->_qp];
+        }
+      }
+    }
 
-  return 0.0;
+    return jac;
+  }  // end else (!is_ad)
 }
 
-Real
-VariationalKernelBase::evaluateC1Contribution()
-{
-  if (!_c1_cache.computed)
-  {
-    DifferentiationVisitor dv(_var.name());
-    auto diff = dv.differentiate(_energy_density);
+// Removed energy-functional contribution helpers; only lowered strong-form is supported
 
-    if (diff.hasOrder(1))
-    {
-      auto c1 = diff.getCoefficient(1);
-      _c1_cache.values[_qp] = evaluateExpression(c1);
-    }
-    else
-    {
-      _c1_cache.values[_qp] = MooseValue(RealVectorValue(), _mesh.dimension());
-    }
-    _c1_cache.computed = true;
-  }
-
-  if (_c1_cache.values[_qp].isVector())
-  {
-    RealVectorValue c1_vec = _c1_cache.values[_qp].asVector();
-    return c1_vec * _grad_test[_i][_qp];
-  }
-
-  return 0.0;
-}
-
-Real
-VariationalKernelBase::evaluateC2Contribution()
-{
-  if (!_c2_cache.computed)
-  {
-    DifferentiationVisitor dv(_var.name());
-    auto diff = dv.differentiate(_energy_density);
-
-    if (diff.hasOrder(2))
-    {
-      auto c2 = diff.getCoefficient(2);
-      _c2_cache.values[_qp] = evaluateExpression(c2);
-    }
-    else
-    {
-      _c2_cache.values[_qp] = MooseValue(RankTwoTensor(), _mesh.dimension());
-    }
-    _c2_cache.computed = true;
-  }
-
-  if (_c2_cache.values[_qp].isTensor() && _fe_order >= 2)
-  {
-    return 0.0;
-  }
-
-  return 0.0;
-}
-
-Real
-VariationalKernelBase::evaluateC3Contribution()
-{
-  return 0.0;
-}
-
+template <bool is_ad>
 MooseValue
-VariationalKernelBase::evaluateExpression(const NodePtr & expr)
+VariationalKernelBaseTempl<is_ad>::evaluateExpression(const NodePtr & expr)
 {
   return evaluateAtQP(expr, _qp);
 }
 
+template <bool is_ad>
 MooseValue
-VariationalKernelBase::evaluateAtQP(const NodePtr & expr, unsigned int qp)
+VariationalKernelBaseTempl<is_ad>::evaluateAtQP(const NodePtr & expr, unsigned int qp)
 {
   if (!expr)
     return MooseValue(0.0);
 
-  // Validate that expression doesn't contain differential operators that should have been eliminated
-  // After integration by parts and variable splitting, we should only see:
+  // Validate that expression doesn't contain differential operators (only for energy functionals)
+  // For strong forms, differential operators like laplacian() are allowed
+  // For energy functionals after integration by parts and variable splitting, we should only see:
   // - Field variables (u, coupled_vars)
   // - Gradients of field variables (grad(u), grad(coupled_var))
   // - Parameters and constants
@@ -710,7 +536,8 @@ VariationalKernelBase::evaluateAtQP(const NodePtr & expr, unsigned int qp)
   // - div(field_var) - should be eliminated by integration by parts
   // - laplacian(field_var) - should be eliminated by variable splitting
   // - curl(field_var) - should be eliminated by variable splitting
-  validateDifferentialOperators(expr);
+  if (!_is_strong_form)
+    validateDifferentialOperators(expr);
 
   // Update the evaluator with values at this quadrature point
   updateEvaluatorAtQP(qp);
@@ -728,12 +555,12 @@ VariationalKernelBase::evaluateAtQP(const NodePtr & expr, unsigned int qp)
     else if (expr->shape().index() == 1)  // VectorShape
     {
       RealVectorValue result = _evaluator->evaluateVector(expr);
-      return MooseValue(result, _mesh.dimension());
+      return MooseValue(result, this->_mesh.dimension());
     }
     else if (expr->shape().index() == 2)  // TensorShape
     {
       RankTwoTensor result = _evaluator->evaluateTensor(expr);
-      return MooseValue(result, _mesh.dimension());
+      return MooseValue(result, this->_mesh.dimension());
     }
     else
     {
@@ -748,8 +575,9 @@ VariationalKernelBase::evaluateAtQP(const NodePtr & expr, unsigned int qp)
   }
 }
 
+template <bool is_ad>
 void
-VariationalKernelBase::validateDifferentialOperators(const NodePtr & expr) const
+VariationalKernelBaseTempl<is_ad>::validateDifferentialOperators(const NodePtr & expr) const
 {
   if (!expr)
     return;
@@ -827,8 +655,9 @@ VariationalKernelBase::validateDifferentialOperators(const NodePtr & expr) const
 // Rest of the original evaluateAtQP implementation removed - now using ExpressionEvaluator
 // The old implementation can be found in git history if needed
 
+template <bool is_ad>
 NodePtr
-VariationalKernelBase::differentiateWithRespectToField(const NodePtr & expr, const std::string & var_name)
+VariationalKernelBaseTempl<is_ad>::differentiateWithRespectToField(const NodePtr & expr, const std::string & var_name)
 {
   if (!expr)
     return nullptr;
@@ -844,8 +673,9 @@ VariationalKernelBase::differentiateWithRespectToField(const NodePtr & expr, con
   return nullptr;
 }
 
+template <bool is_ad>
 NodePtr
-VariationalKernelBase::differentiateWithRespectToGradient(const NodePtr & expr, const std::string & var_name)
+VariationalKernelBaseTempl<is_ad>::differentiateWithRespectToGradient(const NodePtr & expr, const std::string & var_name)
 {
   if (!expr)
     return nullptr;
@@ -956,37 +786,162 @@ VariationalKernelBase::differentiateWithRespectToGradient(const NodePtr & expr, 
   return nullptr;
 }
 
+template <bool is_ad>
 bool
-VariationalKernelBase::containsGradient(const NodePtr & expr, const std::string & var_name)
+VariationalKernelBaseTempl<is_ad>::containsGradient(const NodePtr & expr, const std::string & var_name)
 {
   if (!expr)
     return false;
-    
+
   if (expr->type() == NodeType::Gradient)
   {
     auto unary = std::static_pointer_cast<UnaryOpNode>(expr);
     auto operand = unary->operand();
     if (operand->type() == NodeType::Variable || operand->type() == NodeType::FieldVariable)
     {
-      if ((operand->type() == NodeType::Variable && 
+      if ((operand->type() == NodeType::Variable &&
            std::static_pointer_cast<VariableNode>(operand)->name() == var_name) ||
-          (operand->type() == NodeType::FieldVariable && 
+          (operand->type() == NodeType::FieldVariable &&
            std::static_pointer_cast<FieldVariableNode>(operand)->name() == var_name))
       {
         return true;
       }
     }
   }
-  
+
   // Recursively check children
   for (const auto & child : expr->children())
   {
     if (containsGradient(child, var_name))
       return true;
   }
-  
+
   return false;
 }
+
+// AD-compatible expression evaluation for strong forms
+template <bool is_ad>
+GenericReal<is_ad>
+VariationalKernelBaseTempl<is_ad>::evaluateExpressionAD(const NodePtr & expr, unsigned int qp)
+{
+  if (!expr)
+    return GenericReal<is_ad>(0.0);
+
+  // Walk the AST and evaluate with AD types
+  // Key insight: When is_ad=true, this->_u[qp], this->_grad_u[qp], _var.secondSln()[qp] are all ADReal
+  // So operations automatically track derivatives!
+
+  switch (expr->type())
+  {
+    case NodeType::Constant:
+    {
+      auto c = std::static_pointer_cast<ConstantNode>(expr);
+      // ConstantNode::value() returns MooseValue, need to get scalar
+      if (c->value().isScalar())
+        return GenericReal<is_ad>(c->value().asScalar());  // Constants are Real (not differentiated)
+      else
+        this->mooseError("Non-scalar constant in AD evaluation");
+    }
+
+    case NodeType::Variable:
+    case NodeType::FieldVariable:
+    {
+      // Field variable u at quadrature point
+      std::string var_name;
+      if (expr->type() == NodeType::Variable)
+        var_name = std::static_pointer_cast<VariableNode>(expr)->name();
+      else
+        var_name = std::static_pointer_cast<FieldVariableNode>(expr)->name();
+
+      if (var_name == _var.name())
+        return this->_u[qp];  // ADReal when is_ad=true!
+      else if (_coupled_values.count(var_name))
+        return (*_coupled_values[var_name])[qp];  // Coupled variable
+      mooseError("Variable ", var_name, " not found");
+    }
+
+    case NodeType::Add:
+    {
+      auto binary = std::static_pointer_cast<BinaryOpNode>(expr);
+      return evaluateExpressionAD(binary->left(), qp) + evaluateExpressionAD(binary->right(), qp);
+    }
+
+    case NodeType::Subtract:
+    {
+      auto binary = std::static_pointer_cast<BinaryOpNode>(expr);
+      return evaluateExpressionAD(binary->left(), qp) - evaluateExpressionAD(binary->right(), qp);
+    }
+
+    case NodeType::Multiply:
+    {
+      auto binary = std::static_pointer_cast<BinaryOpNode>(expr);
+      return evaluateExpressionAD(binary->left(), qp) * evaluateExpressionAD(binary->right(), qp);
+    }
+
+    case NodeType::Divide:
+    {
+      auto binary = std::static_pointer_cast<BinaryOpNode>(expr);
+      return evaluateExpressionAD(binary->left(), qp) / evaluateExpressionAD(binary->right(), qp);
+    }
+
+    case NodeType::Power:
+    {
+      auto binary = std::static_pointer_cast<BinaryOpNode>(expr);
+      auto base = evaluateExpressionAD(binary->left(), qp);
+      auto exp = evaluateExpressionAD(binary->right(), qp);
+      return std::pow(base, exp);
+    }
+
+    case NodeType::Negate:
+    {
+      auto unary = std::static_pointer_cast<UnaryOpNode>(expr);
+      return -evaluateExpressionAD(unary->operand(), qp);
+    }
+
+    case NodeType::Laplacian:
+    {
+      // This is the KEY case: laplacian(u) evaluated from second derivatives
+      auto unary = std::static_pointer_cast<UnaryOpNode>(expr);
+      auto operand = unary->operand();
+
+      std::string var_name;
+      if (operand->type() == NodeType::Variable)
+        var_name = std::static_pointer_cast<VariableNode>(operand)->name();
+      else if (operand->type() == NodeType::FieldVariable)
+        var_name = std::static_pointer_cast<FieldVariableNode>(operand)->name();
+      else
+        mooseError("Laplacian of non-variable not supported in AD evaluation");
+
+      if (var_name == _var.name())
+      {
+        // laplacian(u) = trace(Hessian(u))
+        // When is_ad=true, _var.secondSln()[qp] returns ADRankTwoTensor!
+        // MOOSE AD automatically tracks ∂laplacian(u)/∂u_j
+        const auto & second_u = _var.secondSln();
+        return second_u[qp].tr();  // Trace gives laplacian - ADReal!
+      }
+      else if (_coupled_seconds.count(var_name))
+      {
+        return (*_coupled_seconds[var_name])[qp].tr();
+      }
+      mooseError("Variable ", var_name, " second derivatives not available for laplacian");
+    }
+
+    default:
+      mooseError("Node type ", static_cast<int>(expr->type()),
+                 " not yet implemented in evaluateExpressionAD");
+  }
+
+  return GenericReal<is_ad>(0.0);
+}
+
+// Explicit template instantiations
+template class VariationalKernelBaseTempl<false>;
+template class VariationalKernelBaseTempl<true>;
+
+// Register both types
+registerMooseObject("MooseApp", VariationalKernelBase);
+registerMooseObject("MooseApp", ADVariationalKernelBase);
 
 }
 }

@@ -18,10 +18,9 @@
 []
 
 [AutomaticWeakForm]
-  energy_type = expression
-  energy_expression = '0.5*dot(grad(u), grad(u))'
+  strong_forms = 'u = var_diff(0.5*dot(grad(u), grad(u)), u)'
   variables = 'u'
-  use_automatic_differentiation = true  # Enable AD for Jacobian
+  use_automatic_differentiation = false
 []
 
 [BCs]

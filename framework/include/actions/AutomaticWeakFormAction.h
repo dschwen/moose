@@ -148,6 +148,10 @@ private:
   std::map<std::string, moose::automatic_weak_form::NodePtr> _multiple_energies;
   
   std::map<std::string, moose::automatic_weak_form::StringExpressionParser::StrongFormEquation> _strong_form_equations;
+
+  // Lowered weak-form pieces for strong-form equations (from IBP)
+  std::map<std::string, moose::automatic_weak_form::NodePtr> _c0_forms; // scalar
+  std::map<std::string, moose::automatic_weak_form::NodePtr> _c1_forms; // vector
   
   std::map<std::string, moose::automatic_weak_form::SplitVariable> _split_variables;
   

@@ -33,7 +33,6 @@
 []
 
 [AutomaticWeakForm]
-    energy_type = expression
 
     # Intermediate expressions (semicolon-separated)
     expressions = 'M = 1.0;
@@ -52,8 +51,7 @@
     # Primary variables
     variables = 'c mu'
 
-    # Enable automatic differentiation for Jacobian
-    use_automatic_differentiation = true
+    use_automatic_differentiation = false
 []
 
 [ICs]

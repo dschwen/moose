@@ -25,12 +25,12 @@
 []
 
 [AutomaticWeakForm]
-  energy_type = expression
-  # Using var_diff to automatically derive heat equation from energy functional
-  energy_expression = 'var_diff(0.5*k*dot(grad(T), grad(T)), T)'
+  # Strong-form using var_diff to express Euler–Lagrange
+  # Resulting RHS is δF/δT = -div(k*grad(T))
+  strong_forms = 'T = var_diff(0.5*k*dot(grad(T), grad(T)), T)'
   parameters = 'k 1.0'
   variables = 'T'
-  use_automatic_differentiation = true
+  use_automatic_differentiation = false
   verbose = true
 []
 

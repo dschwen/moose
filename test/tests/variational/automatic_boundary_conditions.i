@@ -36,8 +36,7 @@
 []
 
 [AutomaticWeakForm]
-  energy_type = expression
-  energy_expression = '0.5*k*dot(grad(T), grad(T))'
+  strong_forms = 'T = var_diff(0.5*k*dot(grad(T), grad(T)), T)'
   variables = 'T'
   parameters = 'k 1.0'
   verbose = true  # Show what boundary conditions are generated

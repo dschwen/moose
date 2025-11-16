@@ -40,22 +40,16 @@
 
 [AutomaticWeakForm]
     type = AutomaticWeakFormAction
-    energy_type = expression
 
-    # Combined energy expression directly using vec()
-    # Note: intermediate expressions are not yet supported, so we write it out directly
-    energy_expression = 'W(c) + 0.5*kappa*dot(grad(c), grad(c)) + alpha*c*trace(sym(grad(vec(disp_x, disp_y)))) + 0.5*lambda*pow(trace(sym(grad(vec(disp_x, disp_y)))), 2) + mu*contract(sym(grad(vec(disp_x, disp_y))), sym(grad(vec(disp_x, disp_y))))'
+    # Strong forms from a single energy via var_diff for each variable
+    strong_forms = 'c = var_diff(W(c) + 0.5*kappa*dot(grad(c), grad(c)) + alpha*c*trace(sym(grad(vec(disp_x, disp_y)))) + 0.5*lambda*pow(trace(sym(grad(vec(disp_x, disp_y)))), 2) + mu*contract(sym(grad(vec(disp_x, disp_y))), sym(grad(vec(disp_x, disp_y)))), c);
+                    disp_x = var_diff(W(c) + 0.5*kappa*dot(grad(c), grad(c)) + alpha*c*trace(sym(grad(vec(disp_x, disp_y)))) + 0.5*lambda*pow(trace(sym(grad(vec(disp_x, disp_y)))), 2) + mu*contract(sym(grad(vec(disp_x, disp_y))), sym(grad(vec(disp_x, disp_y)))), disp_x);
+                    disp_y = var_diff(W(c) + 0.5*kappa*dot(grad(c), grad(c)) + alpha*c*trace(sym(grad(vec(disp_x, disp_y)))) + 0.5*lambda*pow(trace(sym(grad(vec(disp_x, disp_y)))), 2) + mu*contract(sym(grad(vec(disp_x, disp_y))), sym(grad(vec(disp_x, disp_y)))), disp_y)'
     
-    # Parameters for the energy expressions
     parameters = 'kappa 0.01 lambda 100 mu 75 alpha 10'
-    
-    # Primary variables
     variables = 'c disp_x disp_y'
+    use_automatic_differentiation = false
     
-    # Enable automatic differentiation
-    use_automatic_differentiation = true
-    
-    # Enable variable splitting if needed for higher-order terms
     enable_splitting = true
     max_fe_order = 1
 []

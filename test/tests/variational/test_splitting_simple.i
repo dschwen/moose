@@ -18,9 +18,7 @@
 []
 
 [AutomaticWeakForm]
-  energy_type = expression
-  # Simple diffusion energy that normally doesn't need splitting
-  energy_expression = '0.5*dot(grad(u), grad(u))'
+  strong_forms = 'u = var_diff(0.5*dot(grad(u), grad(u)), u)'
   variables = 'u'
   
   # Force splitting by setting max_fe_order to 0
@@ -33,7 +31,7 @@
   debug_print_expressions = true
   debug_print_weak_form = true
   
-  use_automatic_differentiation = true
+  use_automatic_differentiation = false
 []
 
 [BCs]

@@ -18,14 +18,11 @@
 []
 
 [AutomaticWeakForm]
-    # Basic setup
-    energy_type = expression
-    energy_expression = '0.5*dot(grad(u), grad(u)) - f*u'
+    # Strong form using var_diff for Euler–Lagrange
+    strong_forms = 'u = var_diff(0.5*dot(grad(u), grad(u)) - f*u, u)'
     variables = 'u'
     parameters = 'f 1.0'
-    
-    # Enable automatic differentiation
-    use_automatic_differentiation = true
+    use_automatic_differentiation = false
     
     # Enable all verbose and debug output
     verbose = true                        # Show all processing steps
