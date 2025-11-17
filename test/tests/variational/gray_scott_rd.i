@@ -19,12 +19,12 @@
 [Mesh]
   type = GeneratedMesh
   dim = 2
-  nx = 100
-  ny = 100
+  nx = 128
+  ny = 128
   xmin = 0
-  xmax = 20
+  xmax = 1.25
   ymin = 0
-  ymax = 20
+  ymax = 1.25
 []
 
 [Variables]
@@ -35,19 +35,19 @@
 []
 
 [ICs]
-  # Start with u=1 everywhere
-  [u_ic]
-    type = ConstantIC
+  # u = 1.0 + small random noise to break symmetry
+  [u]
+    type = RandomIC
     variable = u
-    value = 1.0
+    min = 0.998
+    max = 1.000
+    seed = 2342
   []
 
-  # Add a small circular seed of v in the center
-  [v_ic]
+  [v]
     type = FunctionIC
     variable = v
-    # Karl Sims: seed B (v) with amplitude 1.0 in a small disk
-    function = 'r := sqrt((x-${Mesh/xmax}/2)^2 + (y-${Mesh/ymax}/2)^2); tanh((2-r)/1)/2+0.5'
+    function = 'r:=sqrt((x-${Mesh/xmax}/2)^2+(y-${Mesh/ymax}/2)^2); if(r<${Mesh/xmax}/16,1,0)'
   []
 []
 
@@ -59,8 +59,9 @@
                   v_t = Dv*laplacian(v) + u*v*v - (F+k)*v'
 
   variables = 'u v'
-  # Mitosis (Karl Sims): Du=1.0, Dv=0.5, F=0.0367, k=0.0649
-  parameters = 'Du 1.0 Dv 0.5 F 0.0367 k 0.0649'
+  # PDE-scaled parameters for stable patterning on this domain
+  parameters = 'Du 2e-5 Dv 5e-6 F 0.04 k 0.06'
+
   # Coral growth alternative: F=0.0545, k=0.062
   use_automatic_differentiation = true
   enable_splitting = false
@@ -83,32 +84,26 @@
   type = Transient
   solve_type = NEWTON
 
-  # Implicit solve: reasonable starting step for this domain
-  dt = 0.5
-  end_time = 5000
-
-  nl_rel_tol = 1e-6
-  nl_abs_tol = 1e-8
-  l_tol = 1e-4
-  l_max_its = 30
-
-  petsc_options_iname = '-pc_type'
-  petsc_options_value = 'lu'
-
   [TimeStepper]
     type = IterationAdaptiveDT
-    dt = 0.5
-    optimal_iterations = 6
+    dt = 0.02
+    optimal_iterations = 8
     iteration_window = 2
-    growth_factor = 1.1
-    cutback_factor = 0.5
+    growth_factor = 1.5
+    cutback_factor = 0.75
   []
-  dtmin = 0.005
-  dtmax = 100.0
-[]
+  dtmin = 0.001
+  dtmax = 10
 
-[Debug]
-  show_actions = true
+  end_time = 1000
+  nl_rel_tol = 1e-8
+  nl_abs_tol = 1e-10
+  nl_max_its = 12
+
+  # Scale diffusion coefficients directly in PETSc options
+  # since we're using the standard Diffusion kernel
+  petsc_options_iname = '-pc_type'
+  petsc_options_value = 'lu'
 []
 
 [Outputs]
@@ -122,17 +117,24 @@
 []
 
 [Postprocessors]
-  [u_avg]
-    type = ElementAverageValue
+  [u_min]
+    type = ElementExtremeValue
+    value_type = min
     variable = u
   []
-  [v_avg]
-    type = ElementAverageValue
+  [u_max]
+    type = ElementExtremeValue
+    value_type = max
+    variable = u
+  []
+  [v_min]
+    type = ElementExtremeValue
+    value_type = min
     variable = v
   []
   [v_max]
     type = ElementExtremeValue
-    variable = v
     value_type = max
+    variable = v
   []
 []

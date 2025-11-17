@@ -23,21 +23,23 @@ GrayScottReactionU::GrayScottReactionU(const InputParameters & parameters)
 Real
 GrayScottReactionU::computeQpResidual()
 {
-  // Residual for: -u*v^2 + F*(1-u)
+  // Residual term corresponds to -reaction, so that
+  // PDE: u_t = Du ∇²u - [-u*v^2 + F*(1-u)] = Du ∇²u -u*v^2 + F*(1-u)
   Real u = _u[_qp];
   Real v = _v[_qp];
 
-  return (-u * v * v + _F * (1.0 - u)) * _test[_i][_qp];
+  // Kernel residual: -( -u*v^2 + F*(1-u) ) = u*v^2 - F*(1-u)
+  return (u * v * v - _F * (1.0 - u)) * _test[_i][_qp];
 }
 
 Real
 GrayScottReactionU::computeQpJacobian()
 {
-  // Jacobian: ∂R/∂u = ∂(-u*v^2 + F*(1-u))/∂u
-  //                  = -v^2 - F
+  // Jacobian: ∂R/∂u for R = u*v^2 - F*(1-u)
+  //           = v^2 + F
   Real v = _v[_qp];
 
-  return (-v * v - _F) * _phi[_j][_qp] * _test[_i][_qp];
+  return (v * v + _F) * _phi[_j][_qp] * _test[_i][_qp];
 }
 
 Real
@@ -45,11 +47,11 @@ GrayScottReactionU::computeQpOffDiagJacobian(unsigned int jvar)
 {
   if (jvar == _v_var)
   {
-    // Off-diagonal Jacobian: ∂R/∂v = ∂(-u*v^2)/∂v = -2*u*v
+    // Off-diagonal Jacobian: ∂R/∂v = ∂(u*v^2 - F*(1-u))/∂v = 2*u*v
     Real u = _u[_qp];
     Real v = _v[_qp];
 
-    return (-2.0 * u * v) * _phi[_j][_qp] * _test[_i][_qp];
+    return (2.0 * u * v) * _phi[_j][_qp] * _test[_i][_qp];
   }
 
   return 0.0;
