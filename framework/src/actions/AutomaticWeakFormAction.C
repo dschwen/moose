@@ -7,6 +7,9 @@
 #include "MooseUtils.h"
 #include "ExpressionTransformer.h"
 #include "StrongFormLowerer.h"
+#include "ExpressionSimplifier.h"
+#include "MooseAST.h"
+#include <algorithm>
 
 registerMooseAction("MooseApp", AutomaticWeakFormAction, "create_problem_complete");
 registerMooseAction("MooseApp", AutomaticWeakFormAction, "add_variable");
@@ -1217,8 +1220,29 @@ AutomaticWeakFormAction::writeWeakFormToFile()
       const auto it = _c1_forms.find(var_name);
       const auto & c1 = (it != _c1_forms.end()) ? it->second : nullptr;
       file << "# Weak-form coefficients for variable: " << var_name << "\n";
-      file << "c0: " << (c0 ? c0->toString() : std::string("0")) << "\n";
-      file << "c1: " << (c1 ? c1->toString() : std::string("[0,0,0]")) << "\n\n";
+      using namespace moose::automatic_weak_form;
+      auto sc0 = ExpressionSimplifier::simplify(c0);
+      NodePtr sc1 = nullptr;
+      if (c1)
+        sc1 = ExpressionSimplifier::simplify(c1);
+      file << "c0: " << (sc0 ? sc0->toString() : std::string("0")) << "\n";
+      file << "c1: " << (sc1 ? sc1->toString() : std::string("[0,0,0]")) << "\n";
+      // Unified residual: c0*test + c1·grad(test)
+      NodePtr unified_residual = nullptr;
+      if (sc0)
+        unified_residual = multiply(sc0, testFunction(var_name, false));
+      if (sc1)
+      {
+        NodePtr term1 = dot(sc1, testFunction(var_name, true));
+        unified_residual = unified_residual ? add(unified_residual, term1) : term1;
+      }
+      if (unified_residual)
+      {
+        auto simplified_unified = ExpressionSimplifier::simplify(unified_residual);
+        file << "residual: " << simplified_unified->toString() << "\n\n";
+      }
+      else
+        file << "residual: 0\n\n";
     }
   }
   else
@@ -1401,8 +1425,20 @@ AutomaticWeakFormAction::deriveWeakForms()
     }
 
     auto lowered = lowerer.lowerToWeak(eq.rhs);
-    _c0_forms[var_name] = lowered.c0;
-    _c1_forms[var_name] = lowered.c1;
+    // Simplify coefficients for cleaner output and evaluation
+    auto sc0 = moose::automatic_weak_form::ExpressionSimplifier::simplify(lowered.c0);
+    auto sc1 = moose::automatic_weak_form::ExpressionSimplifier::simplify(lowered.c1);
+
+    // If the vector coefficient simplifies to a scalar zero, drop it entirely
+    if (sc1 && sc1->type() == moose::automatic_weak_form::NodeType::Constant)
+    {
+      auto cnode = std::static_pointer_cast<moose::automatic_weak_form::ConstantNode>(sc1);
+      if (cnode->value().isScalar() && std::abs(cnode->value().asScalar()) == 0.0)
+        sc1 = nullptr;
+    }
+
+    _c0_forms[var_name] = sc0;
+    _c1_forms[var_name] = sc1;
 
     // Optional: print Jacobian derivative terms (symbolic) for debugging
     if (_debug_print_jacobian)
@@ -1446,11 +1482,41 @@ AutomaticWeakFormAction::deriveWeakForms()
 
     if (_verbose || _debug_print_weak_form)
     {
-      _console << "  Resulting weak-form coefficients:" << std::endl;
+      _console << "  Resulting weak-form coefficients (simplified):" << std::endl;
       _console << "    c0 (multiplies test): "
-               << (lowered.c0 ? lowered.c0->toString() : std::string("0")) << std::endl;
+               << (_c0_forms[var_name] ? _c0_forms[var_name]->toString() : std::string("0")) << std::endl;
       _console << "    c1 (multiplies grad(test)): "
-               << (lowered.c1 ? lowered.c1->toString() : std::string("[0,0,0]")) << std::endl;
+               << (_c1_forms[var_name] ? _c1_forms[var_name]->toString() : std::string("[0,0,0]")) << std::endl;
+
+      // Unified residual AST: c0*test + c1·grad(test)
+      using namespace moose::automatic_weak_form;
+      NodePtr unified_residual = nullptr;
+      if (_c0_forms[var_name])
+        unified_residual = multiply(_c0_forms[var_name], testFunction(var_name, false));
+      if (_c1_forms[var_name])
+      {
+        NodePtr term1 = dot(_c1_forms[var_name], testFunction(var_name, true));
+        unified_residual = unified_residual ? add(unified_residual, term1) : term1;
+      }
+      if (unified_residual)
+      {
+        auto simplified_unified = ExpressionSimplifier::simplify(unified_residual);
+        _console << "    Unified residual (-F): " << simplified_unified->toString() << std::endl;
+        // Also print the IBP of +F for clarity: F*test = - (c0*test + c1·grad(test))
+        NodePtr f_unified = nullptr;
+        if (_c0_forms[var_name])
+          f_unified = multiply(negate(_c0_forms[var_name]), testFunction(var_name, false));
+        if (_c1_forms[var_name])
+        {
+          NodePtr t1 = dot(negate(_c1_forms[var_name]), testFunction(var_name, true));
+          f_unified = f_unified ? add(f_unified, t1) : t1;
+        }
+        if (f_unified)
+        {
+          auto simplified_f = ExpressionSimplifier::simplify(f_unified);
+          _console << "    Unified RHS (+F): " << simplified_f->toString() << std::endl;
+        }
+      }
     }
 
     // Keep original RHS as a placeholder/debug weak_residual
@@ -1490,9 +1556,9 @@ AutomaticWeakFormAction::addExpressionKernels()
   {
     std::string kernel_name = var_name + "_strong_form_kernel";
 
-    // Always use lowered weak form via non-AD kernel for strong_forms
-    const bool have_lowered = _c0_forms.count(var_name) && _c1_forms.count(var_name);
-    std::string kernel_type = "VariationalKernelBase";
+    // Always use lowered weak form via kernel for strong_forms
+    const bool have_lowered = _c0_forms.count(var_name);
+    std::string kernel_type = _use_automatic_differentiation ? "ADVariationalKernelBase" : "VariationalKernelBase";
 
     if (_verbose)
     {
@@ -1503,7 +1569,10 @@ AutomaticWeakFormAction::addExpressionKernels()
       if (have_lowered)
       {
         _console << "    Lowered weak form (c0): " << _c0_forms.at(var_name)->toString() << "\n";
-        _console << "    Lowered weak form (c1): " << _c1_forms.at(var_name)->toString() << "\n";
+        const auto it1 = _c1_forms.find(var_name);
+        auto c1 = (it1 != _c1_forms.end()) ? it1->second : nullptr;
+        _console << "    Lowered weak form (c1): "
+                 << (c1 ? c1->toString() : std::string("[none]")) << "\n";
       }
     }
 
@@ -1512,10 +1581,14 @@ AutomaticWeakFormAction::addExpressionKernels()
 
     params.set<bool>("use_lowered_weak_form") = true;
     params.set<std::string>("c0_expression") = _c0_forms[var_name] ? _c0_forms[var_name]->toString() : std::string("0.0");
-    params.set<std::string>("c1_expression") = _c1_forms[var_name] ? _c1_forms[var_name]->toString() : std::string("");
+    {
+      const auto itc1 = _c1_forms.find(var_name);
+      auto c1 = (itc1 != _c1_forms.end()) ? itc1->second : nullptr;
+      params.set<std::string>("c1_expression") = c1 ? c1->toString() : std::string("");
+    }
 
-    // AD flags ignored by non-AD kernel
-    params.set<bool>("use_automatic_differentiation") = false;
+    // Respect AD selection; AD kernel will drive Jacobian via dual numbers
+    params.set<bool>("use_automatic_differentiation") = _use_automatic_differentiation;
     params.set<bool>("compute_jacobian_numerically") = _compute_jacobian_numerically;
     params.set<Real>("fd_eps") = _fd_epsilon;
 

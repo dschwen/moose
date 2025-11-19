@@ -197,6 +197,10 @@ ExpressionEvaluator::evaluateNode(const Node * node)
     case NodeType::VectorComponent:
     case NodeType::TensorComponent:
       return visitComponent(static_cast<const ComponentNode *>(node));
+    case NodeType::TestFunction:
+      return visitTestFunction(static_cast<const TestFunctionNode *>(node));
+    case NodeType::ShapeFunction:
+      return visitShapeFunction(static_cast<const ShapeFunctionNode *>(node));
     default:
       mooseError("Unsupported node type in ExpressionEvaluator: ",
                  static_cast<int>(node->type()),
@@ -486,6 +490,46 @@ ExpressionEvaluator::applyFunction(const std::string & name, const std::vector<M
     return MooseValue(tensor_it->second, _dim);
 
   mooseError("Unsupported function in ExpressionEvaluator: ", name);
+}
+
+MooseValue
+ExpressionEvaluator::visitTestFunction(const TestFunctionNode * node)
+{
+  unsigned int var_num = getVarNum(node->varName());
+  if (node->isGradient())
+  {
+    auto it = _test_gradients.find(var_num);
+    if (it == _test_gradients.end())
+      mooseError("No gradient test function registered for variable: ", node->varName());
+    return MooseValue(RealVectorValue(it->second), _dim);
+  }
+  else
+  {
+    auto it = _test_values.find(var_num);
+    if (it == _test_values.end())
+      mooseError("No test function registered for variable: ", node->varName());
+    return MooseValue(it->second);
+  }
+}
+
+MooseValue
+ExpressionEvaluator::visitShapeFunction(const ShapeFunctionNode * node)
+{
+  unsigned int var_num = getVarNum(node->varName());
+  if (node->isGradient())
+  {
+    auto it = _shape_gradients.find(var_num);
+    if (it == _shape_gradients.end())
+      mooseError("No gradient shape function registered for variable: ", node->varName());
+    return MooseValue(RealVectorValue(it->second), _dim);
+  }
+  else
+  {
+    auto it = _shape_values.find(var_num);
+    if (it == _shape_values.end())
+      mooseError("No shape function registered for variable: ", node->varName());
+    return MooseValue(it->second);
+  }
 }
 
 } // namespace automatic_weak_form

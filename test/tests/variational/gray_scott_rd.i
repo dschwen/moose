@@ -35,7 +35,7 @@
 []
 
 [ICs]
-  # u = 1.0 + small random noise to break symmetry
+  # u = 1.0 + small random noise to break symmetry (match traditional)
   [u]
     type = RandomIC
     variable = u

@@ -4,6 +4,7 @@
 #include "MooseVariableFE.h"
 #include "SystemBase.h"
 #include <unordered_map>
+#include <functional>
 
 namespace moose
 {
@@ -138,6 +139,9 @@ VariationalKernelBaseTempl<is_ad>::updateEvaluatorAtQP(unsigned int qp)
   // Update primary variable
   _evaluator->setFieldValue(_var.number(), this->_u[qp]);
   _evaluator->setFieldGradient(_var.number(), this->_grad_u[qp]);
+  // Set test function values for primary variable
+  _evaluator->setTestFunction(this->_var.number(), this->_test[this->_i][qp]);
+  _evaluator->setTestGradient(this->_var.number(), this->_grad_test[this->_i][qp]);
 
   // For strong forms with Laplacian, we need second derivatives.
   // Skip when using lowered weak form (c0/c1 only needs values/gradients).
@@ -185,6 +189,76 @@ VariationalKernelBaseTempl<is_ad>::initializeExpression()
 
     // Precompute symbolic derivatives for Jacobian (huge runtime savings)
     precomputeDerivativesLowered();
+
+    // For non-AD, assemble a scalar residual AST: c0*test + c1·grad(test)
+    if constexpr (!is_ad)
+    {
+      NodePtr term0 = nullptr;
+      NodePtr term1 = nullptr;
+      if (_c0_expr)
+      {
+        auto t = testFunction(this->_var.name(), false);
+        term0 = multiply(_c0_expr, t);
+      }
+      if (_c1_expr)
+      {
+        auto gt = testFunction(this->_var.name(), true);
+        term1 = dot(_c1_expr, gt);
+      }
+      if (term0 && term1)
+        _residual_expr = add(term0, term1);
+      else if (term0)
+        _residual_expr = term0;
+      else if (term1)
+        _residual_expr = term1;
+
+      // Also assemble scalar Jacobian ASTs per variable
+      auto build_jac_for = [&](const std::string & wrt) -> NodePtr {
+        NodePtr sum = nullptr;
+        // t0: (∂c0/∂u) * phi_w * test_u
+        if (auto it = _dc0_du.find(wrt); it != _dc0_du.end() && it->second)
+        {
+          NodePtr t0 = multiply(it->second, multiply(shapeFunction(wrt, false), testFunction(this->_var.name(), false)));
+          sum = sum ? add(sum, t0) : t0;
+        }
+        // t1: dot(∂c0/∂∇u, grad_phi_w) * test_u
+        if (auto it = _dc0_dgradu.find(wrt); it != _dc0_dgradu.end() && it->second)
+        {
+          NodePtr t1 = multiply(dot(it->second, shapeFunction(wrt, true)), testFunction(this->_var.name(), false));
+          sum = sum ? add(sum, t1) : t1;
+        }
+        // t2: dot(∂c1/∂u, grad_test_u) * phi_w
+        if (auto it = _dc1_du.find(wrt); it != _dc1_du.end() && it->second)
+        {
+          NodePtr t2 = multiply(dot(it->second, testFunction(this->_var.name(), true)), shapeFunction(wrt, false));
+          sum = sum ? add(sum, t2) : t2;
+        }
+        // t3: (∂c1/∂∇u) : (grad_phi_w ⊗ grad_test_u)
+        if (auto it = _dc1_dgradu.find(wrt); it != _dc1_dgradu.end() && it->second)
+        {
+          const auto & d = it->second;
+          NodePtr grad_phi = shapeFunction(wrt, true);
+          NodePtr grad_test = testFunction(this->_var.name(), true);
+          NodePtr t3 = nullptr;
+          if (d->isTensor())
+          {
+            t3 = contract(d, outer(grad_phi, grad_test));
+          }
+          else // assume scalar coefficient
+          {
+            t3 = multiply(d, dot(grad_phi, grad_test));
+          }
+          sum = sum ? add(sum, t3) : t3;
+        }
+        return sum;
+      };
+
+      // Build for primary variable and all coupled vars
+      _jac_expr_map.clear();
+      _jac_expr_map[this->_var.name()] = build_jac_for(this->_var.name());
+      for (const auto & n : _coupled_variable_names)
+        _jac_expr_map[n] = build_jac_for(n);
+    }
   }
 }
 
@@ -256,31 +330,109 @@ VariationalKernelBaseTempl<is_ad>::computeQpResidual()
   {
     if constexpr (is_ad)
     {
-      // AD vector evaluation not implemented; use non-AD evaluator for values and
-      // rely on AD only through field variables inside expressions.
-      // To keep compile-time correctness, we error out for now to avoid incorrect AD Jacobians.
-      this->mooseError("Lowered weak form is not yet supported with AD kernel. Use non-AD kernel.");
-      return 0.0;
+      // AD path: evaluate c0 (scalar) with AD and c1·grad(test) via pattern-matched dot
+      GenericReal<is_ad> R = 0.0;
+      if (_c0_expr)
+        R += evaluateExpressionAD(_c0_expr, this->_qp) * this->_test[this->_i][this->_qp];
+      if (_c1_expr)
+      {
+        // Compute dot(c1(u,grad(u),...), grad(test)) directly with AD
+        std::function<GenericReal<is_ad>(const NodePtr &)> dot_val;
+        dot_val = [this, &dot_val](const NodePtr & expr) -> GenericReal<is_ad>
+        {
+          // Constant 0: treat as zero contribution
+          if (expr->type() == NodeType::Constant)
+          {
+            auto c = std::static_pointer_cast<ConstantNode>(expr);
+            if (c->value().isScalar() && c->value().asScalar() == 0.0)
+              return GenericReal<is_ad>(0.0);
+            this->mooseError("Non-zero scalar constant used as c1 in AD lowered path: ", expr->toString());
+          }
+          // Handle sums of vector contributions: dot(sum, gtest) = sum dot(...)
+          if (expr->type() == NodeType::Add)
+          {
+            auto bin = std::static_pointer_cast<BinaryOpNode>(expr);
+            return dot_val(bin->left()) + dot_val(bin->right());
+          }
+          if (expr->type() == NodeType::Subtract)
+          {
+            auto bin = std::static_pointer_cast<BinaryOpNode>(expr);
+            return dot_val(bin->left()) - dot_val(bin->right());
+          }
+          if (expr->type() == NodeType::Negate)
+          {
+            auto un = std::static_pointer_cast<UnaryOpNode>(expr);
+            return -dot_val(un->operand());
+          }
+          if (expr->type() == NodeType::Gradient)
+          {
+            // grad(var) · grad(test)
+            auto unary = std::static_pointer_cast<UnaryOpNode>(expr);
+            auto op = unary->operand();
+            std::string name;
+            if (op->type() == NodeType::Variable)
+              name = std::static_pointer_cast<VariableNode>(op)->name();
+            else if (op->type() == NodeType::FieldVariable)
+              name = std::static_pointer_cast<FieldVariableNode>(op)->name();
+            else
+              this->mooseError("Unsupported operand to Gradient in AD lowered path: ", op->toString());
+
+            const auto & gtest = this->_grad_test[this->_i][this->_qp];
+            if (name == this->_var.name())
+              return this->_grad_u[this->_qp] * gtest;
+            else if (_coupled_gradients.count(name))
+              return (*_coupled_gradients[name])[this->_qp] * gtest;
+            else
+              this->mooseError("Unknown variable in Gradient for AD lowered path: ", name);
+          }
+          if (expr->type() == NodeType::Multiply)
+          {
+            auto bin = std::static_pointer_cast<BinaryOpNode>(expr);
+            // Look for scalar * grad(var) or grad(var) * scalar
+            if (bin->left()->type() == NodeType::Gradient)
+            {
+              auto coeff = evaluateExpressionAD(bin->right(), this->_qp);
+              return coeff * dot_val(bin->left());
+            }
+            if (bin->right()->type() == NodeType::Gradient)
+            {
+              auto coeff = evaluateExpressionAD(bin->left(), this->_qp);
+              return coeff * dot_val(bin->right());
+            }
+            // Fallback not supported for complex vector expressions in AD path
+            this->mooseError("Unsupported c1 structure for AD lowered path: ", expr->toString());
+          }
+          // Not a vector expression we support for dot-product evaluation
+          this->mooseError("Unsupported node for c1·grad(test) in AD lowered path: ", expr->toString());
+        };
+
+        R += dot_val(_c1_expr);
+      }
+      return R;
     }
     else
     {
       clearCache();
       updateVariableValues(_qp);
-
+      if (_residual_expr)
+      {
+        MooseValue v = evaluateExpression(_residual_expr);
+        if (v.isScalar())
+          return v.asScalar();
+      }
+      // Fallback to explicit split if residual AST missing
       Real residual = 0.0;
       if (_c0_expr)
       {
-        MooseValue v = evaluateExpression(_c0_expr);
-        if (v.isScalar())
-          residual += v.asScalar() * this->_test[this->_i][this->_qp];
+        MooseValue v0 = evaluateExpression(_c0_expr);
+        if (v0.isScalar())
+          residual += v0.asScalar() * this->_test[this->_i][this->_qp];
       }
       if (_c1_expr)
       {
-        MooseValue v = evaluateExpression(_c1_expr);
-        if (v.isVector())
-        {
-          residual += v.asVector() * this->_grad_test[this->_i][this->_qp];
-        }
+        MooseValue v1 = evaluateExpression(_c1_expr);
+        if (v1.isVector())
+          residual += v1.asVector() * this->_grad_test[this->_i][this->_qp];
       }
       return residual;
     }
@@ -308,57 +460,18 @@ VariationalKernelBaseTempl<is_ad>::computeQpJacobian()
   {
     clearCache();
     updateVariableValues(_qp);
+    // Provide shape for primary variable
+    _evaluator->setShapeFunction(this->_var.number(), this->_phi[this->_j][this->_qp]);
+    _evaluator->setShapeGradient(this->_var.number(), this->_grad_phi[this->_j][this->_qp]);
 
-    Real jac = 0.0;
-
-    // c0 term: (∂c0/∂u) φ_j ψ_i + (∂c0/∂∇u) · ∇φ_j ψ_i
-    if (_c0_expr)
+    auto it = _jac_expr_map.find(this->_var.name());
+    if (it != _jac_expr_map.end() && it->second)
     {
-      auto dc0_du = _dc0_du.count(this->_var.name()) ? _dc0_du[this->_var.name()] : nullptr;
-      if (dc0_du)
-      {
-        MooseValue v = evaluateExpression(dc0_du);
-        if (v.isScalar())
-          jac += v.asScalar() * this->_phi[this->_j][this->_qp] * this->_test[this->_i][this->_qp];
-      }
-      auto dc0_dgrad = _dc0_dgradu.count(this->_var.name()) ? _dc0_dgradu[this->_var.name()] : nullptr;
-      if (dc0_dgrad)
-      {
-        MooseValue v = evaluateExpression(dc0_dgrad);
-        if (v.isVector())
-          jac += v.asVector() * this->_grad_phi[this->_j][this->_qp] * this->_test[this->_i][this->_qp];
-      }
+      MooseValue v = evaluateExpression(it->second);
+      if (v.isScalar())
+        return v.asScalar();
     }
-
-    // c1 term: (∂c1/∂u) · (φ_j ∇ψ_i) + (∂c1/∂∇u) : (∇φ_j ⊗ ∇ψ_i)
-    if (_c1_expr)
-    {
-      auto dc1_du = _dc1_du.count(this->_var.name()) ? _dc1_du[this->_var.name()] : nullptr;
-      if (dc1_du)
-      {
-        MooseValue v = evaluateExpression(dc1_du);
-        if (v.isVector())
-          jac += v.asVector() * this->_grad_test[this->_i][this->_qp] * this->_phi[this->_j][this->_qp];
-      }
-      auto dc1_dgrad = _dc1_dgradu.count(this->_var.name()) ? _dc1_dgradu[this->_var.name()] : nullptr;
-      if (dc1_dgrad)
-      {
-        MooseValue v = evaluateExpression(dc1_dgrad);
-        if (v.isScalar())
-        {
-          // Scalar coefficient (e.g., κ) * (∇φ_j · ∇ψ_i)
-          jac += v.asScalar() * this->_grad_phi[this->_j][this->_qp] * this->_grad_test[this->_i][this->_qp];
-        }
-        else if (v.isTensor())
-        {
-          RankTwoTensor T = v.asTensor();
-          RealVectorValue tmp = T * this->_grad_phi[this->_j][this->_qp];
-          jac += tmp * this->_grad_test[this->_i][this->_qp];
-        }
-      }
-    }
-
-    return jac;
+    return 0.0;
   }
 
   if (_compute_jacobian_numerically)
@@ -373,57 +486,16 @@ VariationalKernelBaseTempl<is_ad>::computeQpJacobian()
   {
     clearCache();
     updateVariableValues(_qp);
-
-    Real jac = 0.0;
-
-    // c0 term: (∂c0/∂u) φ_j ψ_i + (∂c0/∂∇u) · ∇φ_j ψ_i
-    if (_c0_expr)
+    _evaluator->setShapeFunction(this->_var.number(), this->_phi[this->_j][this->_qp]);
+    _evaluator->setShapeGradient(this->_var.number(), this->_grad_phi[this->_j][this->_qp]);
+    auto it = _jac_expr_map.find(this->_var.name());
+    if (it != _jac_expr_map.end() && it->second)
     {
-      auto dc0_du = differentiateWithRespectToField(_c0_expr, _var.name());
-      if (dc0_du)
-      {
-        MooseValue v = evaluateExpression(dc0_du);
-        if (v.isScalar())
-          jac += v.asScalar() * this->_phi[this->_j][this->_qp] * this->_test[this->_i][this->_qp];
-      }
-      auto dc0_dgrad = differentiateWithRespectToGradient(_c0_expr, _var.name());
-      if (dc0_dgrad)
-      {
-        MooseValue v = evaluateExpression(dc0_dgrad);
-        if (v.isVector())
-          jac += v.asVector() * this->_grad_phi[this->_j][this->_qp] * this->_test[this->_i][this->_qp];
-      }
+      MooseValue v = evaluateExpression(it->second);
+      if (v.isScalar())
+        return v.asScalar();
     }
-
-    // c1 term: (∂c1/∂u) · (φ_j ∇ψ_i) + (∂c1/∂∇u) : (∇φ_j ⊗ ∇ψ_i)
-    if (_c1_expr)
-    {
-      auto dc1_du = differentiateWithRespectToField(_c1_expr, _var.name());
-      if (dc1_du)
-      {
-        MooseValue v = evaluateExpression(dc1_du);
-        if (v.isVector())
-          jac += v.asVector() * this->_grad_test[this->_i][this->_qp] * this->_phi[this->_j][this->_qp];
-      }
-
-      auto dc1_dgrad = differentiateWithRespectToGradient(_c1_expr, _var.name());
-      if (dc1_dgrad)
-      {
-        MooseValue v = evaluateExpression(dc1_dgrad);
-        if (v.isScalar())
-        {
-          jac += v.asScalar() * this->_grad_phi[this->_j][this->_qp] * this->_grad_test[this->_i][this->_qp];
-        }
-        else if (v.isTensor())
-        {
-          RankTwoTensor T = v.asTensor();
-          RealVectorValue tmp = T * this->_grad_phi[this->_j][this->_qp];
-          jac += tmp * this->_grad_test[this->_i][this->_qp];
-        }
-      }
-    }
-
-    return jac;
+    return 0.0;
   }
 
   this->mooseError("Lowered weak form not provided; only strong_forms with IBP lowering are supported.");
@@ -464,49 +536,26 @@ VariationalKernelBaseTempl<is_ad>::computeQpOffDiagJacobian(unsigned int jvar)
     clearCache();
     updateVariableValues(this->_qp);
 
-    Real jac = 0.0;
+    // Determine var_num for shape function entries
+    unsigned int var_num = 0;
+    if (coupled_var_name == this->_var.name())
+      var_num = this->_var.number();
+    else if (auto itvn = _coupled_var_nums.find(coupled_var_name); itvn != _coupled_var_nums.end())
+      var_num = itvn->second;
+    else
+      return 0.0;
 
-    // c0 contribution: (∂c0/∂v) φ_j ψ_i + (∂c0/∂∇v) · ∇φ_j ψ_i
-    if (_c0_expr)
+    _evaluator->setShapeFunction(var_num, this->_phi[this->_j][this->_qp]);
+    _evaluator->setShapeGradient(var_num, this->_grad_phi[this->_j][this->_qp]);
+
+    auto itje = _jac_expr_map.find(coupled_var_name);
+    if (itje != _jac_expr_map.end() && itje->second)
     {
-      if (auto it = _dc0_du.find(coupled_var_name); it != _dc0_du.end())
-      {
-        MooseValue v = evaluateExpression(it->second);
-        if (v.isScalar())
-          jac += v.asScalar() * this->_phi[this->_j][this->_qp] * this->_test[this->_i][this->_qp];
-      }
-      if (auto it2 = _dc0_dgradu.find(coupled_var_name); it2 != _dc0_dgradu.end())
-      {
-        MooseValue v = evaluateExpression(it2->second);
-        if (v.isVector())
-          jac += v.asVector() * this->_grad_phi[this->_j][this->_qp] * this->_test[this->_i][this->_qp];
-      }
+      MooseValue v = evaluateExpression(itje->second);
+      if (v.isScalar())
+        return v.asScalar();
     }
-
-    // c1 contribution: (∂c1/∂v) · (φ_j ∇ψ_i) + (∂c1/∂∇v) : (∇φ_j ⊗ ∇ψ_i)
-    if (_c1_expr)
-    {
-      if (auto it = _dc1_du.find(coupled_var_name); it != _dc1_du.end())
-      {
-        MooseValue v = evaluateExpression(it->second);
-        if (v.isVector())
-          jac += v.asVector() * this->_grad_test[this->_i][this->_qp] * this->_phi[this->_j][this->_qp];
-      }
-      if (auto it2 = _dc1_dgradu.find(coupled_var_name); it2 != _dc1_dgradu.end())
-      {
-        MooseValue v = evaluateExpression(it2->second);
-        if (v.isScalar())
-          jac += v.asScalar() * this->_grad_phi[this->_j][this->_qp] * this->_grad_test[this->_i][this->_qp];
-        else if (v.isTensor())
-        {
-          RankTwoTensor T = v.asTensor();
-          RealVectorValue tmp = T * this->_grad_phi[this->_j][this->_qp];
-          jac += tmp * this->_grad_test[this->_i][this->_qp];
-        }
-      }
-    }
-
-    return jac;
+    return 0.0;
   }  // end else (!is_ad)
 }
 
@@ -857,7 +906,9 @@ VariationalKernelBaseTempl<is_ad>::evaluateExpressionAD(const NodePtr & expr, un
         return this->_u[qp];  // ADReal when is_ad=true!
       else if (_coupled_values.count(var_name))
         return (*_coupled_values[var_name])[qp];  // Coupled variable
-      mooseError("Variable ", var_name, " not found");
+      else if (_parameters.count(var_name))
+        return GenericReal<is_ad>(_parameters.at(var_name)); // parameter constant
+      mooseError("Variable or parameter ", var_name, " not found");
     }
 
     case NodeType::Add:

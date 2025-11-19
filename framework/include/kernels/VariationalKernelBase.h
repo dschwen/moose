@@ -87,12 +87,16 @@ protected:
   bool _use_lowered_weak_form = false;
   NodePtr _c0_expr; // scalar
   NodePtr _c1_expr; // vector
+  NodePtr _residual_expr; // scalar residual AST: c0*test + c1·grad(test)
 
   // Cached symbolic derivatives for lowered weak form (per variable name)
   std::map<std::string, NodePtr> _dc0_du;
   std::map<std::string, NodePtr> _dc0_dgradu;
   std::map<std::string, NodePtr> _dc1_du;
   std::map<std::string, NodePtr> _dc1_dgradu;
+
+  // Scalar Jacobian ASTs for non-AD evaluation: map wrt-var -> expression
+  std::map<std::string, NodePtr> _jac_expr_map;
 
   // Using statements for base class members
   usingGenericKernelMembers;

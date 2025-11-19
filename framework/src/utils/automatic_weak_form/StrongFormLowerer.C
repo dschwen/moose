@@ -139,8 +139,8 @@ StrongFormLowerer::Lowered StrongFormLowerer::lower(const NodePtr & node)
 
       auto handle_scaled_div = [&](const NodePtr & scale, const NodePtr & vec_expr) -> Lowered {
         Lowered tmp;
-        // IBP: -∫ scale*div(V) v = ∫ (scale*V)·grad(v) dx + ∫ (V·grad(scale)) v dx
-        // Our rule builds contributions for -expr*v; so c1 += scale*V; c0 += V·grad(scale)
+        // IBP for -∫ a·div(V) v = ∫ (a·V)·∇v + ∫ (V·∇a) v
+        // Our lowerer builds contributions for -expr*v, so c1 += a*V; c0 += V·grad(a)
         trace("Rule: a*div(V) => c1 += a*V; c0 += V·grad(a) (grad(a) skipped unless a constant)");
         tmp.c1 = mulSafe(scale, vec_expr);
 
@@ -190,7 +190,7 @@ StrongFormLowerer::Lowered StrongFormLowerer::lower(const NodePtr & node)
         return handle_scaled_div(b, gu);
       }
 
-      // Fallback: treat as bulk
+      // Fallback: treat as bulk term g: contributes -g*v (we lower -expr*v)
       trace("Rule: bulk term g => c0 += -g");
       res.c0 = neg(node);
       return res;
@@ -198,7 +198,7 @@ StrongFormLowerer::Lowered StrongFormLowerer::lower(const NodePtr & node)
 
     case NodeType::Divergence:
     {
-      // -∫ div(V) v => ∫ V · grad(v)
+      // -∫ div(V) v = ∫ V · ∇v
       auto unary = std::static_pointer_cast<UnaryOpNode>(node);
       auto op = unary->operand();
       // Product rule: div(a V) = a div(V) + V·grad(a)
@@ -210,11 +210,8 @@ StrongFormLowerer::Lowered StrongFormLowerer::lower(const NodePtr & node)
         auto V = bin->right();
         // c1 += a*V
         res.c1 = mulSafe(a, V);
-        // c0 term V·grad(a) — include 0 when a is parameter/constant; skip if depends on fields
-        if (!dependsOnField(a))
-          res.c0 = constant(0.0);
-        else
-          res.c0 = constant(0.0);
+        // c0 term V·grad(a) — zero for constants; skipped otherwise
+        res.c0 = constant(0.0);
         return res;
       }
       res.c1 = op;
@@ -225,7 +222,7 @@ StrongFormLowerer::Lowered StrongFormLowerer::lower(const NodePtr & node)
 
     case NodeType::Laplacian:
     {
-      // -∫ laplacian(u) v => ∫ grad(u) · grad(v)
+      // -∫ Δu v = ∫ ∇u·∇v
       auto unary = std::static_pointer_cast<UnaryOpNode>(node);
       trace("Rule: laplacian(u) => c1 += grad(u); c0 += 0");
       res.c1 = grad(unary->operand(), _dim);

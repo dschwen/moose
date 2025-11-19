@@ -99,6 +99,8 @@ private:
   MooseValue visitFunction(const FunctionNode * node);
   MooseValue visitVectorAssembly(const VectorAssemblyNode * node);
   MooseValue visitComponent(const ComponentNode * node);
+  MooseValue visitTestFunction(const TestFunctionNode * node);
+  MooseValue visitShapeFunction(const ShapeFunctionNode * node);
   
   // Helper functions for operations
   MooseValue applyUnaryOp(NodeType op, const MooseValue & operand);
