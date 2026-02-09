@@ -169,9 +169,16 @@ AutomaticWeakFormAction::act()
 
   if (_current_task == "add_variable")
   {
+    // Parse strong form equations (users can use var_diff() for energy functionals)
     parseStrongForms();
+
+    // Derive weak forms via integration by parts
     deriveWeakForms();
+
+    // Analyze variable properties
     analyzeVariables();
+
+    // Add variables to the system (including split variables if needed)
     addPrimaryVariables();
   }
   else if (_current_task == "add_kernel")
@@ -190,233 +197,6 @@ AutomaticWeakFormAction::act()
 
   if (_output_weak_form && _current_task == "add_kernel")
     writeWeakFormToFile();
-}
-
-void
-AutomaticWeakFormAction::parseEnergyFunctional()
-{
-  buildEnergyFromType();
-
-  if (!_energy_functional)
-    mooseError("Failed to build energy functional");
-}
-
-void
-AutomaticWeakFormAction::buildEnergyFromType()
-{
-  switch (_energy_type)
-  {
-    case EnergyType::EXPRESSION:
-    {
-      // Use the new string parser for arbitrary expressions
-      moose::automatic_weak_form::StringExpressionParser parser(_problem->mesh().dimension());
-
-      // Enable verbose mode if requested
-      parser.setVerbose(_verbose);
-
-      // Register parameters if provided
-      if (isParamValid("parameters"))
-      {
-        const auto & params = getParam<std::map<std::string, Real>>("parameters");
-        for (const auto & [name, value] : params)
-          parser.setParameter(name, value);
-      }
-
-      // Define variables
-      for (const auto & var_name : _variable_names)
-        parser.defineVariable(var_name);
-      for (const auto & var_name : _coupled_variable_names)
-        parser.defineVariable(var_name);
-
-      // Define intermediate expressions if provided
-      if (isParamValid("expressions"))
-      {
-        const auto & expressions = getParam<std::vector<std::string>>("expressions");
-        for (const auto & expr : expressions)
-        {
-          // Each expression should be of the form "name = expression"
-          size_t eq_pos = expr.find('=');
-          if (eq_pos != std::string::npos)
-          {
-            std::string name = expr.substr(0, eq_pos);
-            std::string rhs = expr.substr(eq_pos + 1);
-
-            // Trim whitespace
-            name.erase(0, name.find_first_not_of(" \t"));
-            name.erase(name.find_last_not_of(" \t") + 1);
-            rhs.erase(0, rhs.find_first_not_of(" \t"));
-            rhs.erase(rhs.find_last_not_of(" \t") + 1);
-
-            parser.defineExpression(name, rhs);
-          }
-        }
-      }
-
-      // Handle multiple energy expressions for coupled systems
-      if (isParamValid("energy_expressions"))
-      {
-        const auto & energy_exprs =
-            getParam<std::map<std::string, std::string>>("energy_expressions");
-        _multiple_energies = parser.parseMultipleEnergies(energy_exprs);
-      }
-      else if (!_energy_expression.empty())
-      {
-        // Single energy expression
-        _energy_functional = parser.parse(_energy_expression);
-      }
-      else
-      {
-        mooseError(
-            "Either energy_expression or energy_expressions must be provided for expression type");
-      }
-    }
-    break;
-
-    case EnergyType::DOUBLE_WELL:
-      buildDoubleWellEnergy();
-      break;
-
-    case EnergyType::ELASTIC_LINEAR:
-      buildElasticEnergy();
-      break;
-
-    case EnergyType::ELASTIC_NEOHOOKEAN:
-      buildNeoHookeanEnergy();
-      break;
-
-    case EnergyType::SURFACE_ISOTROPIC:
-      buildSurfaceEnergy();
-      break;
-
-    case EnergyType::CAHN_HILLIARD:
-      buildCahnHilliardEnergy();
-      break;
-
-    case EnergyType::CAHN_HILLIARD_FOURTH_ORDER:
-      buildFourthOrderCahnHilliardEnergy();
-      break;
-
-    case EnergyType::PHASE_FIELD_CRYSTAL:
-      buildPhaseFieldCrystalEnergy();
-      break;
-
-    case EnergyType::NAVIER_STOKES:
-      buildNavierStokesEnergy();
-      break;
-
-    default:
-      mooseError("Unknown energy type");
-  }
-}
-
-void
-AutomaticWeakFormAction::buildDoubleWellEnergy()
-{
-  if (_variable_names.empty())
-    mooseError("At least one variable required");
-
-  auto c = _expr_builder->field(_variable_names[0]);
-  Real height = getParam<Real>("well_height");
-  _energy_functional = _expr_builder->doubleWell(c, height);
-}
-
-void
-AutomaticWeakFormAction::buildElasticEnergy()
-{
-  if (_variable_names.size() < _problem->mesh().dimension())
-    mooseError("Elastic energy requires displacement components");
-
-  std::string base_name = _variable_names[0];
-  if (base_name.find("disp_x") != std::string::npos)
-    base_name = "disp";
-
-  auto strain = _expr_builder->strain(base_name);
-  Real lambda = getParam<Real>("elastic_lambda");
-  Real mu = getParam<Real>("elastic_mu");
-
-  _energy_functional = _expr_builder->elasticEnergy(strain, lambda, mu);
-}
-
-void
-AutomaticWeakFormAction::buildNeoHookeanEnergy()
-{
-  if (_variable_names.size() < _problem->mesh().dimension())
-    mooseError("Neo-Hookean energy requires displacement components");
-
-  std::string base_name = _variable_names[0];
-  if (base_name.find("disp_x") != std::string::npos)
-    base_name = "disp";
-
-  auto F = _expr_builder->deformationGradient(base_name);
-  Real lambda = getParam<Real>("elastic_lambda");
-  Real mu = getParam<Real>("elastic_mu");
-
-  _energy_functional = _expr_builder->neoHookean(F, mu, lambda);
-}
-
-void
-AutomaticWeakFormAction::buildSurfaceEnergy()
-{
-  if (_variable_names.empty())
-    mooseError("At least one variable required");
-
-  auto phi = _expr_builder->field(_variable_names[0]);
-  Real gamma = getParam<Real>("surface_energy");
-
-  _energy_functional = _expr_builder->surfaceEnergy(phi, gamma);
-}
-
-void
-AutomaticWeakFormAction::buildCahnHilliardEnergy()
-{
-  if (_variable_names.empty())
-    mooseError("At least one variable required");
-
-  auto c = _expr_builder->field(_variable_names[0]);
-  Real kappa = getParam<Real>("gradient_coefficient");
-  Real height = getParam<Real>("well_height");
-
-  auto bulk = _expr_builder->doubleWell(c, height);
-  auto grad_c = moose::automatic_weak_form::grad(c, _problem->mesh().dimension());
-  auto gradient =
-      moose::automatic_weak_form::multiply(moose::automatic_weak_form::constant(0.5 * kappa),
-                                           moose::automatic_weak_form::dot(grad_c, grad_c));
-
-  _energy_functional = moose::automatic_weak_form::add(bulk, gradient);
-}
-
-void
-AutomaticWeakFormAction::buildFourthOrderCahnHilliardEnergy()
-{
-  if (_variable_names.empty())
-    mooseError("At least one variable required");
-
-  auto c = _expr_builder->field(_variable_names[0]);
-  Real kappa = getParam<Real>("gradient_coefficient");
-  Real lambda = getParam<Real>("fourth_order_coefficient");
-  Real height = getParam<Real>("well_height");
-
-  auto bulk = _expr_builder->doubleWell(c, height);
-  auto grad_c = moose::automatic_weak_form::grad(c, _problem->mesh().dimension());
-  auto gradient =
-      moose::automatic_weak_form::multiply(moose::automatic_weak_form::constant(0.5 * kappa),
-                                           moose::automatic_weak_form::dot(grad_c, grad_c));
-  auto fourth = _expr_builder->fourthOrderRegularization(c, lambda);
-
-  _energy_functional =
-      moose::automatic_weak_form::add(moose::automatic_weak_form::add(bulk, gradient), fourth);
-}
-
-void
-AutomaticWeakFormAction::buildPhaseFieldCrystalEnergy()
-{
-  mooseError("Phase field crystal energy not yet implemented");
-}
-
-void
-AutomaticWeakFormAction::buildNavierStokesEnergy()
-{
-  mooseError("Navier-Stokes energy not yet implemented");
 }
 
 void
@@ -447,14 +227,33 @@ void
 AutomaticWeakFormAction::setupVariableSplitting()
 {
   if (_verbose)
-    _console << "\n[AutomaticWeakForm] Analyzing expression for variable splitting...\n";
+    _console << "\n[AutomaticWeakForm] Analyzing expressions for variable splitting...\n";
 
-  if (!_energy_functional)
+  if (_strong_form_equations.empty())
   {
+    if (_verbose)
+      _console << "  No strong form equations to analyze\n";
     return;
   }
 
-  _split_variables = _split_analyzer->generateSplitVariables(_energy_functional);
+  // Analyze each strong form RHS expression for derivative orders
+  for (const auto & [var_name, eq] : _strong_form_equations)
+  {
+    if (!eq.rhs)
+      continue;
+
+    if (_verbose)
+      _console << "  Analyzing " << var_name << ": " << eq.rhs->toString() << "\n";
+
+    auto split_vars = _split_analyzer->generateSplitVariables(eq.rhs);
+
+    // Merge split variables from all equations
+    for (const auto & [name, sv] : split_vars)
+    {
+      if (_split_variables.find(name) == _split_variables.end())
+        _split_variables[name] = sv;
+    }
+  }
 
   if (_verbose)
   {
@@ -501,6 +300,10 @@ AutomaticWeakFormAction::addPrimaryVariables()
 
     _problem->addVariable("MooseVariable", var_name, params);
   }
+
+  // Add split variables if splitting is enabled
+  if (_enable_splitting && !_split_variables.empty())
+    addSplitVariables();
 }
 
 void
@@ -552,12 +355,21 @@ void
 AutomaticWeakFormAction::addKernels()
 {
   // Re-generate split variables if needed (action state doesn't persist across tasks)
-  if (_enable_splitting && _split_variables.empty())
+  if (_enable_splitting && _split_variables.empty() && !_strong_form_equations.empty())
   {
-    if (!_energy_functional)
-      parseEnergyFunctional();
-    if (_energy_functional)
-      _split_variables = _split_analyzer->generateSplitVariables(_energy_functional);
+    // Analyze strong form equations for splitting
+    for (const auto & [var_name, eq] : _strong_form_equations)
+    {
+      if (eq.rhs)
+      {
+        auto split_vars = _split_analyzer->generateSplitVariables(eq.rhs);
+        for (const auto & [name, sv] : split_vars)
+        {
+          if (_split_variables.find(name) == _split_variables.end())
+            _split_variables[name] = sv;
+        }
+      }
+    }
   }
 
   if (_verbose)
@@ -565,137 +377,15 @@ AutomaticWeakFormAction::addKernels()
              << "[AutomaticWeakForm] Adding Kernels\n"
              << "========================================\n";
 
-  // First add constraint kernels for split variables
+  // Add constraint kernels for split variables
   if (_enable_splitting && !_split_variables.empty())
     addSplitConstraintKernels();
 
-  // Check if this is a transient problem and add time derivative kernels
-  bool is_transient = _problem->isTransient();
+  // Kernels for primary variables are added via addTimeDerivativeKernels() and
+  // addExpressionKernels() which are called in the add_kernel task
 
   if (_verbose)
-    _console << "Problem type: " << (is_transient ? "TRANSIENT" : "STEADY-STATE") << "\n";
-
-  // Handle multiple energy expressions for coupled systems
-  if (!_multiple_energies.empty())
-  {
-    if (_verbose)
-      _console << "\nProcessing multiple energy expressions for coupled system\n";
-
-    for (const auto & [var_name, energy] : _multiple_energies)
-    {
-      if (_verbose)
-        _console << "\n--- Processing variable: " << var_name << " ---\n";
-
-      // Add time derivative kernel for transient problems
-      if (is_transient)
-        addTimeDerivativeKernelForVariable(var_name);
-
-      // Transform the energy if we have split variables
-      moose::automatic_weak_form::NodePtr transformed_energy = energy;
-      if (_enable_splitting && !_split_variables.empty())
-      {
-        moose::automatic_weak_form::ExpressionTransformer transformer(_split_variables, _problem->mesh().dimension());
-        transformed_energy = transformer.transform(energy);
-
-        if (_verbose && transformed_energy != energy)
-          _console << "  Transformed energy for split variables\n";
-      }
-
-      auto weak_form = _weak_form_gen->generateWeakForm(transformed_energy, var_name);
-      _weak_forms[var_name] = weak_form;
-
-      if (_debug_print_weak_form && weak_form)
-        _console << "  Weak form: " << weak_form->toString() << "\n";
-
-      generateKernelForVariable(var_name, weak_form, transformed_energy);
-    }
-  }
-  // Handle single energy expression
-  else if (_energy_functional)
-  {
-    if (_verbose)
-      _console << "\nProcessing single energy functional\n";
-
-    if (_debug_print_expressions)
-      _console << "  Energy: " << _energy_functional->toString() << "\n";
-
-    for (const auto & var_name : _variable_names)
-    {
-      if (_verbose)
-        _console << "\n--- Processing variable: " << var_name << " ---\n";
-
-      // Add time derivative kernel for transient problems
-      if (is_transient)
-        addTimeDerivativeKernelForVariable(var_name);
-
-      // Transform the energy if we have split variables
-      moose::automatic_weak_form::NodePtr transformed_energy = _energy_functional;
-      if (_enable_splitting && !_split_variables.empty())
-      {
-        if (_verbose)
-        {
-          _console << "  Transforming energy with " << _split_variables.size() << " split variables\n";
-          for (const auto & [name, sv] : _split_variables)
-          {
-            _console << "    Split var: " << name << " = " << sv.name << " (order " << sv.derivative_order << ")\n";
-          }
-        }
-
-        moose::automatic_weak_form::ExpressionTransformer transformer(_split_variables, _problem->mesh().dimension());
-        transformed_energy = transformer.transform(_energy_functional);
-
-        if (_verbose)
-        {
-          _console << "  Original energy: " << _energy_functional->toString() << "\n";
-          _console << "  Transformed energy: " << transformed_energy->toString() << "\n";
-        }
-      }
-
-      auto weak_form = _weak_form_gen->generateWeakForm(transformed_energy, var_name);
-      _weak_forms[var_name] = weak_form;
-
-      // Always print for info messages (existing behavior)
-      _console << "Generated weak form for " << var_name << ": ";
-      if (weak_form)
-        _console << weak_form->toString() << "\n";
-      else
-        _console << "null\n";
-
-      generateKernelForVariable(var_name, weak_form, transformed_energy);
-
-      // Also generate kernels for split variables (inside the loop where transformed_energy exists)
-      if (_enable_splitting && !_split_variables.empty())
-      {
-        if (_verbose)
-          _console << "  Generating kernels for split variables\n";
-
-        for (const auto & [name, sv] : _split_variables)
-        {
-          if (_verbose)
-            _console << "    Generating kernel for split variable: " << sv.name << "\n";
-
-          // Generate weak form for the split variable
-          auto split_weak_form = _weak_form_gen->generateWeakForm(transformed_energy, sv.name);
-          _weak_forms[sv.name] = split_weak_form;
-
-          if (split_weak_form)
-          {
-            _console << "Generated weak form for split variable " << sv.name << ": " << split_weak_form->toString() << "\n";
-            generateKernelForVariable(sv.name, split_weak_form, transformed_energy);
-          }
-          else if (_verbose)
-          {
-            _console << "      WARNING: No weak form generated for " << sv.name << "\n";
-          }
-        }
-      }
-    }
-  }
-
-  if (_verbose)
-    _console << "\n========================================\n"
-             << "[AutomaticWeakForm] Kernel Addition Complete\n"
-             << "========================================\n";
+    _console << "\n[AutomaticWeakForm] Kernel addition complete\n";
 }
 
 void

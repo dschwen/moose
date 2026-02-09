@@ -15,10 +15,8 @@ public:
   AutomaticWeakFormAction(const InputParameters & params);
   
   virtual void act() override;
-  
+
 protected:
-  void parseEnergyFunctional();
-  
   void analyzeVariables();
   
   void setupVariableSplitting();
@@ -56,25 +54,6 @@ protected:
   void optimizeSolverSettings();
   
 private:
-  enum class EnergyType
-  {
-    EXPRESSION,
-    DOUBLE_WELL,
-    ELASTIC_LINEAR,
-    ELASTIC_NEOHOOKEAN,
-    SURFACE_ISOTROPIC,
-    SURFACE_ANISOTROPIC,
-    CAHN_HILLIARD,
-    CAHN_HILLIARD_FOURTH_ORDER,
-    PHASE_FIELD_CRYSTAL,
-    NAVIER_STOKES,
-    CUSTOM
-  };
-  
-  EnergyType _energy_type;
-  
-  std::string _energy_expression;
-  
   std::vector<std::string> _variable_names;
   
   std::map<std::string, std::string> _variable_types;
@@ -140,13 +119,9 @@ private:
   std::unique_ptr<moose::automatic_weak_form::MixedFormulationGenerator> _mixed_gen;
   
   std::unique_ptr<moose::automatic_weak_form::VariationalProblemAnalyzer> _problem_analyzer;
-  
-  moose::automatic_weak_form::NodePtr _energy_functional;
-  
+
   std::map<std::string, moose::automatic_weak_form::NodePtr> _weak_forms;
-  
-  std::map<std::string, moose::automatic_weak_form::NodePtr> _multiple_energies;
-  
+
   std::map<std::string, moose::automatic_weak_form::StringExpressionParser::StrongFormEquation> _strong_form_equations;
 
   // Lowered weak-form pieces for strong-form equations (from IBP)
@@ -183,18 +158,7 @@ private:
   };
   
   std::vector<KernelInfo> _kernels;
-  
-  void buildEnergyFromType();
-  
-  void buildDoubleWellEnergy();
-  void buildElasticEnergy();
-  void buildNeoHookeanEnergy();
-  void buildSurfaceEnergy();
-  void buildCahnHilliardEnergy();
-  void buildFourthOrderCahnHilliardEnergy();
-  void buildPhaseFieldCrystalEnergy();
-  void buildNavierStokesEnergy();
-  
+
   void setupMaterialProperties();
 
   void addMaterialProperty(const std::string & name, const std::string & type);
