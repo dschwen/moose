@@ -63,7 +63,7 @@
   parameters = 'Du 2e-5 Dv 5e-6 F 0.04 k 0.06'
 
   # Coral growth alternative: F=0.0545, k=0.062
-  use_automatic_differentiation = true
+  use_automatic_differentiation = false
   enable_splitting = false
 
   # Enable verbose output to see the automatic weak form generation

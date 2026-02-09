@@ -24,7 +24,7 @@ VariationalKernelBaseTempl<is_ad>::validParams()
 
   // Add a generic coupled variable parameter that can handle multiple variables
   params.addCoupledVar("coupled_vars", "List of coupled variables from the energy expression");
-  
+
   params.addParam<std::map<std::string, Real>>("parameters",
                                                  "Named parameters for the energy functional");
 
@@ -85,6 +85,7 @@ VariationalKernelBaseTempl<is_ad>::VariationalKernelBaseTempl(const InputParamet
     for (unsigned int i = 0; i < n_coupled; ++i)
     {
       auto var_name = this->getFieldVar("coupled_vars", i)->name();
+      mooseInfoRepeated(this->name(), " couples to " , var_name);
       _coupled_variable_names.push_back(var_name);
 
       // Store the coupled values and gradients
@@ -520,14 +521,19 @@ VariationalKernelBaseTempl<is_ad>::computeQpOffDiagJacobian(unsigned int jvar)
     if (!_use_lowered_weak_form)
       return 0.0;
 
-    // Resolve the coupled variable name for jvar
+    // Resolve the coupled variable name for this jvar by scanning the
+    // multi-coupled "coupled_vars" parameter.
     std::string coupled_var_name;
-    for (const auto & [name, var_num] : _coupled_var_nums)
+    if (this->isCoupled("coupled_vars"))
     {
-      if (var_num == jvar)
+      const unsigned int n_coupled = this->coupledComponents("coupled_vars");
+      for (unsigned int i = 0; i < n_coupled; ++i)
       {
-        coupled_var_name = name;
-        break;
+        if (this->coupled("coupled_vars", i) == jvar)
+        {
+          coupled_var_name = this->getFieldVar("coupled_vars", i)->name();
+          break;
+        }
       }
     }
     if (coupled_var_name.empty())
@@ -536,14 +542,17 @@ VariationalKernelBaseTempl<is_ad>::computeQpOffDiagJacobian(unsigned int jvar)
     clearCache();
     updateVariableValues(this->_qp);
 
-    // Determine var_num for shape function entries
+    // Determine evaluator variable number for shape function entries
     unsigned int var_num = 0;
     if (coupled_var_name == this->_var.name())
       var_num = this->_var.number();
-    else if (auto itvn = _coupled_var_nums.find(coupled_var_name); itvn != _coupled_var_nums.end())
-      var_num = itvn->second;
     else
-      return 0.0;
+    {
+      auto itvn = _coupled_var_nums.find(coupled_var_name);
+      if (itvn == _coupled_var_nums.end())
+        return 0.0;
+      var_num = itvn->second;
+    }
 
     _evaluator->setShapeFunction(var_num, this->_phi[this->_j][this->_qp]);
     _evaluator->setShapeGradient(var_num, this->_grad_phi[this->_j][this->_qp]);
@@ -710,15 +719,15 @@ VariationalKernelBaseTempl<is_ad>::differentiateWithRespectToField(const NodePtr
 {
   if (!expr)
     return nullptr;
-    
+
   // Use the differentiation visitor to compute ∂expr/∂var
   DifferentiationVisitor dv(var_name);
   auto diff = dv.differentiate(expr);
-  
+
   // The 0-th order coefficient is ∂expr/∂var
   if (diff.hasOrder(0))
     return diff.getCoefficient(0);
-    
+
   return nullptr;
 }
 
@@ -728,10 +737,10 @@ VariationalKernelBaseTempl<is_ad>::differentiateWithRespectToGradient(const Node
 {
   if (!expr)
     return nullptr;
-    
+
   // For expressions like C^1 = κ∇u, we need ∂C^1/∂(∇u)
   // This is more complex and depends on the structure of the expression
-  
+
   // Handle different node types
   if (expr->type() == NodeType::Add)
   {
@@ -739,7 +748,7 @@ VariationalKernelBaseTempl<is_ad>::differentiateWithRespectToGradient(const Node
     auto binary = std::static_pointer_cast<BinaryOpNode>(expr);
     auto left_deriv = differentiateWithRespectToGradient(binary->left(), var_name);
     auto right_deriv = differentiateWithRespectToGradient(binary->right(), var_name);
-    
+
     if (left_deriv && right_deriv)
       return add(left_deriv, right_deriv);
     else if (left_deriv)
@@ -756,11 +765,11 @@ VariationalKernelBaseTempl<is_ad>::differentiateWithRespectToGradient(const Node
     auto binary = std::static_pointer_cast<BinaryOpNode>(expr);
     auto left = binary->left();
     auto right = binary->right();
-    
+
     // Check if one side is a scalar constant/expression and the other contains grad(u)
     bool left_has_grad = containsGradient(left, var_name);
     bool right_has_grad = containsGradient(right, var_name);
-    
+
     if (!left_has_grad && right_has_grad)
     {
       // left is coefficient, right contains grad(u)
@@ -785,9 +794,9 @@ VariationalKernelBaseTempl<is_ad>::differentiateWithRespectToGradient(const Node
     if (operand->type() == NodeType::Variable || operand->type() == NodeType::FieldVariable)
     {
       auto var_node = operand;
-      if ((var_node->type() == NodeType::Variable && 
+      if ((var_node->type() == NodeType::Variable &&
            std::static_pointer_cast<VariableNode>(var_node)->name() == var_name) ||
-          (var_node->type() == NodeType::FieldVariable && 
+          (var_node->type() == NodeType::FieldVariable &&
            std::static_pointer_cast<FieldVariableNode>(var_node)->name() == var_name))
       {
         // ∂(grad(u))/∂(grad(u)) = I (identity tensor)
@@ -800,11 +809,11 @@ VariationalKernelBaseTempl<is_ad>::differentiateWithRespectToGradient(const Node
     auto binary = std::static_pointer_cast<BinaryOpNode>(expr);
     auto left = binary->left();
     auto right = binary->right();
-    
+
     // Check if one side is grad(var) and the other is a constant/scalar
     NodePtr grad_part = nullptr;
     NodePtr coeff_part = nullptr;
-    
+
     if (right->type() == NodeType::Gradient)
     {
       grad_part = right;
@@ -815,14 +824,14 @@ VariationalKernelBaseTempl<is_ad>::differentiateWithRespectToGradient(const Node
       grad_part = left;
       coeff_part = right;
     }
-    
+
     if (grad_part)
     {
       auto unary = std::static_pointer_cast<UnaryOpNode>(grad_part);
       auto operand = unary->operand();
-      if ((operand->type() == NodeType::Variable && 
+      if ((operand->type() == NodeType::Variable &&
            std::static_pointer_cast<VariableNode>(operand)->name() == var_name) ||
-          (operand->type() == NodeType::FieldVariable && 
+          (operand->type() == NodeType::FieldVariable &&
            std::static_pointer_cast<FieldVariableNode>(operand)->name() == var_name))
       {
         // ∂(κ * grad(u))/∂(grad(u)) = κ * I
@@ -830,7 +839,7 @@ VariationalKernelBaseTempl<is_ad>::differentiateWithRespectToGradient(const Node
       }
     }
   }
-  
+
   // For more complex expressions, we would need a more sophisticated approach
   return nullptr;
 }
