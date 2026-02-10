@@ -1,0 +1,244 @@
+[Tests]
+  design = 'AutomaticWeakFormAction.md VariationalKernelBase.md'
+  issues = '#0000'
+
+  # =============================================================================
+  # DIFFUSION TESTS - Basic PDE solving
+  # =============================================================================
+
+  [diffusion_simple]
+    type = 'Exodiff'
+    input = 'simple_diffusion.i'
+    exodiff = 'simple_diffusion_out.e'
+    requirement = 'The system shall solve simple diffusion equations using strong form specification'
+    rel_err = 1e-5
+  []
+
+  [diffusion_with_ad]
+    type = 'Exodiff'
+    input = 'simple_diffusion_ad.i'
+    exodiff = 'simple_diffusion_ad_out.e'
+    requirement = 'The system shall solve diffusion equations with automatic differentiation enabled'
+    rel_err = 1e-5
+  []
+
+  # =============================================================================
+  # ALLEN-CAHN TESTS - Phase field modeling
+  # =============================================================================
+
+  [allen_cahn_anisotropic]
+    type = 'CSVDiff'
+    input = 'allen_cahn_anisotropic.i'
+    csvdiff = 'allen_cahn_anisotropic_csv.csv'
+    requirement = 'The system shall solve Allen-Cahn equations with anisotropic interface energy'
+    rel_err = 1e-4
+    max_parallel = 4
+  []
+
+  [allen_cahn_fourfold]
+    type = 'CSVDiff'
+    input = 'allen_cahn_fourfold_anisotropy.i'
+    csvdiff = 'allen_cahn_fourfold_anisotropy_csv.csv'
+    requirement = 'The system shall solve Allen-Cahn with fourfold crystalline anisotropy'
+    rel_err = 1e-4
+    max_parallel = 4
+  []
+
+  # =============================================================================
+  # CAHN-HILLIARD TESTS - Conserved order parameter dynamics
+  # =============================================================================
+
+  [cahn_hilliard_no_ad]
+    type = 'Exodiff'
+    input = 'cahn_hilliard_no_ad.i'
+    exodiff = 'cahn_hilliard_no_ad_out.e'
+    requirement = 'The system shall solve Cahn-Hilliard equations without automatic differentiation'
+    rel_err = 1e-5
+  []
+
+  [cahn_hilliard_with_ad]
+    type = 'Exodiff'
+    input = 'cahn_hilliard_ad.i'
+    exodiff = 'cahn_hilliard_ad_out.e'
+    requirement = 'The system shall solve Cahn-Hilliard equations with automatic differentiation'
+    rel_err = 1e-5
+  []
+
+  [cahn_hilliard_steady]
+    type = 'Exodiff'
+    input = 'cahn_hilliard_steady_ad.i'
+    exodiff = 'cahn_hilliard_steady_ad_out.e'
+    requirement = 'The system shall solve steady-state Cahn-Hilliard problems'
+    rel_err = 1e-5
+  []
+
+  [cahn_hilliard_transient]
+    type = 'Exodiff'
+    input = 'cahn_hilliard_transient_ad.i'
+    exodiff = 'cahn_hilliard_transient_ad_out.e'
+    requirement = 'The system shall solve transient Cahn-Hilliard evolution'
+    rel_err = 1e-5
+    expect_out = 'Solve Converged!'
+  []
+
+  # =============================================================================
+  # VARIABLE SPLITTING TESTS - Higher-order PDEs
+  # =============================================================================
+
+  [cahn_hilliard_fourth_order_split]
+    type = 'Exodiff'
+    input = 'cahn_hilliard_fourth_order_split.i'
+    exodiff = 'cahn_hilliard_fourth_order_split_out.e'
+    requirement = 'The system shall automatically split fourth-order Cahn-Hilliard equations into coupled second-order system'
+    rel_err = 1e-5
+    expect_out = 'Variable splitting: ENABLED'
+  []
+
+  [fourth_order_splitting]
+    type = 'Exodiff'
+    input = 'fourth_order_splitting.i'
+    exodiff = 'fourth_order_splitting_out.e'
+    requirement = 'The system shall handle automatic variable splitting for higher-order derivatives'
+    rel_err = 1e-5
+  []
+
+  [test_splitting_simple]
+    type = 'Exodiff'
+    input = 'test_splitting_simple.i'
+    exodiff = 'test_splitting_simple_out.e'
+    requirement = 'The system shall create and constrain split variables for gradient operators'
+    rel_err = 1e-5
+  []
+
+  # =============================================================================
+  # COUPLED MULTI-PHYSICS TESTS
+  # =============================================================================
+
+  [coupled_cahn_hilliard_diffusion]
+    type = 'Exodiff'
+    input = 'coupled_ch_diffusion_simple.i'
+    exodiff = 'coupled_ch_diffusion_simple_out.e'
+    requirement = 'The system shall solve coupled Cahn-Hilliard and diffusion equations'
+    rel_err = 1e-5
+    expect_out = 'couples to'
+  []
+
+  [coupled_cahn_hilliard_allen_cahn]
+    type = 'CSVDiff'
+    input = 'coupled_ch_ac_simple.i'
+    csvdiff = 'coupled_ch_ac_simple_csv.csv'
+    requirement = 'The system shall solve coupled conserved (CH) and non-conserved (AC) order parameters'
+    rel_err = 1e-4
+  []
+
+  # =============================================================================
+  # GRAY-SCOTT REACTION-DIFFUSION TESTS
+  # =============================================================================
+
+  [gray_scott_basic]
+    type = 'CSVDiff'
+    input = 'gs_auto.i'
+    csvdiff = 'gs_auto_out.csv'
+    requirement = 'The system shall solve Gray-Scott reaction-diffusion patterns using strong form equations'
+    rel_err = 1e-4
+    expect_out = 'Solve Converged!'
+  []
+
+  [gray_scott_improved_timestepping]
+    type = 'Exodiff'
+    input = 'gray_scott_rd_improved.i'
+    exodiff = 'gray_scott_rd_improved_out.e'
+    requirement = 'The system shall efficiently solve Gray-Scott with adaptive timestepping'
+    rel_err = 1e-4
+    cli_args = 'Executioner/end_time=10'  # Shorter run for testing
+  []
+
+  # =============================================================================
+  # VAR_DIFF OPERATOR TESTS - Energy functional derivatives
+  # =============================================================================
+
+  [var_diff_simple]
+    type = 'Exodiff'
+    input = 'var_diff_simple.i'
+    exodiff = 'var_diff_simple_out.e'
+    requirement = 'The system shall compute variational derivatives using var_diff() operator'
+    rel_err = 1e-5
+  []
+
+  # =============================================================================
+  # POLYNOMIAL AND DOUBLE-WELL TESTS
+  # =============================================================================
+
+  [polynomial_ad]
+    type = 'Exodiff'
+    input = 'polynomial_ad.i'
+    exodiff = 'polynomial_ad_out.e'
+    requirement = 'The system shall handle polynomial expressions in strong forms with AD'
+    rel_err = 1e-5
+  []
+
+  [double_well_gradient]
+    type = 'Exodiff'
+    input = 'double_well_gradient_ad.i'
+    exodiff = 'double_well_gradient_ad_out.e'
+    requirement = 'The system shall solve double-well energy with gradient terms'
+    rel_err = 1e-5
+  []
+
+  # =============================================================================
+  # INTEGRATION BY PARTS TESTS
+  # =============================================================================
+
+  [poisson_strong_ibp]
+    type = 'Exodiff'
+    input = 'poisson_strong_ibp.i'
+    exodiff = 'poisson_strong_ibp_out.e'
+    requirement = 'The system shall correctly apply integration by parts to strong form Laplacian'
+    rel_err = 1e-5
+    expect_out = 'Applying IBP lowering'
+  []
+
+  # =============================================================================
+  # QUICK SMOKE TESTS - Fast validation
+  # =============================================================================
+
+  [test_quick_run]
+    type = 'RunApp'
+    input = 'test_quick.i'
+    requirement = 'The system shall parse and execute basic variational problems quickly'
+    expect_out = 'Solve Converged!'
+    max_time = 30
+  []
+
+  [test_verbose_output]
+    type = 'RunApp'
+    input = 'test_verbose_output.i'
+    requirement = 'The system shall provide detailed output when verbose mode is enabled'
+    expect_out = 'Deriving weak form'
+    cli_args = 'AutomaticWeakForm/verbose=true'
+  []
+
+  # =============================================================================
+  # STRING PARSING TESTS
+  # =============================================================================
+
+  [cahn_hilliard_string_parser]
+    type = 'Exodiff'
+    input = 'cahn_hilliard_string.i'
+    exodiff = 'cahn_hilliard_string_out.e'
+    requirement = 'The system shall parse complex mathematical expressions from strings'
+    rel_err = 1e-5
+  []
+
+  # =============================================================================
+  # BOUNDARY CONDITION TESTS
+  # =============================================================================
+
+  [automatic_boundary_conditions]
+    type = 'Exodiff'
+    input = 'automatic_boundary_conditions.i'
+    exodiff = 'automatic_boundary_conditions_out.e'
+    requirement = 'The system shall generate appropriate boundary conditions from weak forms'
+    rel_err = 1e-5
+  []
+[]
