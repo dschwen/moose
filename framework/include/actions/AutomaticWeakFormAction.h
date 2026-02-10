@@ -32,19 +32,13 @@ protected:
   void addSplitConstraintKernels();
   
   void addAuxKernels();
-  
-  void addBoundaryConditions();
-  
+
   void addPreconditioner();
   
   void addPostprocessors();
   
   void validateProblemSetup();
-  
-  void generateKernelForVariable(const std::string & var_name,
-                                  const moose::automatic_weak_form::NodePtr & weak_form,
-                                  const moose::automatic_weak_form::NodePtr & energy_expr = nullptr);
-  
+
   void generateSplitVariableKernel(const moose::automatic_weak_form::SplitVariable & split_var);
   
   void setupCoupledProblem();
@@ -171,9 +165,7 @@ private:
   void writeWeakFormToFile();
   
   void performConservationCheck();
-  
-  void performStabilityAnalysis();
-  
+
   void estimateSystemConditionNumber();
   
   // Strong form handling

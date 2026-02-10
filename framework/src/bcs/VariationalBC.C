@@ -197,7 +197,6 @@ VariationalBC::computeQpJacobian()
   else if (_use_ad)
   {
     // Use automatic differentiation
-    Real flux = _evaluator->evaluate(_boundary_expr);
     Real dflux_du = _evaluator->evaluateDerivative(_boundary_expr, _var.name());
 
     // Jacobian: d/du[flux * test] = (dflux/du * phi) * test

@@ -949,7 +949,9 @@ VariationalKernelBaseTempl<is_ad>::evaluateExpressionAD(const NodePtr & expr, un
       auto binary = std::static_pointer_cast<BinaryOpNode>(expr);
       auto base = evaluateExpressionAD(binary->left(), qp);
       auto exp = evaluateExpressionAD(binary->right(), qp);
-      return std::pow(base, exp);
+      // Use ADL to find correct pow overload (works for both AD and non-AD types)
+      using std::pow;
+      return pow(base, exp);
     }
 
     case NodeType::Negate:

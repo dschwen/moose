@@ -87,13 +87,13 @@
   [TimeStepper]
     type = IterationAdaptiveDT
     dt = 0.02
-    optimal_iterations = 8
+    optimal_iterations = 12
     iteration_window = 2
-    growth_factor = 1.5
+    growth_factor = 1.75
     cutback_factor = 0.75
   []
   dtmin = 0.001
-  dtmax = 10
+  # dtmax = 20
 
   end_time = 1000
   nl_rel_tol = 1e-8

@@ -937,6 +937,8 @@ NodePtr WeakFormGenerator::extractBoundaryTerms(
     const Differential & diff,
     const std::string & var_name)
 {
+  (void)var_name;  // Reserved for future use
+
   // Create a symbolic normal vector for boundary term expressions
   auto normal = variable("n");  // Represents outward unit normal
 
