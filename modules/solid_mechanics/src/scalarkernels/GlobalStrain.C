@@ -37,7 +37,8 @@ GlobalStrain::GlobalStrain(const InputParameters & parameters)
     _pst(getUserObject<GlobalStrainUserObjectInterface>("global_strain_uo")),
     _pst_residual(_pst.getResidual()),
     _pst_jacobian(_pst.getJacobian()),
-    _periodic_dir(_pst.getPeriodicDirections()),
+    _active_dir(_pst.getActiveDirections()),
+    _has_explicit_active_directions(_pst.hasExplicitActiveDirections()),
     _components(_var.order()),
     _dim(_mesh.dimension())
 {
@@ -56,8 +57,14 @@ GlobalStrain::computeResidual()
   prepareVectorTag(_assembly, _var.number());
   for (_i = 0; _i < _local_re.size(); ++_i)
   {
-    if (_periodic_dir(_components[_i].first) || _periodic_dir(_components[_i].second))
+    if ((_has_explicit_active_directions && _components[_i].first == _components[_i].second &&
+         _active_dir(_components[_i].first)) ||
+        (!_has_explicit_active_directions &&
+         (_active_dir(_components[_i].first) || _active_dir(_components[_i].second))))
       _local_re(_i) += _pst_residual(_components[_i].first, _components[_i].second);
+    else
+      // Pin inactive scalar components to zero.
+      _local_re(_i) += _u[_i];
   }
   accumulateTaggedLocalResidual();
 }
@@ -68,11 +75,17 @@ GlobalStrain::computeJacobian()
   prepareMatrixTag(_assembly, _var.number(), _var.number());
   for (_i = 0; _i < _local_ke.m(); ++_i)
     for (_j = 0; _j < _local_ke.m(); ++_j)
-      // periodic direction check is not done for jacobian calculations to avoid zero pivot error
-      _local_ke(_i, _j) += _pst_jacobian(_components[_i].first,
-                                         _components[_i].second,
-                                         _components[_j].first,
-                                         _components[_j].second);
+      if (!_has_explicit_active_directions ||
+          (_components[_i].first == _components[_i].second &&
+           _components[_j].first == _components[_j].second && _active_dir(_components[_i].first) &&
+           _active_dir(_components[_j].first)))
+        _local_ke(_i, _j) += _pst_jacobian(_components[_i].first,
+                                           _components[_i].second,
+                                           _components[_j].first,
+                                           _components[_j].second);
+      else if (_i == _j)
+        // Inactive scalar components retain a unit diagonal to avoid a zero pivot.
+        _local_ke(_i, _j) += 1.0;
   accumulateTaggedLocalMatrix();
 }
 

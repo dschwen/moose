@@ -28,7 +28,8 @@ public:
   void finalize() override;
   virtual const RankTwoTensor & getResidual() const override;
   virtual const RankFourTensor & getJacobian() const override;
-  virtual const VectorValue<bool> & getPeriodicDirections() const override;
+  virtual const VectorValue<bool> & getActiveDirections() const override;
+  virtual bool hasExplicitActiveDirections() const override;
 
   /**
    * Calculate additional applied stresses
@@ -53,6 +54,9 @@ protected:
   /// Displacement variables
   const std::vector<const MooseVariableFieldBase *> _disp_var;
 
-  /// Variable numbers of the displacement variables
-  VectorValue<bool> _periodic_dir;
+  /// Whether directions were explicitly selected rather than inferred from periodicity
+  const bool _has_explicit_active_directions;
+
+  /// Directions with active global strain components
+  VectorValue<bool> _active_dir;
 };

@@ -44,6 +44,11 @@ GlobalStrainAction::validParams()
                                      "Vector of values defining the constant applied stress "
                                      "to add, in order 11, 22, 33, 23, 13, 12");
   params.addParam<std::string>("base_name", "Material property base name");
+  params.addParam<MultiMooseEnum>(
+      "active_directions",
+      MultiMooseEnum("x=0 y=1 z=2"),
+      "Global strain directions to activate independently of translated "
+      "periodicity");
   params.addParam<std::vector<SubdomainName>>(
       "block", {}, "The block id where this variable lives");
 

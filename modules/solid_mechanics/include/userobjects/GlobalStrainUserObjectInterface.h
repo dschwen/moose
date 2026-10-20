@@ -13,7 +13,7 @@
 #include "RankTwoTensor.h"
 #include "RankFourTensor.h"
 /**
- * This class provides interface for extracting the periodic directions, residual, and jacobian
+ * This class provides an interface for extracting active directions, residual, and jacobian
  * values from UserObjects associated with global strain calculation
  */
 class GlobalStrainUserObjectInterface
@@ -21,5 +21,6 @@ class GlobalStrainUserObjectInterface
 public:
   virtual const RankTwoTensor & getResidual() const = 0;
   virtual const RankFourTensor & getJacobian() const = 0;
-  virtual const VectorValue<bool> & getPeriodicDirections() const = 0;
+  virtual const VectorValue<bool> & getActiveDirections() const = 0;
+  virtual bool hasExplicitActiveDirections() const = 0;
 };

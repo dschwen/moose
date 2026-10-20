@@ -88,6 +88,12 @@ ComputeIncrementalStrain::computeTotalStrainIncrement(RankTwoTensor & total_stra
   auto Fbar = RankTwoTensor ::initializeFromRows(
       (*_grad_disp_old[0])[_qp], (*_grad_disp_old[1])[_qp], (*_grad_disp_old[2])[_qp]);
 
+  if (_global_strain)
+  {
+    A += (*_global_strain)[_qp];
+    Fbar += (*_global_strain_old)[_qp];
+  }
+
   _deformation_gradient[_qp] = A;
   _deformation_gradient[_qp].addIa(1.0);
 

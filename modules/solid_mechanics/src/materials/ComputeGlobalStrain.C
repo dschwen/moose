@@ -40,7 +40,8 @@ ComputeGlobalStrain::ComputeGlobalStrain(const InputParameters & parameters)
     _scalar_global_strain(coupledScalarValue("scalar_global_strain")),
     _global_strain(declareProperty<RankTwoTensor>(_base_name + "global_strain")),
     _pst(getUserObject<GlobalStrainUserObjectInterface>("global_strain_uo")),
-    _periodic_dir(_pst.getPeriodicDirections()),
+    _active_dir(_pst.getActiveDirections()),
+    _has_explicit_active_directions(_pst.hasExplicitActiveDirections()),
     _dim(_mesh.dimension()),
     _ndisp(coupledComponents("displacements"))
 {
@@ -59,7 +60,8 @@ ComputeGlobalStrain::computeQpProperties()
   strain.fillFromScalarVariable(_scalar_global_strain);
 
   for (unsigned int dir = 0; dir < _dim; ++dir)
-    if (!_periodic_dir(dir))
-      for (unsigned int var = 0; var < _ndisp; ++var)
+    for (unsigned int var = 0; var < _ndisp; ++var)
+      if (!_active_dir(dir) ||
+          (_has_explicit_active_directions && (dir != var || !_active_dir(var))))
         strain(dir, var) = 0.0;
 }

@@ -1,4 +1,12 @@
 [Tests]
+  [./moosify_nnl]
+    type = RunApp
+    input = 'moosify_nnl.i'
+    cli_args = 'Executioner/end_time=1 Executioner/dt=1'
+    check_input = True
+    capabilities = 'library_mode=dynamic & installation_type=in_tree'
+    valgrind = NONE
+  [../]
   [./circle_thermal_expansion_stress]
     type = RunApp
     input = 'circle_thermal_expansion_stress.i'

@@ -80,10 +80,18 @@
                   'material models for small strain elasticity'
   []
 
+  [global_strain_incremental]
+    type = 'RunApp'
+    input = 'global_strain_incremental.i'
+    capabilities = 'library_mode=dynamic & installation_type=in_tree'
+    valgrind = 'NONE'
+    requirement = 'The Abaqus UMAT interface shall support the incremental elastic UMAT with an '
+                  'explicitly active Global Strain direction without periodic boundary conditions.'
+  []
   [elastic_incremental]
     type = 'Exodiff'
     input = 'elastic.i'
-    cli_args = "Materials/active='umat' Materials/umat/plugin='../../../plugins/elastic_incremental'"
+    cli_args = "Materials/active='umat'"
     exodiff = 'elastic_out.e'
     # installation_type=in_tree: see #25279
     capabilities = 'library_mode=dynamic & installation_type=in_tree'

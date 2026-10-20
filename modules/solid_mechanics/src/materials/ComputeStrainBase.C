@@ -46,6 +46,9 @@ ComputeStrainBase::ComputeStrainBase(const InputParameters & parameters)
     _global_strain(isParamValid("global_strain")
                        ? &getMaterialProperty<RankTwoTensor>(_base_name + "global_strain")
                        : nullptr),
+    _global_strain_old(isParamValid("global_strain")
+                           ? &getMaterialPropertyOld<RankTwoTensor>(_base_name + "global_strain")
+                           : nullptr),
     _volumetric_locking_correction(getParam<bool>("volumetric_locking_correction") &&
                                    !isBoundaryMaterial()),
     _current_elem_volume(_assembly.elemVolume())

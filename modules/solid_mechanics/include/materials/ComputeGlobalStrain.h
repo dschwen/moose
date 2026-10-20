@@ -36,7 +36,8 @@ protected:
   MaterialProperty<RankTwoTensor> & _global_strain;
 
   const GlobalStrainUserObjectInterface & _pst;
-  const VectorValue<bool> & _periodic_dir;
+  const VectorValue<bool> & _active_dir;
+  const bool _has_explicit_active_directions;
 
   const unsigned int _dim;
 

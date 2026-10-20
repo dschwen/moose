@@ -8,6 +8,11 @@
 
 `ScalarKernel` [GlobalStrain](/GlobalStrain.md) extracts the residual and jacobian values from this `UserObject`.
 
+By default, Global Strain activates directions detected from translated periodic boundary
+conditions. Set `active_directions`, for example `active_directions = 'x y'`, to activate
+those directions explicitly. This supports plane-remains-plane constraints constructed with
+Dirichlet boundary conditions without requiring periodicity.
+
 ## Example Input File Syntax
 
 !listing modules/solid_mechanics/test/tests/global_strain/global_strain.i block=UserObjects/global_strain_uo

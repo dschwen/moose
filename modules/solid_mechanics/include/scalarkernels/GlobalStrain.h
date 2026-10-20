@@ -36,7 +36,8 @@ protected:
   const GlobalStrainUserObjectInterface & _pst;
   const RankTwoTensor & _pst_residual;
   const RankFourTensor & _pst_jacobian;
-  const VectorValue<bool> & _periodic_dir;
+  const VectorValue<bool> & _active_dir;
+  const bool _has_explicit_active_directions;
 
   std::vector<std::pair<unsigned int, unsigned int>> _components;
   const unsigned int _dim;

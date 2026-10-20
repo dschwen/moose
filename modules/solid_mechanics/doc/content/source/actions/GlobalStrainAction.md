@@ -2,7 +2,11 @@
 
 !syntax description /Physics/SolidMechanics/GlobalStrain/GlobalStrainAction
 
-This action simplifies the input file syntax for global strain calculation required for maintaining strain periodicity. It also generates the auxiliary displacement field created by the global strain. It creates following MOOSE objects,
+This action simplifies the input file syntax for global strain calculation required for maintaining strain periodicity. It also generates the auxiliary displacement field created by the global strain. It creates following MOOSE objects.
+
+The optional `active_directions` parameter activates global strain directions independently of
+translated periodic boundary conditions. This can represent plane-remains-plane boundary
+conditions when local normal displacements are constrained with Dirichlet boundary conditions.
 
 ### UserObject
 

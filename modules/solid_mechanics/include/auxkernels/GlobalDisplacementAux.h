@@ -33,7 +33,7 @@ protected:
   bool _output_global_disp;
 
   const GlobalStrainUserObjectInterface & _pst;
-  const VectorValue<bool> & _periodic_dir;
+  const VectorValue<bool> & _active_dir;
   const Point _ref_point;
 
   const unsigned int _dim;

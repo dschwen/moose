@@ -1,6 +1,6 @@
 # Global Strain
 
-The global strain system enables capturing the volume change, shear deformation etc. while still maintaining the periodicity. It relaxes the stresses along the periodic directions and allows the corresponding deformation. This, combined with the periodic displacement, enforces the strain periodicity.
+The global strain system enables capturing volume change, shear deformation, and other homogeneous deformation while maintaining periodicity. It relaxes stresses along active directions and allows the corresponding deformation. Combined with periodic displacement, this enforces strain periodicity. The active directions can also be selected explicitly for nonperiodic plane-remains-plane applications.
 
 The [global strain](/GlobalStrain.md) is computed by setting integral of each of the stress components $\sigma_{ij}$ in the periodic direction to zero such that
 

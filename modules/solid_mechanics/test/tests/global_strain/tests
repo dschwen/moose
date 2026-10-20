@@ -41,6 +41,12 @@
                    behavior in 2D with applied displacement boundary condition in
                    one direction while still maintaining periodicity in the other."
   [../]
+  [./active_direction]
+    type = 'RunApp'
+    input = 'global_strain_active_direction.i'
+    requirement = "The global strain system shall activate explicitly selected directions without "
+                  "translated periodic displacement boundary conditions."
+  [../]
   [./disp]
     type = 'Exodiff'
     input = 'global_strain_disp.i'

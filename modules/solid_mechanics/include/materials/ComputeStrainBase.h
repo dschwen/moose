@@ -51,6 +51,7 @@ protected:
   std::vector<const MaterialProperty<RankTwoTensor> *> _eigenstrains;
 
   const MaterialProperty<RankTwoTensor> * const _global_strain;
+  const MaterialProperty<RankTwoTensor> * const _global_strain_old;
 
   const bool _volumetric_locking_correction;
   const Real & _current_elem_volume;
